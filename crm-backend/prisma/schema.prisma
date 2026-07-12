@@ -1,0 +1,234 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─────────────────────────────────────────────
+// Tenant & Auth
+// ─────────────────────────────────────────────
+
+model Tenant {
+  id        String   @id @default(cuid())
+  name      String
+  createdAt DateTime @default(now())
+
+  users     User[]
+
+  @@map("tenants")
+}
+
+enum Role {
+  ADMIN
+  MANAGER
+  REP
+}
+
+model User {
+  id           String   @id @default(cuid())
+  tenantId     String
+  tenant       Tenant   @relation(fields: [tenantId], references: [id])
+  name         String
+  email        String
+  passwordHash String
+  role         Role     @default(REP)
+  createdAt    DateTime @default(now())
+
+  @@unique([tenantId, email])
+  @@index([tenantId])
+  @@map("users")
+}
+
+// ─────────────────────────────────────────────
+// Contact
+// ─────────────────────────────────────────────
+
+model Contact {
+  id          String   @id @default(cuid())
+  tenantId    String
+  name        String
+  email       String
+  phone       String?
+  companyName String?
+  createdAt   DateTime @default(now())
+
+  deals       Deal[]
+
+  @@index([tenantId])
+  @@index([tenantId, email])
+  @@map("contacts")
+}
+
+// ─────────────────────────────────────────────
+// Lead
+// ─────────────────────────────────────────────
+
+enum LeadStatus {
+  NEW
+  CONTACTED
+  QUALIFIED
+  DISQUALIFIED
+  CONVERTED
+}
+
+model Lead {
+  id         String     @id @default(cuid())
+  tenantId   String
+  name       String
+  email      String
+  phone      String?
+  source     String
+  status     LeadStatus @default(NEW)
+  assignedTo String?
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+
+  @@index([tenantId, status])
+  @@index([tenantId, assignedTo])
+  @@index([tenantId, email])
+  @@map("leads")
+}
+
+// ─────────────────────────────────────────────
+// Deal
+// ─────────────────────────────────────────────
+
+enum DealStage {
+  DISCOVERY
+  PROPOSAL
+  NEGOTIATION
+  WON
+  LOST
+}
+
+enum DealType {
+  PRODUCT
+  SERVICE
+}
+
+model Deal {
+  id             String    @id @default(cuid())
+  tenantId       String
+  title          String
+  value          Float
+  stage          DealStage @default(DISCOVERY)
+  position       Float     @default(0)
+  probability    Int       @default(20)
+  contactId      String
+  contact        Contact   @relation(fields: [contactId], references: [id])
+  ownerId        String
+  dealType       DealType  @default(PRODUCT)
+  lastActivityAt DateTime  @default(now())
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  invoices       Invoice[]
+
+  @@index([tenantId, stage])
+  @@index([tenantId, ownerId])
+  @@index([tenantId, stage, position])
+  @@map("deals")
+}
+
+// ─────────────────────────────────────────────
+// Activity (polymorphic timeline)
+// ─────────────────────────────────────────────
+
+enum ActivityType {
+  CALL
+  EMAIL
+  NOTE
+  STAGE_CHANGE
+}
+
+model Activity {
+  id         String       @id @default(cuid())
+  tenantId   String
+  entityType String       // "lead" | "deal" | "contact"
+  entityId   String
+  type       ActivityType
+  content    String
+  createdBy  String
+  createdAt  DateTime     @default(now())
+
+  @@index([tenantId, entityType, entityId])
+  @@map("activities")
+}
+
+// ─────────────────────────────────────────────
+// Invoice
+// ─────────────────────────────────────────────
+
+enum InvoiceStatus {
+  DRAFT
+  SENT
+  PAID
+  OVERDUE
+}
+
+model Invoice {
+  id        String            @id @default(cuid())
+  tenantId  String
+  dealId    String
+  deal      Deal              @relation(fields: [dealId], references: [id])
+  status    InvoiceStatus     @default(DRAFT)
+  dueDate   DateTime
+  total     Float
+  createdAt DateTime          @default(now())
+  updatedAt DateTime          @updatedAt
+
+  lineItems InvoiceLineItem[]
+
+  @@index([tenantId, status])
+  @@map("invoices")
+}
+
+model InvoiceLineItem {
+  id          String  @id @default(cuid())
+  invoiceId   String
+  invoice     Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  description String
+  quantity    Float
+  unitPrice   Float
+
+  @@map("invoice_line_items")
+}
+
+// ─────────────────────────────────────────────
+// Notification
+// ─────────────────────────────────────────────
+
+model Notification {
+  id        String   @id @default(cuid())
+  tenantId  String
+  userId    String
+  type      String
+  message   String
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([tenantId, userId, isRead])
+  @@map("notifications")
+}
+
+// ─────────────────────────────────────────────
+// Audit Log (append-only)
+// ─────────────────────────────────────────────
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  tenantId   String
+  userId     String?
+  action     String   // e.g. "deal.stage_changed"
+  entityType String
+  entityId   String
+  metadata   Json?
+  createdAt  DateTime @default(now())
+
+  @@index([tenantId, entityType, entityId])
+  @@index([tenantId, createdAt])
+  @@map("audit_logs")
+}
