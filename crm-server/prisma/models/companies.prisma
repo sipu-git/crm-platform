@@ -1,0 +1,16 @@
+model Company {
+    id         String   @id @default(cuid())
+    tenant_id  String
+    name       String
+    industry   String
+    website    Json
+    created_at DateTime @default(now())
+
+    contact    Contacts[]
+    activities Activities[]
+    Invoice    Invoice[]
+
+    tenant Tenant @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
+
+    @@index([tenant_id])
+}

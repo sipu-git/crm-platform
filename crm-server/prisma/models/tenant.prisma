@@ -1,0 +1,16 @@
+model Tenant {
+    id           String         @id @default(uuid())
+    name         String
+    user         User[]
+    company      Company[]
+    contacts     Contacts[]
+    pipeline     Pipeline[]
+    deals        Deal[]
+    activities   Activities[]
+    Invoice      Invoice[]
+    notification Notification[]
+    lead         Leads[]
+    created_at   DateTime       @default(now())
+
+    @@index([name])
+}

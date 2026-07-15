@@ -1,0 +1,22 @@
+model Contacts {
+    id         String   @id @default(cuid())
+    tenant_id  String
+    company_id String
+    first_name String
+    last_name  String
+    email      String   @unique
+    phone      String
+    created_by String
+    created_at DateTime @default(now())
+    updated_at DateTime
+
+    tenant     Tenant       @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
+    company    Company      @relation(fields: [company_id], references: [id], onDelete: Cascade)
+    user       User         @relation(fields: [created_by], references: [id], onDelete: Cascade)
+    deals      Deal[]
+    activities Activities[]
+    Invoice    Invoice[]
+    lead       Leads[]
+
+    @@index([tenant_id, company_id, email])
+}

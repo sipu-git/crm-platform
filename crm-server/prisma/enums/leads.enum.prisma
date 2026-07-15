@@ -1,0 +1,15 @@
+enum Source {
+    WEBSITE
+    REFERAL
+    SOCIAL_MEDIA
+    EVENT
+    WEBINAR
+    OTHER
+}
+
+enum LeadStatus {
+    NEW
+    CONTRACTED
+    QUALIFIED
+    DISQUALIFIED
+}

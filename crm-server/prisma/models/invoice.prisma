@@ -1,0 +1,24 @@
+model Invoice {
+    id             String        @id @default(cuid())
+    tenant_id      String
+    invoice_number String        @unique
+    deal_id        String
+    contact_id     String
+    company_id     String
+    status         InvoiceStatus
+    issue_date     DateTime
+    due_date       DateTime
+    paid_at        DateTime
+    tax_amount     Decimal       @default(0)
+    total_amount   Decimal       @default(0)
+    notes          String
+    created_at     DateTime      @default(now())
+    updated_at     DateTime
+
+    tenant  Tenant   @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
+    deal    Deal     @relation(fields: [deal_id], references: [id], onDelete: Cascade)
+    contact Contacts @relation(fields: [contact_id], references: [id], onDelete: Cascade)
+    company Company  @relation(fields: [company_id], references: [id], onDelete: Cascade)
+
+    @@index([tenant_id, invoice_number])
+}

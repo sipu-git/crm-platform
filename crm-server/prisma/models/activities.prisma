@@ -1,0 +1,25 @@
+model Activities {
+    id           String         @id @default(cuid())
+    tenant_id    String
+    deal_id      String
+    contact_id   String
+    company_id   String
+    title        String
+    description  String
+    status       ActivityStatus
+    priority     Priority
+    due_date     DateTime
+    completed_at DateTime
+    assigned_to  String
+    created_by   String
+    created_at   DateTime       @default(now())
+    updated_at   DateTime
+
+    tenant   Tenant   @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
+    deal     Deal     @relation(fields: [deal_id], references: [id], onDelete: Cascade)
+    contacts Contacts @relation(fields: [contact_id], references: [id], onDelete: Cascade)
+    company  Company  @relation(fields: [company_id], references: [id], onDelete: Cascade)
+    user     User     @relation(fields: [created_by], references: [id], onDelete: Cascade)
+
+    @@index([tenant_id, company_id])
+}

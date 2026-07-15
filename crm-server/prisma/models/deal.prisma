@@ -1,0 +1,21 @@
+model Deal {
+    id                  String   @id @default(cuid())
+    tenant_id           String
+    title               String
+    value               Decimal  @default(0)
+    contact_id          String
+    stage_id            String
+    owner_id            String
+    expected_close_date DateTime
+    created_at          DateTime @default(now())
+    updated_at          DateTime @default(now())
+
+    activities Activities[]
+    Invoice    Invoice[]
+    tenant     Tenant       @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
+    contact    Contacts     @relation(fields: [contact_id], references: [id], onDelete: Cascade)
+    pipeline   Pipeline     @relation(fields: [stage_id], references: [id], onDelete: Cascade)
+    owner      User         @relation(fields: [owner_id], references: [id], onDelete: Cascade)
+
+    @@index([tenant_id])
+}

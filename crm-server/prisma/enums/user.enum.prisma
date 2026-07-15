@@ -1,0 +1,7 @@
+enum Role {
+    ADMIN
+    MANAGER
+    SALES_REP
+    FINANCE
+    CLIENT
+}

@@ -1,0 +1,13 @@
+model Pipeline {
+    id         String  @id @default(cuid())
+    tenant_id  String
+    name       String
+    sort_order Int
+    is_own     Boolean @default(false)
+    is_lost    Boolean @default(false)
+
+    deal   Deal[]
+    tenant Tenant @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
+
+    @@index([tenant_id])
+}

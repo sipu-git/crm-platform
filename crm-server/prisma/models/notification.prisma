@@ -1,0 +1,18 @@
+model Notification {
+    id            String             @id @default(cuid())
+    tenant_id     String
+    recipient_id  String
+    channel       String
+    subject       String
+    message       String
+    status        NotificationStatus
+    external_ref  String
+    error_message String
+    sent_at       DateTime
+    created_at    DateTime           @default(now())
+
+    tenant    Tenant @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
+    recipient User   @relation(fields: [recipient_id], references: [id], onDelete: Cascade)
+
+    @@index([tenant_id])
+}
