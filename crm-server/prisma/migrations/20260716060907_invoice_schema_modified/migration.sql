@@ -1,0 +1,3 @@
+-- AlterTable
+ALTER TABLE "Invoice" ALTER COLUMN "paid_at" DROP NOT NULL,
+ALTER COLUMN "notes" DROP NOT NULL;

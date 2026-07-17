@@ -1,7 +1,7 @@
 import jwt, { SignOptions } from 'jsonwebtoken';
 import { env } from '../configs/env';
 import { Role } from '../configs/role';
-import { Sign } from 'node:crypto';
+// import { Sign } from 'node:crypto';
 
 export interface AccessTokenPayload {
   userId: string;

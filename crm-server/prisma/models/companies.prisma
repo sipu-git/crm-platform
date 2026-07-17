@@ -9,8 +9,8 @@ model Company {
     contact    Contacts[]
     activities Activities[]
     Invoice    Invoice[]
-
-    tenant Tenant @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
+    leads      Leads[]
+    tenant     Tenant       @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
 
     @@index([tenant_id])
 }

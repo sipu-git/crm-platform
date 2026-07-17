@@ -1,11 +1,5 @@
-import { eventBus } from '../../core/event-bus';
+import { eventBus } from '../../shared/event-bus';
 import { auditService } from './audit.service';
-
-/**
- * Listens to every significant domain event tenant-wide and writes an
- * immutable audit trail entry. This module is intentionally broad —
- * that's its entire purpose — but it never mutates state, only records it.
- */
 export function registerAuditListeners() {
   eventBus.on('lead.created', (p: { leadId: string; tenantId: string }) =>
     auditService.record(p.tenantId, 'lead.created', 'lead', p.leadId)

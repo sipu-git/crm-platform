@@ -10,6 +10,7 @@ model Tenant {
     Invoice      Invoice[]
     notification Notification[]
     lead         Leads[]
+    audits AuditLogs[]
     created_at   DateTime       @default(now())
 
     @@index([name])

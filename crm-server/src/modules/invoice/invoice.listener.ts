@@ -1,13 +1,6 @@
-import { eventBus } from '../../core/event-bus';
+import { prisma } from '../../../lib/prisma';
+import { eventBus } from '../../shared/event-bus';
 import { invoiceRepository } from './invoice.repository';
-import { prisma } from '../../core/database/prisma';
-
-/**
- * Deal Won -> auto-generate a draft invoice. This module never imports
- * the Deal module's service directly — it only listens for the event,
- * keeping the dependency one-directional (invoice depends on the event
- * contract, not on deal's internals).
- */
 export function registerInvoiceListeners() {
   eventBus.on('deal.won', async (payload: { dealId: string; tenantId: string }) => {
     try {

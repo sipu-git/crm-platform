@@ -1,0 +1,8 @@
+enum AuditEntityType {
+  Lead
+  Deal
+  Invoice
+  User
+  Notification
+  Tenant
+}

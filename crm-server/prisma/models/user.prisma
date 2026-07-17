@@ -15,7 +15,7 @@ model User {
     activities   Activities[]
     deal         Deal[]
     notification Notification[]
-
+    audits AuditLogs[]
     @@unique([tenantId, email])
     @@index([tenantId])
 }

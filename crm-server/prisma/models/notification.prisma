@@ -7,6 +7,7 @@ model Notification {
     message       String
     status        NotificationStatus
     external_ref  String
+    isRead        Boolean @default(false)
     error_message String
     sent_at       DateTime
     created_at    DateTime           @default(now())

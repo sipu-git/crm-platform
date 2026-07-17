@@ -1,8 +1,8 @@
 import { Router } from 'express';
 import { leadController } from './lead.controller';
-import { authGuard } from '../../core/middleware/authGuard';
-import { tenantContext } from '../../core/middleware/tenantContext';
-import { asyncHandler } from '../../core/utils/asyncHandler';
+import { authGuard } from '../../shared/middleware/authGuard.middleware';
+import { tenantContext } from '../../shared/middleware/tenantContext.middleware';
+import { asyncHandler } from '../../shared/middleware/asyncHandler.middleware';
 
 const router = Router();
 router.use(authGuard, tenantContext);

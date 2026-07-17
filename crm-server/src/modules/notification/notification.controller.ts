@@ -8,12 +8,12 @@ export const notificationController = {
   },
 
   async markRead(req: Request, res: Response) {
-    await notificationService.markRead(req.tenantId!, req.auth!.userId, req.params.id);
+    await notificationService.markAsRead(req.tenantId!, req.auth!.userId, req.params.id as string);
     res.status(204).send();
   },
 
   async markAllRead(req: Request, res: Response) {
-    await notificationService.markAllRead(req.tenantId!, req.auth!.userId);
+    await notificationService.markAllAsRead(req.tenantId!, req.auth!.userId);
     res.status(204).send();
   },
 };

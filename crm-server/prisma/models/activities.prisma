@@ -7,6 +7,7 @@ model Activities {
     title        String
     description  String
     status       ActivityStatus
+    entityType   AuditEntityType
     priority     Priority
     due_date     DateTime
     completed_at DateTime

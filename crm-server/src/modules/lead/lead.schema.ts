@@ -1,11 +1,13 @@
 import { z } from 'zod';
+import { LeadStatus, Source } from '../../../generated/prisma/enums';
 
 export const createLeadSchema = z.object({
-  name: z.string().min(1),
+  full_name: z.string().min(1),
   email: z.string().email(),
-  phone: z.string().optional(),
-  source: z.string().min(1),
-  assignedTo: z.string().optional(),
+  phone: z.string("Phone number is required").min(1),
+  source: z.enum(Source).default(Source.OTHER),
+  company_name: z.string().min(1),
+  companyId: z.string().min(1),
 });
 
 export const updateLeadStatusSchema = z.object({
@@ -14,6 +16,7 @@ export const updateLeadStatusSchema = z.object({
 
 export const leadFiltersSchema = z.object({
   status: z.string().optional(),
+  source:z.string().optional(),
   assignedTo: z.string().optional(),
   search: z.string().optional(),
   page: z.coerce.number().min(1).default(1),

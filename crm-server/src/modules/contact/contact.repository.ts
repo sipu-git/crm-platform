@@ -1,42 +1,65 @@
-import { prisma } from '../../core/database/prisma';
-import type { CreateContactInput, UpdateContactInput } from './contact.schema';
+import { prisma } from "../../../lib/prisma";
+import { CreateContactInput, UpdateContactInput } from "./contact.schema";
 
-export const contactRepository = {
-  findMany(tenantId: string, search?: string) {
-    return prisma.contact.findMany({
-      where: {
-        tenantId,
-        ...(search
-          ? {
-              OR: [
-                { name: { contains: search, mode: 'insensitive' } },
-                { email: { contains: search, mode: 'insensitive' } },
-                { companyName: { contains: search, mode: 'insensitive' } },
-              ],
-            }
-          : {}),
+export const contactsRepository = {
+  create(tenantId: string, createdBy: string, input: CreateContactInput) {
+    return prisma.contacts.create({
+      data: {
+        tenant_id: tenantId,
+        company_id: input.companyId,
+        first_name: input.firstName,
+        last_name: input.lastName,
+        email: input.email,
+        phone: input.phone,
+        created_by: createdBy,
+        updated_at: new Date(),
       },
-      orderBy: { createdAt: 'desc' },
     });
   },
 
   findById(tenantId: string, id: string) {
-    return prisma.contact.findFirst({ where: { id, tenantId } });
+    return prisma.contacts.findFirst({
+      where: { id, tenant_id: tenantId },
+    });
+  },
+
+  findMany(tenantId: string) {
+    return prisma.contacts.findMany({
+      where: { tenant_id: tenantId },
+      orderBy: { created_at: "desc" },
+    });
+  },
+
+  findByCompany(tenantId: string, companyId: string) {
+    return prisma.contacts.findMany({
+      where: { tenant_id: tenantId, company_id: companyId },
+      orderBy: { created_at: "desc" },
+    });
   },
 
   findByEmail(tenantId: string, email: string) {
-    return prisma.contact.findFirst({ where: { tenantId, email } });
+    return prisma.contacts.findFirst({
+      where: { tenant_id: tenantId, email },
+    });
   },
 
-  create(tenantId: string, data: CreateContactInput) {
-    return prisma.contact.create({ data: { ...data, tenantId } });
+  update(tenantId: string, id: string, input: UpdateContactInput) {
+    return prisma.contacts.updateMany({
+      where: { id, tenant_id: tenantId },
+      data: {
+        company_id: input.companyId,
+        first_name: input.firstName,
+        last_name: input.lastName,
+        email: input.email,
+        phone: input.phone,
+        updated_at: new Date(),
+      },
+    });
   },
 
-  update(tenantId: string, id: string, data: UpdateContactInput) {
-    return prisma.contact.updateMany({ where: { id, tenantId }, data });
-  },
-
-  remove(tenantId: string, id: string) {
-    return prisma.contact.deleteMany({ where: { id, tenantId } });
+  delete(tenantId: string, id: string) {
+    return prisma.contacts.deleteMany({
+      where: { id, tenant_id: tenantId },
+    });
   },
 };

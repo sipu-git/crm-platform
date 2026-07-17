@@ -1,5 +1,5 @@
+import { eventBus } from '../../shared/event-bus';
 import { activityRepository } from './activity.repository';
-import { eventBus } from '../../core/event-bus';
 import type { CreateActivityInput } from './activity.schema';
 
 export const activityService = {

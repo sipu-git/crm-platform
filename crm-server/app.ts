@@ -16,10 +16,12 @@ import { registerAuditListeners } from './src/modules/audit/audit.listener';
 import { env } from './src/shared/configs/env';
 import { requestLogger } from './src/shared/middleware/requestLogger.middleware';
 import { errorHandler } from './src/shared/middleware/errorHandler.middleware';
+import { connectDB } from './src/shared/configs/db';
 
 export function createApp() {
   const app = express();
 
+  connectDB();
   app.use(helmet());
   app.use(cors({ origin: env.clientUrl, credentials: true }));
   app.use(express.json());

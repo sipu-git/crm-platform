@@ -1,15 +1,10 @@
 import type { Server as HttpServer } from 'http';
 import { Server, type Socket } from 'socket.io';
-import { verifyAccessToken } from '../../core/utils/jwt';
-import { env } from '../../core/config/env';
+import { env } from '../../shared/configs/env';
+import { verifyAccessToken } from '../../shared/utils/jwt';
 
 let io: Server | undefined;
 
-/**
- * Initialized once at server bootstrap. Rooms are scoped per-tenant and
- * per-user so notifications can never leak across tenants — every emit
- * targets `tenant:<id>` or `user:<id>`, never a global broadcast.
- */
 export function initSocketServer(httpServer: HttpServer) {
   io = new Server(httpServer, {
     cors: { origin: env.clientUrl, credentials: true },

@@ -1,43 +1,56 @@
-import { prisma } from '../../core/database/prisma';
-import type { CreateDealInput } from './deal.schema';
+import { prisma } from "../../../lib/prisma";
+import type { CreateDealInput } from "./deal.schema";
 
 export const dealRepository = {
   findMany(tenantId: string, ownerId?: string) {
     return prisma.deal.findMany({
-      where: { tenantId, ...(ownerId ? { ownerId } : {}) },
-      orderBy: [{ stage: 'asc' }, { position: 'asc' }],
+      where: { tenant_id: tenantId, ...(ownerId ? { owner_id: ownerId } : {}) },
+      orderBy: [{ stage_id: "asc" }, { created_at: "asc" }],
       include: { contact: true },
     });
   },
 
   findById(tenantId: string, id: string) {
-    return prisma.deal.findFirst({ where: { id, tenantId }, include: { contact: true } });
+    return prisma.deal.findFirst({
+      where: { id, tenant_id: tenantId },
+      include: { contact: true },
+    });
   },
 
   create(tenantId: string, ownerId: string, data: CreateDealInput) {
     return prisma.deal.create({
-      data: { ...data, tenantId, ownerId, lastActivityAt: new Date() },
-    });
-  },
-
-  updateStage(tenantId: string, id: string, stage: string, probability: number, position?: number) {
-    return prisma.deal.updateMany({
-      where: { id, tenantId },
       data: {
-        stage: stage as any,
-        probability,
-        ...(position !== undefined ? { position } : {}),
-        lastActivityAt: new Date(),
+        tenant_id: tenantId,
+        owner_id: ownerId,
+        title: data.title,
+        value: data.value,
+        contact_id: data.contactId,
+        stage_id: data.stageId,
+        expected_close_date: data.expectedCloseDate,
       },
     });
   },
 
-  findIdleDeals(tenantId: string, idleSinceDate: Date) {
+ updateStage(tenantId: string,id: string,
+  stageId: string,probability: number,position?: number
+) {
+  return prisma.deal.updateMany({
+    where: { id, tenant_id: tenantId },
+    data: {
+      stage_id: stageId,
+      probability,
+      ...(position !== undefined ? { position } : {}),
+      updated_at: new Date(),
+    },
+  });
+},
+
+  findIdleDeals(tenantId: string, idleSinceDate: Date, closedStageIds: string[] = []) {
     return prisma.deal.findMany({
       where: {
-        tenantId,
-        stage: { notIn: ['WON', 'LOST'] },
-        lastActivityAt: { lt: idleSinceDate },
+        tenant_id: tenantId,
+        ...(closedStageIds.length ? { stage_id: { notIn: closedStageIds } } : {}),
+        updated_at: { lt: idleSinceDate },
       },
     });
   },

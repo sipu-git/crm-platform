@@ -1,16 +1,31 @@
-import { prisma } from '../../core/database/prisma';
+import { AuditEntityType } from "../../../generated/prisma/enums";
+import { prisma } from "../../../lib/prisma";
 
 export const auditRepository = {
-  create(tenantId: string, action: string, entityType: string, entityId: string, userId?: string, metadata?: unknown) {
-    return prisma.auditLog.create({
-      data: { tenantId, action, entityType, entityId, userId, metadata: metadata as any },
+  create(
+    tenantId: string,
+    action: string,
+    entityType: AuditEntityType,
+    entityId: string,
+    userId?: string,
+    metadata?: unknown
+  ) {
+    return prisma.auditLogs.create({
+      data: {
+        tenant_id: tenantId,
+        action,
+        entityType,
+        entityId,
+        userId: userId ?? "",
+        metadata: metadata as any,
+      },
     });
   },
 
-  findByEntity(tenantId: string, entityType: string, entityId: string) {
-    return prisma.auditLog.findMany({
-      where: { tenantId, entityType, entityId },
-      orderBy: { createdAt: 'desc' },
+  findByEntity(tenantId: string, entityType: AuditEntityType, entityId: string) {
+    return prisma.auditLogs.findMany({
+      where: { tenant_id: tenantId, entityType, entityId },
+      orderBy: { created_at: "desc" },
     });
   },
 };

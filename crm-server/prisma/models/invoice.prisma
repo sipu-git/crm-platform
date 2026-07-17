@@ -8,10 +8,10 @@ model Invoice {
     status         InvoiceStatus
     issue_date     DateTime
     due_date       DateTime
-    paid_at        DateTime
+    paid_at        DateTime?
     tax_amount     Decimal       @default(0)
     total_amount   Decimal       @default(0)
-    notes          String
+    notes          String?
     created_at     DateTime      @default(now())
     updated_at     DateTime
 

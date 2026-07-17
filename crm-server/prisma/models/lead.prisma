@@ -1,18 +1,20 @@
 model Leads {
     id                   String     @id @default(cuid())
     tenant_id            String
+    companyId            String
     full_name            String
     email                String     @unique
     phone                String
     source               Source
     status               LeadStatus
     owner_id             String
-    converted_contact_id String
+    converted_contact_id String?
     created_At           DateTime   @default(now())
 
-    owner   User     @relation(fields: [owner_id], references: [id], onDelete: Cascade)
-    tenant  Tenant   @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
-    contact Contacts @relation(fields: [converted_contact_id], references: [id], onDelete: Cascade)
+    company Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+    owner   User      @relation(fields: [owner_id], references: [id], onDelete: Cascade)
+    tenant  Tenant    @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
+    contact Contacts? @relation(fields: [converted_contact_id], references: [id], onDelete: Cascade)
 
     @@index([tenant_id])
 }

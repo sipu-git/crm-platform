@@ -1,6 +1,6 @@
+import { eventBus } from '../../shared/event-bus';
+import { ApiError } from '../../shared/utils/ApiError';
 import { invoiceRepository } from './invoice.repository';
-import { ApiError } from '../../core/utils/ApiError';
-import { eventBus } from '../../core/event-bus';
 import type { CreateInvoiceInput } from './invoice.schema';
 
 export const invoiceService = {
@@ -29,7 +29,7 @@ export const invoiceService = {
     if (result.count === 0) throw ApiError.notFound('Invoice not found');
 
     const invoice = await invoiceRepository.findById(tenantId, id);
-    eventBus.emit('invoice.paid', { invoiceId: id, tenantId, dealId: invoice?.dealId });
+    eventBus.emit('invoice.paid', { invoiceId: id, tenantId, dealId: invoice?.deal_id });
     return invoice;
   },
 };

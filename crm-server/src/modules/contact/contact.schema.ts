@@ -1,10 +1,11 @@
 import { z } from 'zod';
 
 export const createContactSchema = z.object({
-  name: z.string().min(1),
+  firstName: z.string().min(1),
+  lastName: z.string().min(1),
   email: z.string().email(),
-  phone: z.string().optional(),
-  companyName: z.string().optional(),
+  phone: z.string().min(1),
+  companyId: z.string().cuid(),
 });
 
 export const updateContactSchema = createContactSchema.partial();

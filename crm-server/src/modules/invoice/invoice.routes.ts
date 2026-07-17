@@ -1,9 +1,9 @@
 import { Router } from 'express';
 import { invoiceController } from './invoice.controller';
-import { authGuard } from '../../core/middleware/authGuard';
-import { tenantContext } from '../../core/middleware/tenantContext';
-import { requireRole } from '../../core/middleware/rbac';
-import { asyncHandler } from '../../core/utils/asyncHandler';
+import { authGuard } from '../../shared/middleware/authGuard.middleware';
+import { tenantContext } from '../../shared/middleware/tenantContext.middleware';
+import { asyncHandler } from '../../shared/middleware/asyncHandler.middleware';
+import { requireRole } from '../../shared/configs/rbac';
 
 const router = Router();
 router.use(authGuard, tenantContext);
