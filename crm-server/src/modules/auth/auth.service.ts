@@ -1,8 +1,8 @@
-import { prisma } from '../../../lib/prisma';
-import { eventBus } from '../../shared/event-bus';
-import { ApiError } from '../../shared/utils/ApiError';
-import { signAccessToken, signRefreshToken, verifyRefreshToken } from '../../shared/utils/jwt';
-import type { RegisterInput, LoginInput } from './auth.schema';
+import { prisma } from '../../../lib/prisma.js';
+import { eventBus } from '../../shared/event-bus/index.js';
+import { ApiError } from '../../shared/utils/ApiError.js';
+import { signAccessToken, signRefreshToken, verifyRefreshToken } from '../../shared/utils/jwt.js';
+import type { RegisterInput, LoginInput } from './auth.schema.js';
 import bcrypt from 'bcrypt'
 
 export const authService = {

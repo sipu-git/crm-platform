@@ -1,8 +1,8 @@
-import { eventBus } from '../../shared/event-bus';
-import { ApiError } from '../../shared/utils/ApiError';
-import { STAGE_PROBABILITY } from './deal.constant';
-import { dealRepository } from './deal.repository';
-import { pipelineRepository } from './pipeline.repository';
+import { eventBus } from '../../shared/event-bus/index.js';
+import { ApiError } from '../../shared/utils/ApiError.js';
+import { STAGE_PROBABILITY } from './deal.constant.js';
+import { dealRepository } from './deal.repository.js';
+import { pipelineRepository } from './pipeline.repository.js';
 export const dealService = {
     list(tenantId, ownerId) {
         return dealRepository.findMany(tenantId, ownerId);

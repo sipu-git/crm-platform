@@ -1,6 +1,6 @@
 import { Server } from 'socket.io';
-import { env } from '../../shared/configs/env';
-import { verifyAccessToken } from '../../shared/utils/jwt';
+import { env } from '../../shared/configs/env.js';
+import { verifyAccessToken } from '../../shared/utils/jwt.js';
 let io;
 export function initSocketServer(httpServer) {
     io = new Server(httpServer, {

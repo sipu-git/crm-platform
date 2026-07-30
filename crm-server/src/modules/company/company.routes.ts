@@ -1,11 +1,11 @@
 import express from 'express';
 
-import { companyController } from './company.controller';
-import { authGuard } from '../../shared/middleware/authGuard.middleware';
-import { tenantContext } from '../../shared/middleware/tenantContext.middleware';
-import { asyncHandler } from '../../shared/middleware/asyncHandler.middleware';
-import { validate } from '../../shared/middleware/validate.middeware';
-import { createCompanySchema, idParamSchema, updateCompanySchema } from './company.schema';
+import { companyController } from './company.controller.js';
+import { authGuard } from '../../shared/middleware/authGuard.middleware.js';
+import { tenantContext } from '../../shared/middleware/tenantContext.middleware.js';
+import { asyncHandler } from '../../shared/middleware/asyncHandler.middleware.js';
+import { validate } from '../../shared/middleware/validate.middeware.js';
+import { createCompanySchema, idParamSchema, updateCompanySchema } from './company.schema.js';
 
 const router = express.Router();
 router.use(authGuard, tenantContext);

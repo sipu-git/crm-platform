@@ -1,11 +1,11 @@
-import { ApiError } from '../../shared/utils/ApiError';
-import { eventBus } from '../../shared/event-bus';
-import { activityRepository } from './activity.repository';
+import { ApiError } from '../../shared/utils/ApiError.js';
+import { eventBus } from '../../shared/event-bus/index.js';
+import { activityRepository } from './activity.repository.js';
 import type {
   CreateActivityInput,
   UpdateActivityInput,
   ListActivitiesQuery,
-} from './activity.schema';
+} from './activity.schema.js';
 
 export const activityService = {
   list(tenantId: string, query: ListActivitiesQuery = {}) {

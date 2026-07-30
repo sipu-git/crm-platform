@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
-import { createCompanySchema, updateCompanySchema } from "./company.schema";
-import { companyService } from "./company.service";
-import { successResponse } from "../../shared/utils/ApiResponse";
+import { createCompanySchema, updateCompanySchema } from "./company.schema.js";
+import { companyService } from "./company.service.js";
+import { successResponse } from "../../shared/utils/ApiResponse.js";
 
 
 export const companyController = {

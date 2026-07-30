@@ -1,5 +1,5 @@
-import { ApiError } from '../../shared/utils/ApiError';
-import { contactsRepository } from './contact.repository';
+import { ApiError } from '../../shared/utils/ApiError.js';
+import { contactsRepository } from './contact.repository.js';
 export const contactService = {
     list(tenantId) {
         return contactsRepository.findMany(tenantId);

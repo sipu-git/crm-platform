@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { LeadStatus, Source } from '../../../generated/prisma/enums';
+import { LeadStatus, Source } from '../../../generated/prisma/enums.js';
 export const createLeadSchema = z.object({
     full_name: z.string().min(1),
     source: z.enum(Source).default(Source.OTHER),

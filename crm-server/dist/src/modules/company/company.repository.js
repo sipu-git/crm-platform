@@ -1,4 +1,4 @@
-import { prisma } from "../../../lib/prisma";
+import { prisma } from "../../../lib/prisma.js";
 export const companyRepository = {
     create(tenantId, data) {
         return prisma.company.create({

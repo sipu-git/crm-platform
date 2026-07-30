@@ -1,4 +1,4 @@
-import { prisma } from "../../../lib/prisma";
+import { prisma } from "../../../lib/prisma.js";
 
 export const pipelineRepository = {
   findById(tenantId: string, id: string) {

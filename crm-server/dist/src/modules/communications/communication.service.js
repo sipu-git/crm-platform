@@ -1,9 +1,9 @@
 // features/communications/communication.service.ts
-import { CommunicationChannel, CommunicationStatus, } from "../../../generated/prisma/enums";
-import { prisma } from "../../../lib/prisma";
-import { ApiError } from "../../shared/utils/ApiError";
-import { toWhatsAppNumber } from "../../shared/utils/phoneZone";
-import { whatsAppService } from "./integrations/whatsapp/services/whatsapp.service";
+import { CommunicationChannel, CommunicationStatus, } from "../../../generated/prisma/enums.js";
+import { prisma } from "../../../lib/prisma.js";
+import { ApiError } from "../../shared/utils/ApiError.js";
+import { toWhatsAppNumber } from "../../shared/utils/phoneZone.js";
+import { whatsAppService } from "./integrations/whatsapp/services/whatsapp.service.js";
 const NOT_YET_IMPLEMENTED = new Set([
     CommunicationChannel.EMAIL,
     CommunicationChannel.CALL,

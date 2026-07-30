@@ -1,6 +1,6 @@
-import { prisma } from "../../../lib/prisma";
-import { eventBus } from "../../shared/event-bus";
-import { notificationService } from "./notification.service";
+import { prisma } from "../../../lib/prisma.js";
+import { eventBus } from "../../shared/event-bus/index.js";
+import { notificationService } from "./notification.service.js";
 export function registerNotificationListeners() {
     eventBus.on("lead.created", async (payload) => {
         if (!payload.assignedTo)

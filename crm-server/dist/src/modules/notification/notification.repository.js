@@ -1,5 +1,5 @@
-import { NotificationStatus } from "../../../generated/prisma/enums";
-import { prisma } from "../../../lib/prisma";
+import { NotificationStatus } from "../../../generated/prisma/enums.js";
+import { prisma } from "../../../lib/prisma.js";
 export const notificationRepository = {
     findUnread(tenantId, userId) {
         return prisma.notification.findMany({

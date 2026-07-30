@@ -1,11 +1,11 @@
 import type { Request, Response } from 'express';
-import { ApiError } from '../../shared/utils/ApiError';
-import { activityService } from './activity.service';
+import { ApiError } from '../../shared/utils/ApiError.js';
+import { activityService } from './activity.service.js';
 import {
   createActivitySchema,
   updateActivitySchema,
   listActivitiesQuerySchema,
-} from './activity.schema';
+} from './activity.schema.js';
 
 function getId(req: Request): string {
   const { id } = req.params;

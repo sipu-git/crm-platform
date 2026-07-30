@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { ActivityStatus, AuditEntityType } from '../../../generated/prisma/enums';
+import { ActivityStatus, AuditEntityType } from '../../../generated/prisma/enums.js';
 export const createActivitySchema = z.object({
     dealId: z.string().min(1),
     contactId: z.string().min(1),

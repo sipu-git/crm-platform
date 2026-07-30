@@ -1,8 +1,8 @@
 import { Router } from 'express';
-import { contactController } from './contact.controller';
-import { asyncHandler } from '../../shared/middleware/asyncHandler.middleware';
-import { authGuard } from '../../shared/middleware/authGuard.middleware';
-import { tenantContext } from '../../shared/middleware/tenantContext.middleware';
+import { contactController } from './contact.controller.js';
+import { asyncHandler } from '../../shared/middleware/asyncHandler.middleware.js';
+import { authGuard } from '../../shared/middleware/authGuard.middleware.js';
+import { tenantContext } from '../../shared/middleware/tenantContext.middleware.js';
 const router = Router();
 router.use(authGuard, tenantContext);
 router.get('/', asyncHandler(contactController.list));

@@ -1,6 +1,6 @@
-import { prisma } from '../../../lib/prisma';
-import { eventBus } from '../../shared/event-bus';
-import { invoiceRepository } from './invoice.repository';
+import { prisma } from '../../../lib/prisma.js';
+import { eventBus } from '../../shared/event-bus/index.js';
+import { invoiceRepository } from './invoice.repository.js';
 export function registerInvoiceListeners() {
     eventBus.on('deal.won', async (payload) => {
         try {

@@ -1,6 +1,6 @@
 import type { Request, Response } from 'express';
-import { auditService } from './audit.service';
-import { AuditEntityType } from '../../../generated/prisma/enums';
+import { auditService } from './audit.service.js';
+import { AuditEntityType } from '../../../generated/prisma/enums.js';
 
 export const auditController = {
   async history(req: Request, res: Response) {

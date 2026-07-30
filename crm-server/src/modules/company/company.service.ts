@@ -1,6 +1,6 @@
-import { CreateCompanyBody } from "./company.schema";
-import { companyRepository } from "./company.repository";
-import { ApiError } from "../../shared/utils/ApiError";
+import { CreateCompanyBody } from "./company.schema.js";
+import { companyRepository } from "./company.repository.js";
+import { ApiError } from "../../shared/utils/ApiError.js";
 
 export const companyService = {
     async create(tenantId: string, data: CreateCompanyBody) {

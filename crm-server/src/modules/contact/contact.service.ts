@@ -1,6 +1,6 @@
-import { ApiError } from '../../shared/utils/ApiError';
-import { contactsRepository } from './contact.repository';
-import type { CreateContactInput, UpdateContactInput } from './contact.schema';
+import { ApiError } from '../../shared/utils/ApiError.js';
+import { contactsRepository } from './contact.repository.js';
+import type { CreateContactInput, UpdateContactInput } from './contact.schema.js';
 
 export const contactService = {
   list(tenantId: string) {

@@ -1,5 +1,5 @@
-import { AuditEntityType } from '../../../generated/prisma/enums';
-import { auditRepository } from './audit.repository';
+import { AuditEntityType } from '../../../generated/prisma/enums.js';
+import { auditRepository } from './audit.repository.js';
 
 export const auditService = {
   record(tenantId: string, action: string, entityType: AuditEntityType, entityId: string, userId?: string, metadata?: unknown) {

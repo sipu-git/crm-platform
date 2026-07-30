@@ -1,6 +1,6 @@
-import { eventBus } from '../../shared/event-bus';
-import { ApiError } from '../../shared/utils/ApiError';
-import { invoiceRepository } from './invoice.repository';
+import { eventBus } from '../../shared/event-bus/index.js';
+import { ApiError } from '../../shared/utils/ApiError.js';
+import { invoiceRepository } from './invoice.repository.js';
 export const invoiceService = {
     list(tenantId, status) {
         return invoiceRepository.findMany(tenantId, status);

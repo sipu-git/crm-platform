@@ -1,5 +1,5 @@
-import { prisma } from '../../../lib/prisma';
-import type { CreateInvoiceInput } from './invoice.schema';
+import { prisma } from '../../../lib/prisma.js';
+import type { CreateInvoiceInput } from './invoice.schema.js';
 
 function computeTotal(lineItems: { quantity: number; unitPrice: number }[]) {
   return lineItems.reduce((sum, li) => sum + li.quantity * li.unitPrice, 0);

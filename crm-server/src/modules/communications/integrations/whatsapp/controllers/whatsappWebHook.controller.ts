@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
-import { whatsAppConfig } from "../configs/whatsapp.env";
-import { whatsappHookService } from "../services/webhook.service";
+import { whatsAppConfig } from "../configs/whatsapp.env.js";
+import { whatsappHookService } from "../services/webhook.service.js";
 
 export const whatsappHookController = {
     async verifyWebHook(req: Request, res: Response) {

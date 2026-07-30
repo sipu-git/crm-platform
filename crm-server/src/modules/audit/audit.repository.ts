@@ -1,5 +1,5 @@
-import { AuditEntityType } from "../../../generated/prisma/enums";
-import { prisma } from "../../../lib/prisma";
+import { AuditEntityType } from "../../../generated/prisma/enums.js";
+import { prisma } from "../../../lib/prisma.js";
 
 export const auditRepository = {
   create(

@@ -1,4 +1,4 @@
-import { prisma } from '../../../lib/prisma';
+import { prisma } from '../../../lib/prisma.js';
 function computeTotal(lineItems) {
     return lineItems.reduce((sum, li) => sum + li.quantity * li.unitPrice, 0);
 }

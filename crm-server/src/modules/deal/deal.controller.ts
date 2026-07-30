@@ -1,7 +1,7 @@
 import type { Request, Response } from 'express';
-import { dealService } from './deal.service';
-import { createDealSchema, updateStageSchema } from './deal.schema';
-import { ApiError } from '../../shared/utils/ApiError';
+import { dealService } from './deal.service.js';
+import { createDealSchema, updateStageSchema } from './deal.schema.js';
+import { ApiError } from '../../shared/utils/ApiError.js';
 
 function getId(req: Request): string {
   const { id } = req.params;

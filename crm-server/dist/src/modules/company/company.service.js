@@ -1,5 +1,5 @@
-import { companyRepository } from "./company.repository";
-import { ApiError } from "../../shared/utils/ApiError";
+import { companyRepository } from "./company.repository.js";
+import { ApiError } from "../../shared/utils/ApiError.js";
 export const companyService = {
     async create(tenantId, data) {
         const existing = await companyRepository.findCompany(tenantId, data.name);

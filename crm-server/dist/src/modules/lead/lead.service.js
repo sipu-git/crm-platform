@@ -1,9 +1,9 @@
-import { ApiError } from '../../shared/utils/ApiError';
-import { eventBus } from '../../shared/event-bus';
-import { leadsRepository } from './lead.repository';
-import { LeadStatus } from '../../../generated/prisma/enums';
-import { contactsRepository } from '../contact/contact.repository';
-import { prisma } from '../../../lib/prisma';
+import { ApiError } from '../../shared/utils/ApiError.js';
+import { eventBus } from '../../shared/event-bus/index.js';
+import { leadsRepository } from './lead.repository.js';
+import { LeadStatus } from '../../../generated/prisma/enums.js';
+import { contactsRepository } from '../contact/contact.repository.js';
+import { prisma } from '../../../lib/prisma.js';
 export const leadService = {
     list(tenantId, filters) {
         return leadsRepository.findMany(tenantId, filters);

@@ -1,5 +1,5 @@
-import { prisma } from "../../../lib/prisma";
-import { CreateCompanyBody, FilterCompanyQuery, UpdateCompanyBody } from "./company.schema";
+import { prisma } from "../../../lib/prisma.js";
+import { CreateCompanyBody, FilterCompanyQuery, UpdateCompanyBody } from "./company.schema.js";
 
 export const companyRepository = {
     create(tenantId: string, data: CreateCompanyBody) {

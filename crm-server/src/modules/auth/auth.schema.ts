@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { Role } from '../../shared/configs/role';
+import { Role } from '../../shared/configs/role.js';
 
 export const registerSchema = z.object({
   full_name: z.string().min(1),

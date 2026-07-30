@@ -1,6 +1,6 @@
-import { whatsAppApi } from "../configs/whatsapp.config";
-import { whatsAppConfig } from "../configs/whatsapp.env";
-import { ApiError } from "../../../../../shared/utils/ApiError";
+import { whatsAppApi } from "../configs/whatsapp.config.js";
+import { whatsAppConfig } from "../configs/whatsapp.env.js";
+import { ApiError } from "../../../../../shared/utils/ApiError.js";
 export const whatsAppService = {
     async sendTextMessage(to, message) {
         try {

@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { CommunicationChannel, CommunicationDirection, MessageType } from "../../../../generated/prisma/enums";
+import { CommunicationChannel, CommunicationDirection, MessageType } from "../../../../generated/prisma/enums.js";
 export const sendCommunicationSchema = z.object({
     tenantId: z
         .string({

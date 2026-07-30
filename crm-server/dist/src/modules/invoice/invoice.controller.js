@@ -1,6 +1,6 @@
-import { invoiceService } from './invoice.service';
-import { createInvoiceSchema } from './invoice.schema';
-import { ApiError } from '../../shared/utils/ApiError';
+import { invoiceService } from './invoice.service.js';
+import { createInvoiceSchema } from './invoice.schema.js';
+import { ApiError } from '../../shared/utils/ApiError.js';
 function getId(req) {
     const { id } = req.params;
     if (typeof id !== 'string')

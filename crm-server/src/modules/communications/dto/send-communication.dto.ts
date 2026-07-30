@@ -1,4 +1,4 @@
-import { CommunicationChannel, CommunicationDirection, CommunicationStatus, MessageType } from "../../../../generated/prisma/enums";
+import { CommunicationChannel, CommunicationDirection, CommunicationStatus, MessageType } from "../../../../generated/prisma/enums.js";
 
 export interface SendCommunicationDto {
   tenantId: string;

@@ -1,6 +1,6 @@
-import { NotificationStatus } from "../../../generated/prisma/enums";
-import { notificationRepository } from "./notification.repository";
-import { emitToUser } from "./socket";
+import { NotificationStatus } from "../../../generated/prisma/enums.js";
+import { notificationRepository } from "./notification.repository.js";
+import { emitToUser } from "./socket.js";
 export class NotificationNotFoundError extends Error {
     constructor(id) {
         super(`Notification ${id} not found`);

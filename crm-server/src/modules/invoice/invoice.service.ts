@@ -1,7 +1,7 @@
-import { eventBus } from '../../shared/event-bus';
-import { ApiError } from '../../shared/utils/ApiError';
-import { invoiceRepository } from './invoice.repository';
-import type { CreateInvoiceInput } from './invoice.schema';
+import { eventBus } from '../../shared/event-bus/index.js';
+import { ApiError } from '../../shared/utils/ApiError.js';
+import { invoiceRepository } from './invoice.repository.js';
+import type { CreateInvoiceInput } from './invoice.schema.js';
 
 export const invoiceService = {
   list(tenantId: string, status?: string) {

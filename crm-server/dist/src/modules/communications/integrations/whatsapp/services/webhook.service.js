@@ -1,6 +1,6 @@
-import { CommunicationChannel, CommunicationStatus, MessageType } from "../../../../../../generated/prisma/enums";
-import { prisma } from "../../../../../../lib/prisma";
-import { toWhatsAppNumber } from "../../../../../shared/utils/phoneZone";
+import { CommunicationChannel, CommunicationStatus, MessageType } from "../../../../../../generated/prisma/enums.js";
+import { prisma } from "../../../../../../lib/prisma.js";
+import { toWhatsAppNumber } from "../../../../../shared/utils/phoneZone.js";
 const WHATSAPP_MESSAGE_TYPE_MAP = {
     text: MessageType.TEXT,
     image: MessageType.IMAGE,

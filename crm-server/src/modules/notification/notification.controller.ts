@@ -1,5 +1,5 @@
 import type { Request, Response } from 'express';
-import { notificationService } from './notification.service';
+import { notificationService } from './notification.service.js';
 
 export const notificationController = {
   async listUnread(req: Request, res: Response) {

@@ -1,4 +1,4 @@
-import { notificationService } from './notification.service';
+import { notificationService } from './notification.service.js';
 export const notificationController = {
     async listUnread(req, res) {
         const notifications = await notificationService.listUnread(req.tenantId, req.auth.userId);

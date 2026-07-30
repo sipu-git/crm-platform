@@ -1,4 +1,4 @@
-import { prisma } from "../../../lib/prisma";
+import { prisma } from "../../../lib/prisma.js";
 export const contactsRepository = {
     create(tenantId, createdBy, input) {
         return prisma.contacts.create({

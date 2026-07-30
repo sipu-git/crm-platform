@@ -1,6 +1,6 @@
-import { leadService } from './lead.service';
-import { createLeadSchema, updateLeadStatusSchema, leadFiltersSchema, updateLeadSchema } from './lead.schema';
-import { successResponse } from '../../shared/utils/ApiResponse';
+import { leadService } from './lead.service.js';
+import { createLeadSchema, updateLeadStatusSchema, leadFiltersSchema, updateLeadSchema } from './lead.schema.js';
+import { successResponse } from '../../shared/utils/ApiResponse.js';
 export const leadController = {
     async list(req, res) {
         const filters = leadFiltersSchema.parse(req.query);

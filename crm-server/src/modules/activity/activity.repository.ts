@@ -1,9 +1,9 @@
-import { prisma } from "../../../lib/prisma";
+import { prisma } from "../../../lib/prisma.js";
 import type {
   CreateActivityInput,
   UpdateActivityInput,
   ListActivitiesQuery,
-} from "./activity.schema";
+} from "./activity.schema.js";
 
 export const activityRepository = {
   findMany(tenantId: string, query: ListActivitiesQuery = {}) {

@@ -1,4 +1,4 @@
-import { ApiError } from '../utils/ApiError';
+import { ApiError } from '../utils/ApiError.js';
 export function requireRole(...allowedRoles) {
     return (req, _res, next) => {
         if (!req.auth)

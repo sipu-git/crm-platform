@@ -1,6 +1,6 @@
-import { Source, LeadStatus } from "../../../generated/prisma/enums";
-import { prisma } from "../../../lib/prisma";
-import { CreateLeadInput, UpdateLeadInput } from "./lead.schema";
+import { Source, LeadStatus } from "../../../generated/prisma/enums.js";
+import { prisma } from "../../../lib/prisma.js";
+import { CreateLeadInput, UpdateLeadInput } from "./lead.schema.js";
 
 export const leadsRepository = {
   create(tenantId: string, ownerId: string,companyId: string, data: CreateLeadInput) {

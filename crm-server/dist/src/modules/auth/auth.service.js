@@ -1,7 +1,7 @@
 import { prisma } from '../../../lib/prisma.js';
-import { eventBus } from '../../shared/event-bus.js';
+import { eventBus } from '../../shared/event-bus/index.js';
 import { ApiError } from '../../shared/utils/ApiError.js';
-import { signAccessToken, signRefreshToken, verifyRefreshToken } from '../../shared/utils/jwt';
+import { signAccessToken, signRefreshToken, verifyRefreshToken } from '../../shared/utils/jwt.js';
 import bcrypt from 'bcrypt';
 export const authService = {
     async register(input) {

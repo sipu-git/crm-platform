@@ -2,13 +2,13 @@
 import {
   CommunicationChannel,
   CommunicationStatus,
-} from "../../../generated/prisma/enums";
-import { prisma } from "../../../lib/prisma";
-import { ApiError } from "../../shared/utils/ApiError";
-import { toWhatsAppNumber } from "../../shared/utils/phoneZone";
-import { SendCommunicationDto } from "./dto/communication.dto";
-import { SendCommunicationContext } from "./dto/send-communication.dto";
-import { whatsAppService } from "./integrations/whatsapp/services/whatsapp.service";
+} from "../../../generated/prisma/enums.js";
+import { prisma } from "../../../lib/prisma.js";
+import { ApiError } from "../../shared/utils/ApiError.js";
+import { toWhatsAppNumber } from "../../shared/utils/phoneZone.js";
+import { SendCommunicationDto } from "./dto/communication.dto.js";
+import { SendCommunicationContext } from "./dto/send-communication.dto.js";
+import { whatsAppService } from "./integrations/whatsapp/services/whatsapp.service.js";
 
 const NOT_YET_IMPLEMENTED = new Set<CommunicationChannel>([
   CommunicationChannel.EMAIL,

@@ -1,6 +1,6 @@
-import { createCompanySchema, updateCompanySchema } from "./company.schema";
-import { companyService } from "./company.service";
-import { successResponse } from "../../shared/utils/ApiResponse";
+import { createCompanySchema, updateCompanySchema } from "./company.schema.js";
+import { companyService } from "./company.service.js";
+import { successResponse } from "../../shared/utils/ApiResponse.js";
 export const companyController = {
     async getById(req, res) {
         const id = req.params.id;

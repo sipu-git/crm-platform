@@ -1,9 +1,9 @@
 import express from 'express';
-import whatsappRoutes from './integrations/whatsapp/whatsapp.route';
-import { asyncHandler } from '../../shared/middleware/asyncHandler.middleware';
-import { communicationController } from './communication.controller';
-import { authGuard } from '../../shared/middleware/authGuard.middleware';
-import { tenantContext } from '../../shared/middleware/tenantContext.middleware';
+import whatsappRoutes from './integrations/whatsapp/whatsapp.route.js';
+import { asyncHandler } from '../../shared/middleware/asyncHandler.middleware.js';
+import { communicationController } from './communication.controller.js';
+import { authGuard } from '../../shared/middleware/authGuard.middleware.js';
+import { tenantContext } from '../../shared/middleware/tenantContext.middleware.js';
 const router = express.Router();
 
 router.use('/whatsapp', whatsappRoutes);

@@ -1,5 +1,5 @@
-import { prisma } from "../../../lib/prisma";
-import { CreateContactInput, UpdateContactInput } from "./contact.schema";
+import { prisma } from "../../../lib/prisma.js";
+import { CreateContactInput, UpdateContactInput } from "./contact.schema.js";
 
 export const contactsRepository = {
   create(tenantId: string, createdBy: string, input: CreateContactInput) {

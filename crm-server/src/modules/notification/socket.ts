@@ -1,7 +1,7 @@
 import type { Server as HttpServer } from 'http';
 import { Server, type Socket } from 'socket.io';
-import { env } from '../../shared/configs/env';
-import { verifyAccessToken } from '../../shared/utils/jwt';
+import { env } from '../../shared/configs/env.js';
+import { verifyAccessToken } from '../../shared/utils/jwt.js';
 
 let io: Server | undefined;
 

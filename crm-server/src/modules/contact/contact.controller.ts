@@ -1,7 +1,7 @@
 import type { Request, Response } from 'express';
-import { contactService } from './contact.service';
-import { createContactSchema, updateContactSchema } from './contact.schema';
-import { ApiError } from '../../shared/utils/ApiError';
+import { contactService } from './contact.service.js';
+import { createContactSchema, updateContactSchema } from './contact.schema.js';
+import { ApiError } from '../../shared/utils/ApiError.js';
 
 function getId(req: Request): string {
   const { id } = req.params;

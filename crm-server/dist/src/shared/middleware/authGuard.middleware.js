@@ -1,5 +1,5 @@
-import { verifyAccessToken } from "../utils/jwt";
-import { ApiError } from "../utils/ApiError";
+import { verifyAccessToken } from "../utils/jwt.js";
+import { ApiError } from "../utils/ApiError.js";
 export function authGuard(req, _res, next) {
     const header = req.headers.authorization;
     if (!header?.startsWith('Bearer ')) {

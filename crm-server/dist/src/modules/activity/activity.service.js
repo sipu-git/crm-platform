@@ -1,5 +1,5 @@
 import { ApiError } from '../../shared/utils/ApiError.js';
-import { eventBus } from '../../shared/event-bus.js';
+import { eventBus } from '../../shared/event-bus/index.js';
 import { activityRepository } from './activity.repository.js';
 export const activityService = {
     list(tenantId, query = {}) {

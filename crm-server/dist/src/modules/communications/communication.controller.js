@@ -1,6 +1,6 @@
-import { communicationService } from "./communication.service";
-import { successResponse } from "../../shared/utils/ApiResponse";
-import { ApiError } from "../../shared/utils/ApiError";
+import { communicationService } from "./communication.service.js";
+import { successResponse } from "../../shared/utils/ApiResponse.js";
+import { ApiError } from "../../shared/utils/ApiError.js";
 export const communicationController = {
     sendCommunication: async (req, res) => {
         const { leadId } = req.params;

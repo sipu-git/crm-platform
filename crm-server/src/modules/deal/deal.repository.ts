@@ -1,5 +1,5 @@
-import { prisma } from "../../../lib/prisma";
-import type { CreateDealInput } from "./deal.schema";
+import { prisma } from "../../../lib/prisma.js";
+import type { CreateDealInput } from "./deal.schema.js";
 
 export const dealRepository = {
   findMany(tenantId: string, ownerId?: string) {

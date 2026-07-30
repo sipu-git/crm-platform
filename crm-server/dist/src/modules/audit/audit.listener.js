@@ -1,4 +1,4 @@
-import { eventBus } from '../../shared/event-bus.js';
+import { eventBus } from '../../shared/event-bus/index.js';
 import { auditService } from './audit.service.js';
 export function registerAuditListeners() {
     eventBus.on('lead.created', (p) => auditService.record(p.tenantId, 'lead.created', 'Lead', p.leadId));

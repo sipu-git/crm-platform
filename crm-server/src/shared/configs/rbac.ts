@@ -1,6 +1,6 @@
 import type { Request, Response, NextFunction } from 'express';
-import { ApiError } from '../utils/ApiError';
-import { Role } from './role';
+import { ApiError } from '../utils/ApiError.js';
+import { Role } from './role.js';
 
 type role = Role;
 

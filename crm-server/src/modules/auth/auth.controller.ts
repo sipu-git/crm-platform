@@ -1,8 +1,8 @@
 import type { Request, Response } from 'express';
-import { authService } from './auth.service';
-import { registerSchema, loginSchema } from './auth.schema';
-import { env } from '../../shared/configs/env';
-import { successResponse } from '../../shared/utils/ApiResponse';
+import { authService } from './auth.service.js';
+import { registerSchema, loginSchema } from './auth.schema.js';
+import { env } from '../../shared/configs/env.js';
+import { successResponse } from '../../shared/utils/ApiResponse.js';
 
 const REFRESH_COOKIE_OPTIONS = {
   httpOnly: true,
