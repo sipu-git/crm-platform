@@ -1,0 +1,32 @@
+import { whatsAppConfig } from "../configs/whatsapp.env.js";
+import { whatsappHookService } from "../services/webhook.service.js";
+export const whatsappHookController = {
+    async verifyWebHook(req, res) {
+        const mode = req.query["hub.mode"];
+        const token = req.query["hub.verify_token"];
+        const challenge = req.query["hub.challenge"];
+        console.log("Mode:", mode);
+        console.log("Token:", token);
+        console.log("Challenge:", challenge);
+        console.log("ENV Token:", process.env.WHATSAPP_VERIFY_TOKEN);
+        if (mode && token) {
+            if (mode === "subscribe" && token === whatsAppConfig.whatsapp.verifyToken) {
+                console.log("WEBHOOK_VERIFIED");
+                return res.status(200).send(challenge);
+            }
+            else {
+                return res.sendStatus(403);
+            }
+        }
+    },
+    async receiveWebHook(req, res) {
+        console.log("🔔 WEBHOOK HIT, body:", JSON.stringify(req.body, null, 2));
+        res.sendStatus(200);
+        try {
+            await whatsappHookService.processEvent(req.body);
+        }
+        catch (err) {
+            console.error("Failed to process WhatsApp webhook event:", err);
+        }
+    },
+};

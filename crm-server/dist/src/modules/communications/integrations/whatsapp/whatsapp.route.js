@@ -1,0 +1,10 @@
+import express from 'express';
+import { whatsappHookController } from './controllers/whatsappWebHook.controller';
+import { sendMessage } from './controllers/whatsapp.controller';
+import { asyncHandler } from '../../../../shared/middleware/asyncHandler.middleware';
+import { verifyMetaSignature } from '../../../../shared/middleware/verifyMetaSignature.middleware';
+const router = express.Router();
+router.post("/v1/whatsapp/send", asyncHandler(sendMessage));
+router.get("/webhook", asyncHandler(whatsappHookController.verifyWebHook));
+router.post("/webhook", verifyMetaSignature, asyncHandler(whatsappHookController.receiveWebHook));
+export default router;
