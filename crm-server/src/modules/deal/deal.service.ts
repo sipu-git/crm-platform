@@ -33,7 +33,7 @@ export const dealService = {
     const deal = await dealRepository.findById(tenantId, id);
 
     eventBus.emit('deal.stage_changed', { dealId: id, tenantId, stageId });
-    if (pipeline.is_own) {
+    if (pipeline.is_won) {
       eventBus.emit('deal.won', { dealId: id, tenantId });
     } else if (pipeline.is_lost) {
       eventBus.emit('deal.lost', { dealId: id, tenantId });

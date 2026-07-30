@@ -1,6 +1,13 @@
 import type { Request, Response } from 'express';
 import { invoiceService } from './invoice.service';
 import { createInvoiceSchema } from './invoice.schema';
+import { ApiError } from '../../shared/utils/ApiError';
+
+function getId(req: Request): string {
+  const { id } = req.params;
+  if (typeof id !== 'string') throw ApiError.notFound('Contact not found');
+  return id;
+}
 
 export const invoiceController = {
   async list(req: Request, res: Response) {
@@ -10,7 +17,7 @@ export const invoiceController = {
   },
 
   async getById(req: Request, res: Response) {
-    const invoice = await invoiceService.getById(req.tenantId!, req.params.id);
+    const invoice = await invoiceService.getById(req.tenantId!, getId(req));
     res.json(invoice);
   },
 
@@ -21,7 +28,7 @@ export const invoiceController = {
   },
 
   async markPaid(req: Request, res: Response) {
-    const invoice = await invoiceService.markPaid(req.tenantId!, req.params.id);
+    const invoice = await invoiceService.markPaid(req.tenantId!, getId(req));
     res.json(invoice);
   },
 };

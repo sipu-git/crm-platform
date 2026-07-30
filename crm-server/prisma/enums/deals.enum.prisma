@@ -1,0 +1,9 @@
+enum DealStage {
+    QUALIFICATION
+    NEEDS_ANALYSIS
+    PROPOSAL_SENT
+    NEGOTIATION
+    CONTRACT_REVIEW
+    WON
+    LOST
+}

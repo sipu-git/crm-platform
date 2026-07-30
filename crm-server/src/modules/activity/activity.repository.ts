@@ -32,7 +32,7 @@ export const activityRepository = {
         contact_id: data.contactId,
         company_id: data.companyId,
         title: data.title,
-        entityType:data.entityType,
+        entityType: data.entityType,
         description: data.description,
         status: data.status,
         priority: data.priority,

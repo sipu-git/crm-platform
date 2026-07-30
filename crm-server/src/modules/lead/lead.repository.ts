@@ -1,19 +1,20 @@
 import { Source, LeadStatus } from "../../../generated/prisma/enums";
 import { prisma } from "../../../lib/prisma";
-import { CreateLeadInput } from "./lead.schema";
+import { CreateLeadInput, UpdateLeadInput } from "./lead.schema";
 
 export const leadsRepository = {
-  create(tenantId: string, ownerId: string, data: CreateLeadInput) {
+  create(tenantId: string, ownerId: string,companyId: string, data: CreateLeadInput) {
   return prisma.leads.create({
     data: {
       tenant_id: tenantId,
-      companyId: data.companyId,
+      company_name: data.company_name,
+      companyId: companyId,
       full_name: data.full_name,
-      email: data.email,
       source: data.source,
-      phone: data.phone,
+      designation: data.designation,
       status: LeadStatus.NEW,
       owner_id: ownerId,
+      created_At: new Date(),
     },
   });
 },
@@ -75,6 +76,14 @@ assignLead(tenantId: string, id: string, ownerId: string) {
     where: { id, tenant_id: tenantId },
     data: { owner_id: ownerId },
   });
-}
+},
+updateLead(tenantId: string, id: string, data: Partial<UpdateLeadInput>) {
+  return prisma.leads.updateMany({
+    where: { id, tenant_id: tenantId },
+    data: { ...data, updated_at: new Date() },
+  });
+},
 };
+
+
 

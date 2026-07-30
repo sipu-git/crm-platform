@@ -1,6 +1,13 @@
 import type { Request, Response } from 'express';
 import { dealService } from './deal.service';
 import { createDealSchema, updateStageSchema } from './deal.schema';
+import { ApiError } from '../../shared/utils/ApiError';
+
+function getId(req: Request): string {
+  const { id } = req.params;
+  if (typeof id !== 'string') throw ApiError.notFound('deal not found');
+  return id;
+}
 
 export const dealController = {
   async list(req: Request, res: Response) {
@@ -10,7 +17,7 @@ export const dealController = {
   },
 
   async getById(req: Request, res: Response) {
-    const deal = await dealService.getById(req.tenantId!, req.params.id);
+    const deal = await dealService.getById(req.tenantId!, getId(req));
     res.json(deal);
   },
 
@@ -21,8 +28,12 @@ export const dealController = {
   },
 
   async updateStage(req: Request, res: Response) {
-    const { stage, position } = updateStageSchema.parse(req.body);
-    const deal = await dealService.updateStage(req.tenantId!, req.params.id, stage, position);
-    res.json(deal);
-  },
+  const parsed = updateStageSchema.safeParse(req.body);
+  if (!parsed.success) {
+    throw ApiError.badRequest('Invalid request body', parsed.error.flatten());
+  }
+  const { stageId, position } = parsed.data;
+  const deal = await dealService.updateStage(req.tenantId!, getId(req), stageId, position);
+  res.json(deal);
+},
 };

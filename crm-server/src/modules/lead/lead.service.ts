@@ -1,9 +1,10 @@
-import type { CreateLeadInput, LeadFilters } from './lead.schema';
+import type { CreateLeadInput, LeadFilters, UpdateLeadInput } from './lead.schema';
 import { ApiError } from '../../shared/utils/ApiError';
 import { eventBus } from '../../shared/event-bus';
 import { leadsRepository } from './lead.repository';
 import { LeadStatus } from '../../../generated/prisma/enums';
 import { contactsRepository } from '../contact/contact.repository';
+import { prisma } from '../../../lib/prisma';
 
 export const leadService = {
   list(tenantId: string, filters: LeadFilters) {
@@ -16,20 +17,59 @@ export const leadService = {
     return lead;
   },
   async create(tenantId: string, ownerId: string, input: CreateLeadInput) {
-    const existing = await leadsRepository.findById(tenantId, input.email);
-    if (existing) {
-      throw ApiError.conflict('A lead with this email already exists for this tenant');
-    }
-    const company = await leadsRepository.findByName(tenantId, input.company_name);
-    if (!company) {
-      throw ApiError.conflict('A company with this name does not exist for this tenant');
-    }
-    const lead = await leadsRepository.create(tenantId, ownerId, {
-      ...input,
-      companyId: company.id
+    return await prisma.$transaction(async (tx) => {
+      let company = await tx.company.findFirst({
+        where: {
+          tenant_id: tenantId,
+          name: input.company_name.trim(),
+        },
+      });
+      if (!company) {
+        company = await tx.company.create({
+          data: {
+            tenant_id: tenantId,
+            name: input.company_name.trim(),
+          },
+        });
+      }
+
+      // 3. Check duplicate lead
+      const duplicateLead = await tx.leads.findFirst({
+        where: {
+          tenant_id: tenantId,
+          companyId: company.id,
+          full_name: input.full_name.trim(),
+        },
+      });
+
+      if (duplicateLead) {
+        throw ApiError.conflict("Lead already exists for this company.");
+      }
+
+      // 4. Create lead
+      const lead = await tx.leads.create({
+        data: {
+          tenant_id: tenantId,
+          company_name: company.name,
+          companyId: company.id,
+          full_name: input.full_name.trim(),
+          designation: input.designation,
+          source: input.source,
+          status: LeadStatus.NEW,
+          created_At: new Date(),
+          owner_id: ownerId,
+        },
+      });
+
+      return lead;
+    }).then((lead) => {
+      eventBus.emit("lead.created", {
+        tenantId,
+        leadId: lead.id,
+      });
+
+      return lead;
     });
-    eventBus.emit('lead.created', { leadId: lead.id, tenantId });
-    return lead;
   },
   async updateStatus(tenantId: string, id: string, status: LeadStatus) {
     const result = await leadsRepository.updateStatus(tenantId, id, status);
@@ -40,6 +80,11 @@ export const leadService = {
     } else if (status === 'DISQUALIFIED') {
       eventBus.emit('lead.disqualified', { leadId: id, tenantId });
     }
+  },
+
+  async updateLead(tenantId: string, id: string, data: Partial<UpdateLeadInput>) {
+    const result = await leadsRepository.updateLead(tenantId, id, data);
+    if (result.count === 0) throw ApiError.notFound('Lead not found');
   },
 
   async convertToContact(tenantId: string, id: string) {
@@ -55,9 +100,9 @@ export const leadService = {
     const contact = await contactsRepository.create(tenantId, lead.owner_id, {
       firstName,
       lastName,
-      email: lead.email,
-      phone: lead.phone ?? undefined,
-      companyId: lead.companyId,
+      email: lead.email ?? '',
+      phone: lead.phone ?? '',
+      companyId: lead.companyId ?? '',
       // companyId:lead.,
     });
 

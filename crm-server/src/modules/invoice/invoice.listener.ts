@@ -10,7 +10,7 @@ export function registerInvoiceListeners() {
       const dueDate = new Date();
       dueDate.setDate(dueDate.getDate() + 14); // net-14 default
 
-      await invoiceRepository.createDraftFromDeal(payload.tenantId, deal.id, deal.title, deal.value, dueDate);
+      await invoiceRepository.createDraftFromDeal(payload.tenantId, deal.id, deal.title, deal.amount.toNumber(), dueDate);
     } catch (err) {
       console.error('Failed to auto-generate invoice on deal.won:', err);
     }

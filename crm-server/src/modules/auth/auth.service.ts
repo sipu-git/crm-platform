@@ -8,7 +8,7 @@ import bcrypt from 'bcrypt'
 export const authService = {
   async register(input: RegisterInput) {
     const existingTenantUser = await prisma.user.findFirst({ where: { email: input.email } });
-    if (existingTenantUser) throw new ApiError('An account with this email already exists', 400);
+    if (existingTenantUser) throw ApiError.badRequest('An account with this email already exists');
 
     const tenant = await prisma.tenant.create({ data: { name: input.company_name } });
     const passwordHash = await bcrypt.hash(input.password, 10);
@@ -30,10 +30,10 @@ export const authService = {
 
   async login(input: LoginInput) {
     const user = await prisma.user.findFirst({ where: { email: input.email } });
-    if (!user) throw new ApiError('No account found for this email', 404);
+    if (!user) throw ApiError.notFound('No account found for this email');
 
     const passwordMatches = await bcrypt.compare(input.password, user.password);
-    if (!passwordMatches) throw new ApiError('Incorrect email or password', 400);
+    if (!passwordMatches) throw ApiError.badRequest('Incorrect email or password');
 
     const accessToken = signAccessToken({ userId: user.id, tenantId: user.tenantId, role: user.role });
     const refreshToken = signRefreshToken({ userId: user.id });
@@ -46,17 +46,17 @@ export const authService = {
   },
 
   async refresh(refreshToken: string | undefined) {
-    if (!refreshToken) throw new ApiError('Missing refresh token', 400);
+    if (!refreshToken) throw ApiError.badRequest('Missing refresh token');
 
     let decoded;
     try {
       decoded = verifyRefreshToken(refreshToken);
     } catch {
-      throw new ApiError('Invalid or expired refresh token');
+      throw ApiError.unauthorized('Invalid or expired refresh token');
     }
 
     const user = await prisma.user.findUnique({ where: { id: decoded.userId } });
-    if (!user) throw new ApiError('User no longer exists');
+    if (!user) throw ApiError.notFound('User no longer exists');
 
     const accessToken = signAccessToken({ userId: user.id, tenantId: user.tenantId, role: user.role });
     return {

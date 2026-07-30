@@ -1,0 +1,19 @@
+model Pipeline {
+    id          String  @id @default(cuid())
+    tenant_id   String
+    name        String
+    sort_order  Int // Display order in the pipeline
+    probability Int? // 10, 30, 60, 90, 100
+    is_won      Boolean @default(false)
+    is_lost     Boolean @default(false)
+
+    created_at DateTime @default(now())
+    updated_at DateTime @updatedAt
+
+    tenant Tenant @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
+
+    deals Deal[]
+
+    @@unique([tenant_id, name])
+    @@index([tenant_id])
+}

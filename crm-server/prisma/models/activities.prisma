@@ -1,5 +1,5 @@
 model Activities {
-    id           String         @id @default(cuid())
+    id           String          @id @default(cuid())
     tenant_id    String
     deal_id      String
     contact_id   String
@@ -10,11 +10,11 @@ model Activities {
     entityType   AuditEntityType
     priority     Priority
     due_date     DateTime
-    completed_at DateTime
+    completed_at DateTime?
     assigned_to  String
     created_by   String
-    created_at   DateTime       @default(now())
-    updated_at   DateTime
+    created_at   DateTime        @default(now())
+    updated_at   DateTime        @updatedAt
 
     tenant   Tenant   @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
     deal     Deal     @relation(fields: [deal_id], references: [id], onDelete: Cascade)

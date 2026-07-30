@@ -5,11 +5,13 @@ import cookieParser from 'cookie-parser';
 import authRoutes from './src/modules/auth/auth.routes';
 import contactRoutes from './src/modules/contact/contact.routes';
 import leadRoutes from './src/modules/lead/lead.routes';
+import companyRoutes from './src/modules/company/company.routes';
 import dealRoutes from './src/modules/deal/deal.routes';
 import activityRoutes from './src/modules/activity/activity.routes';
 import invoiceRoutes from './src/modules/invoice/invoice.routes';
 import notificationRoutes from './src/modules/notification/notification.routes';
 import auditRoutes from './src/modules/audit/audit.routes';
+import communicationRoutes from './src/modules/communications/communication.routes';
 import { registerInvoiceListeners } from './src/modules/invoice/invoice.listener';
 import { registerNotificationListeners } from './src/modules/notification/notification.listener';
 import { registerAuditListeners } from './src/modules/audit/audit.listener';
@@ -24,20 +26,26 @@ export function createApp() {
   connectDB();
   app.use(helmet());
   app.use(cors({ origin: env.clientUrl, credentials: true }));
-  app.use(express.json());
+  app.use(express.json({
+    verify: (req: any, _res, buf) => {
+      req.rawBody = buf
+    }
+  }));
   app.use(cookieParser());
   app.use(requestLogger);
 
   app.get('/health', (_req, res) => res.json({ status: 'ok' }));
-  
+
   app.use('/api/auth', authRoutes);
   app.use('/api/contacts', contactRoutes);
   app.use('/api/leads', leadRoutes);
+  app.use('/api/companies', companyRoutes);
   app.use('/api/deals', dealRoutes);
   app.use('/api/activities', activityRoutes);
   app.use('/api/invoices', invoiceRoutes);
   app.use('/api/notifications', notificationRoutes);
   app.use('/api/audit', auditRoutes);
+  app.use('/api/communications', communicationRoutes);
 
   app.use(errorHandler);
 

@@ -6,7 +6,7 @@ export const contactsRepository = {
     return prisma.contacts.create({
       data: {
         tenant_id: tenantId,
-        company_id: input.companyId,
+        companyId: input.companyId,
         first_name: input.firstName,
         last_name: input.lastName,
         email: input.email,

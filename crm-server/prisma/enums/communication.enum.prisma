@@ -1,0 +1,30 @@
+enum CommunicationChannel {
+  WHATSAPP
+  EMAIL
+  CALL
+  SMS
+  INTERNAL_NOTE
+}
+
+enum CommunicationDirection {
+  INBOUND
+  OUTBOUND
+}
+
+enum CommunicationStatus {
+  QUEUED
+  SENT
+  DELIVERED
+  READ
+  FAILED
+  RECEIVED
+}
+enum MessageType {
+    TEXT
+    IMAGE
+    VIDEO
+    AUDIO
+    DOCUMENT
+    FILE
+    NOTE
+}

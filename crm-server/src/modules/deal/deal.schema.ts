@@ -10,6 +10,7 @@ export const createDealSchema = z.object({
 
 export const updateStageSchema = z.object({
   stageId: z.string().min(1),
+  position: z.number().int().nonnegative(),
 });
 
 export type CreateDealInput = z.infer<typeof createDealSchema>;

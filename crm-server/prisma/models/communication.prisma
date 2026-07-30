@@ -1,0 +1,31 @@
+model Communications {
+    id                  String                 @id @default(cuid())
+    tenant_id           String
+    lead_id             String
+    contact_id          String?
+    deal_id             String?
+    company_id          String?
+    channel             CommunicationChannel
+    direction           CommunicationDirection
+    message_type        MessageType
+    subject             String?
+    body                String?
+    media_url           String?
+    media_type          String?
+    file_name           String?
+    provider_message_id String?                @unique
+    status              CommunicationStatus
+    metaData            Json?
+    created_by          String?
+    created_at          DateTime               @default(now())
+    updated_at          DateTime               @updatedAt
+
+    lead    Leads     @relation(fields: [lead_id], references: [id])
+    tenant  Tenant    @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
+    contact Contacts? @relation(fields: [contact_id], references: [id], onDelete: Cascade)
+    deal    Deal?     @relation(fields: [deal_id], references: [id], onDelete: SetNull)
+    company Company?   @relation(fields: [company_id], references: [id], onDelete: Cascade)
+
+    @@index([tenant_id, contact_id])
+    @@index([provider_message_id])
+}

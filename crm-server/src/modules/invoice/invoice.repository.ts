@@ -53,7 +53,7 @@ export const invoiceRepository = {
   },
 
   /** Used by invoice.listener.ts when a Deal is marked Won. */
-  async createDraftFromDeal(tenantId: string, dealId: string, title: string, value: number, dueDate: Date) {
+  async createDraftFromDeal(tenantId: string, dealId: string, title: string, amount: number, dueDate: Date) {
     const deal = await prisma.deal.findFirstOrThrow({
       where: { id: dealId, tenant_id: tenantId },
       select: { contact_id: true, company_id: true },
@@ -70,7 +70,7 @@ export const invoiceRepository = {
         company_id: deal.company_id,
         status: 'DRAFT',
         due_date: dueDate,
-        total_amount: value,
+        total_amount: amount,
         notes: title,
         issue_date: new Date(),
         updated_at: new Date()
