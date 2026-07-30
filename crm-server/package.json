@@ -7,7 +7,7 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "tsx watch server.ts",
-    "build": "tsc",
+    "build": "tsc && node fix-dist-import.js",
     "start": "node dist/server.js"
   },
   "keywords": [],
