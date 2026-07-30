@@ -1,17 +1,15 @@
 import fs from "fs";
 import path from "path";
 
-const SRC_DIRS = ["src", "."];
-const exts = [".ts"];
+const DIST_DIR = "dist";
 
 function walk(dir) {
   const entries = fs.readdirSync(dir, { withFileTypes: true });
   for (const entry of entries) {
     const fullPath = path.join(dir, entry.name);
     if (entry.isDirectory()) {
-      if (["node_modules", "dist", ".git"].includes(entry.name)) continue;
       walk(fullPath);
-    } else if (exts.includes(path.extname(entry.name))) {
+    } else if (entry.name.endsWith(".js")) {
       fixFile(fullPath);
     }
   }
@@ -25,9 +23,8 @@ function fixFile(filePath) {
   content = content.replace(
     /((?:from|import)\s*\(?\s*["'])(\.\.?\/[^"']+)(["'])/gs,
     (match, prefix, importPath, suffix) => {
-      if (/\.(js|json|css|node|ts)$/.test(importPath)) return match;
+      if (/\.(js|json|css|node)$/.test(importPath)) return match;
 
-      const asTs = path.resolve(dir, importPath + ".ts");
       const asDir = path.resolve(dir, importPath);
       const isDirectory = fs.existsSync(asDir) && fs.statSync(asDir).isDirectory();
 
@@ -42,8 +39,5 @@ function fixFile(filePath) {
   }
 }
 
-for (const dir of SRC_DIRS) {
-  if (fs.existsSync(dir)) walk(dir);
-}
-
-console.log("Done.");
+walk(DIST_DIR);
+console.log("Done fixing dist imports.");
