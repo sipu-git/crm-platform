@@ -25,7 +25,8 @@ export function createApp() {
 
   connectDB();
   app.use(helmet());
-  app.use(cors({ origin: [env.clientUrl,"https://crm-platform-backend-91af.onrender.com"], credentials: true }));
+  app.use(cors({ origin: [env.clientUrl,"https://crm-platform-backend-91af.onrender.com"], 
+    credentials: true }));
   app.use(express.json({
     verify: (req: any, _res, buf) => {
       req.rawBody = buf

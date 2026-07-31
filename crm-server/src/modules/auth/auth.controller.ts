@@ -6,8 +6,8 @@ import { successResponse } from '../../shared/utils/ApiResponse.js';
 
 const REFRESH_COOKIE_OPTIONS = {
   httpOnly: true,
-  secure: env.nodeEnv === 'production',
-  sameSite: 'lax' as const,
+  secure: true,
+  sameSite: 'none' as const,
   path: '/',
   maxAge: 7 * 24 * 60 * 60 * 1000,
 };
@@ -23,7 +23,7 @@ export const authController = {
     const input = loginSchema.parse(req.body);
     const { accessToken, refreshToken, user } = await authService.login(input);
     res.cookie('refreshToken', refreshToken, REFRESH_COOKIE_OPTIONS);
-   return res.json({ accessToken, user });
+    return res.json({ accessToken, user });
   },
 
   async refresh(req: Request, res: Response) {
