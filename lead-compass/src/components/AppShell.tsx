@@ -1,16 +1,9 @@
-import { Link, Outlet, useRouterState, useNavigate } from "@tanstack/react-router";
+import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { setSidebarCollapsed } from "@/features/ui/slice";
 import { switchTenant } from "@/components/AppProviders";
 import { logout } from "@/features/auth/slice";
-import {
-  BarChart3,
-  Users,
-  Kanban,
-  FileText,
-  Bell,
-  Settings,
-  ChevronsLeft,
+import {BarChart3,Users,Kanban,FileText,Bell,Settings,ChevronsLeft,
   ChevronsRight,
   LogOut,
   Menu,
@@ -19,6 +12,10 @@ import {
   Laptop,
   Check,
   Search,
+  ContactRound,
+  ListTodo,
+  ShieldCheck,
+  Building2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -32,18 +29,42 @@ import {
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
-import { NotificationsBell } from "@/components/NotificationsBell";
+// import { NotificationsBell } from "@/components/NotificationsBell";
 import { cn } from "@/lib/utils";
 import { setTheme, type ThemeMode } from "@/features/ui/slice";
 import { useState } from "react";
 
-const NAV = [
-  { to: "dashboard", label: "Dashboard", icon: BarChart3 },
-  { to: "leads", label: "Leads", icon: Users },
-  { to: "deals", label: "Deals", icon: Kanban },
-  { to: "invoices", label: "Invoices", icon: FileText },
-  { to: "notifications", label: "Notifications", icon: Bell },
-  { to: "settings", label: "Settings", icon: Settings },
+const NAV_GROUPS = [
+  {
+    label: "Overview",
+    items: [
+      { to: "dashboard", label: "Dashboard", icon: BarChart3 },
+    ],
+  },
+  {
+    label: "CRM",
+    items: [
+      { to: "leads", label: "Leads", icon: Users },
+      { to: "contacts", label: "Contacts", icon: ContactRound },
+      { to: "companies", label: "Companies", icon: Building2 },
+      { to: "deals", label: "Deals", icon: Kanban },
+    ],
+  },
+  {
+    label: "Operations",
+    items: [
+      { to: "activities", label: "Activities", icon: ListTodo },
+      { to: "invoices", label: "Invoices", icon: FileText },
+    ],
+  },
+  {
+    label: "Admin",
+    items: [
+      { to: "notifications", label: "Notifications", icon: Bell },
+      { to: "audit", label: "Audit trail", icon: ShieldCheck },
+      { to: "settings", label: "Settings", icon: Settings },
+    ],
+  },
 ];
 
 function NavList({
@@ -55,32 +76,43 @@ function NavList({
   collapsed: boolean;
   onNavigate?: () => void;
 }) {
-  const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const { pathname } = useLocation();
   return (
-    <nav className="flex-1 space-y-1 px-2 py-3">
-      {NAV.map((n) => {
-        const to = `/${slug}/${n.to}`;
-        const active = pathname === to || pathname.startsWith(to + "/");
-        const Icon = n.icon;
-        return (
-          <Link
-            key={n.to}
-            to={to}
-            onClick={onNavigate}
-            className={cn(
-              "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors",
-              active
-                ? "bg-primary/10 text-primary"
-                : "text-muted-foreground hover:bg-muted hover:text-foreground",
-              collapsed && "justify-center px-2",
-            )}
-            title={collapsed ? n.label : undefined}
-          >
-            <Icon className="h-4 w-4 shrink-0" />
-            {!collapsed && <span className="truncate">{n.label}</span>}
-          </Link>
-        );
-      })}
+    <nav className="flex-1 space-y-4 px-2 py-3">
+      {NAV_GROUPS.map((group) => (
+        <div key={group.label}>
+          {!collapsed && (
+            <div className="px-3 pb-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground/70">
+              {group.label}
+            </div>
+          )}
+          <div className="space-y-1">
+            {group.items.map((n) => {
+              const to = `/${slug}/${n.to}`;
+              const active = pathname === to || pathname.startsWith(to + "/");
+              const Icon = n.icon;
+              return (
+                <Link
+                  key={n.to}
+                  to={to}
+                  onClick={onNavigate}
+                  className={cn(
+                    "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors",
+                    active
+                      ? "bg-primary/10 text-primary"
+                      : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                    collapsed && "justify-center px-2",
+                  )}
+                  title={collapsed ? n.label : undefined}
+                >
+                  <Icon className="h-4 w-4 shrink-0" />
+                  {!collapsed && <span className="truncate">{n.label}</span>}
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+      ))}
     </nav>
   );
 }
@@ -131,44 +163,9 @@ function ThemeMenu() {
   );
 }
 
-function TenantSwitcher({ slug }: { slug: string }) {
-  const tenants = useAppSelector((s) => s.auth.tenants);
-  const nav = useNavigate();
-  const current = tenants.find((t) => t.slug === slug);
-  return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button variant="outline" size="sm" className="h-9 gap-2">
-          <div
-            className="h-4 w-4 rounded"
-            style={{ backgroundColor: current?.primaryColor || "#4F46E5" }}
-          />
-          <span className="max-w-[140px] truncate">{current?.name || slug}</span>
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="start" className="w-56">
-        <DropdownMenuLabel>Workspaces</DropdownMenuLabel>
-        <DropdownMenuSeparator />
-        {tenants.map((t) => (
-          <DropdownMenuItem
-            key={t.id}
-            onClick={() => {
-              switchTenant(t.slug);
-              nav({ to: `/${t.slug}/dashboard` });
-            }}
-          >
-            <div
-              className="mr-2 h-3 w-3 rounded"
-              style={{ backgroundColor: t.primaryColor }}
-            />
-            {t.name}
-            {t.slug === slug && <Check className="ml-auto h-4 w-4" />}
-          </DropdownMenuItem>
-        ))}
-      </DropdownMenuContent>
-    </DropdownMenu>
-  );
-}
+// function TenantSwitcher({ slug }: { slug: string }) {
+//   return <Button variant="outline" size="sm" className="h-9 gap-2"><div className="h-4 w-4 rounded bg-primary" /><span className="max-w-35 truncate">{slug}</span></Button>;
+// }
 
 function UserMenu() {
   const user = useAppSelector((s) => s.auth.user);
@@ -198,7 +195,7 @@ function UserMenu() {
         <DropdownMenuItem
           onClick={() => {
             dispatch(logout());
-            nav({ to: "/login" });
+            nav("/login");
           }}
         >
           <LogOut className="mr-2 h-4 w-4" /> Sign out
@@ -211,12 +208,13 @@ function UserMenu() {
 export function AppShell({ tenantSlug }: { tenantSlug: string }) {
   const dispatch = useAppDispatch();
   const collapsed = useAppSelector((s) => s.ui.sidebarCollapsed);
-  const tenants = useAppSelector((s) => s.auth.tenants);
-  const current = tenants.find((t) => t.slug === tenantSlug);
   const [mobileOpen, setMobileOpen] = useState(false);
 
   return (
-    <div className="flex h-screen w-full bg-background">
+    <div className="flex h-screen w-full
+    bg-[linear-gradient(45deg,#edf4fd,#eff3fd,#f1f2fc,#f2f0fc,#f4effc,#f6eefb,#f8edfb,#f9ebfa,#fbeafa)]
+    dark:bg-[linear-gradient(45deg,#000000,#040204,#080408,#0c060b,#10080f,#130913,#170b17,#1b0d1a,#1f0f1e)]
+    " >
       {/* Desktop sidebar */}
       <aside
         className={cn(
@@ -224,7 +222,7 @@ export function AppShell({ tenantSlug }: { tenantSlug: string }) {
           collapsed ? "w-16" : "w-60",
         )}
       >
-        <Brand collapsed={collapsed} name={current?.name || ""} />
+        <Brand collapsed={collapsed} name={tenantSlug} />
         <NavList slug={tenantSlug} collapsed={collapsed} />
         <div className="border-t p-2">
           <Button
@@ -255,12 +253,12 @@ export function AppShell({ tenantSlug }: { tenantSlug: string }) {
               </Button>
             </SheetTrigger>
             <SheetContent side="left" className="w-64 p-0">
-              <Brand collapsed={false} name={current?.name || ""} />
+              <Brand collapsed={false} name={tenantSlug} />
               <NavList slug={tenantSlug} collapsed={false} onNavigate={() => setMobileOpen(false)} />
             </SheetContent>
           </Sheet>
 
-          <TenantSwitcher slug={tenantSlug} />
+          {/* <TenantSwitcher slug={tenantSlug} /> */}
 
           <div className="ml-2 hidden max-w-md flex-1 md:block">
             <div className="relative">
@@ -270,7 +268,7 @@ export function AppShell({ tenantSlug }: { tenantSlug: string }) {
           </div>
 
           <div className="ml-auto flex items-center gap-1">
-            <NotificationsBell tenantSlug={tenantSlug} />
+            {/* <NotificationsBell tenantSlug={tenantSlug} /> */}
             <ThemeMenu />
             <UserMenu />
           </div>

@@ -1,61 +1,17 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
-import { useAppDispatch, useAppSelector } from "@/store/hooks";
-import {
-  createDeal,
-  dealsSelectors,
-  fetchDeals,
-  moveDealOptimistic,
-  revertStage,
-  setView,
-  updateDeal,
-} from "@/features/deals/slice";
-import { PageHeader, TableSkeleton } from "@/components/ui-kit";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { Kanban as KanbanIcon, Rows3, Plus } from "lucide-react";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  DndContext,
-  DragOverlay,
-  PointerSensor,
-  useDroppable,
-  useDraggable,
-  useSensor,
-  useSensors,
-  type DragEndEvent,
-  type DragStartEvent,
-} from "@dnd-kit/core";
-import { DEAL_STAGES, type Deal, type DealStage } from "@/lib/mockDb";
+// features/deals/pages/DealsPage.tsx
+import { useEffect, useMemo, useState } from "react";
+import { Link, useParams } from "react-router-dom";
 import { toast } from "sonner";
+import { DndContext, DragOverlay, PointerSensor, useDroppable, useDraggable, useSensor, useSensors, type DragEndEvent, type DragStartEvent } from "@dnd-kit/core";
+import { Kanban as KanbanIcon, Rows3, Building2, Calendar, User } from "lucide-react";
+import { useAppDispatch, useAppSelector } from "@/store/hooks";
+import { fetchDeals, fetchDealBoard, moveDealStage, selectDeals, selectDealBoard, selectDealsLoading } from "@/features/deals/slice";
+import type { Deal, DealBoardColumn } from "@/features/deals/deal.types";
+import { PageHeader, TableSkeleton, EmptyState } from "@/components/ui-kit";
+import { Button } from "@/components/ui/button";
+import { formatFullName } from "@/hooks/use-format";
 
-export const Route = createFileRoute("/_app/$tenantSlug/deals")({
-  ssr: false,
-  component: DealsPage,
-});
-
-const STAGE_LABELS: Record<DealStage, string> = {
-  lead: "Lead",
-  qualified: "Qualified",
-  proposal: "Proposal",
-  negotiation: "Negotiation",
-  won: "Won",
-  lost: "Lost",
-};
+type ViewMode = "kanban" | "table";
 
 function fmtMoney(n: number) {
   return new Intl.NumberFormat("en-US", {
@@ -65,17 +21,22 @@ function fmtMoney(n: number) {
   }).format(n);
 }
 
-function DealsPage() {
-  const { tenantSlug } = Route.useParams();
+function fmtDate(dateStr: string) {
+  return new Date(dateStr).toLocaleDateString(undefined, { month: "short", day: "numeric" });
+}
+
+export function DealsPage() {
+  const { tenantSlug = "" } = useParams();
   const dispatch = useAppDispatch();
-  const deals = useAppSelector(dealsSelectors.selectAll);
-  const view = useAppSelector((s) => s.deals.view);
-  const status = useAppSelector((s) => s.deals.status);
-  const [createOpen, setCreateOpen] = useState(false);
+  const deals = useAppSelector(selectDeals);
+  const board = useAppSelector(selectDealBoard);
+  const loading = useAppSelector(selectDealsLoading);
+  const [view, setView] = useState<ViewMode>("kanban");
 
   useEffect(() => {
-    dispatch(fetchDeals(tenantSlug));
-  }, [dispatch, tenantSlug]);
+    dispatch(fetchDealBoard());
+    dispatch(fetchDeals());
+  }, [dispatch]);
 
   return (
     <div>
@@ -83,117 +44,122 @@ function DealsPage() {
         title="Deals"
         description="Track pipeline value across every stage."
         actions={
-          <div className="flex gap-2">
-            <div className="flex rounded-md border p-0.5">
-              <Button
-                size="sm"
-                variant={view === "kanban" ? "secondary" : "ghost"}
-                onClick={() => dispatch(setView("kanban"))}
-              >
-                <KanbanIcon className="mr-2 h-4 w-4" /> Kanban
-              </Button>
-              <Button
-                size="sm"
-                variant={view === "table" ? "secondary" : "ghost"}
-                onClick={() => dispatch(setView("table"))}
-              >
-                <Rows3 className="mr-2 h-4 w-4" /> Table
-              </Button>
-            </div>
-            <Button onClick={() => setCreateOpen(true)}>
-              <Plus className="mr-2 h-4 w-4" /> New deal
+          <div className="flex overflow-hidden rounded-md border">
+            <Button
+              size="sm"
+              variant={view === "kanban" ? "secondary" : "ghost"}
+              className="rounded-none"
+              onClick={() => setView("kanban")}
+            >
+              <KanbanIcon className="mr-2 h-4 w-4" />
+              Kanban
+            </Button>
+            <Button
+              size="sm"
+              variant={view === "table" ? "secondary" : "ghost"}
+              className="rounded-none border-l"
+              onClick={() => setView("table")}
+            >
+              <Rows3 className="mr-2 h-4 w-4" />
+              Table
             </Button>
           </div>
         }
       />
 
-      <div className="p-6">
-        {status === "loading" && deals.length === 0 && <TableSkeleton rows={4} cols={6} />}
-        {view === "kanban" ? (
-          <KanbanView tenantSlug={tenantSlug} deals={deals} />
-        ) : (
-          <TableView deals={deals} tenantSlug={tenantSlug} />
-        )}
-      </div>
+      <div className="p-4 sm:p-6">
+        {loading && deals.length === 0 && board.length === 0 && <TableSkeleton rows={4} cols={5} />}
 
-      <CreateDealDialog tenantSlug={tenantSlug} open={createOpen} onOpenChange={setCreateOpen} />
+        {!loading && board.length === 0 && deals.length === 0 && (
+          <EmptyState
+            title="No deals yet"
+            description="Deals are created automatically once a lead is marked Qualified."
+          />
+        )}
+
+        {(board.length > 0 || deals.length > 0) &&
+          (view === "kanban" ? (
+            <KanbanView tenantSlug={tenantSlug} board={board} />
+          ) : (
+            <TableView deals={deals} tenantSlug={tenantSlug} />
+          ))}
+      </div>
     </div>
   );
 }
 
-function KanbanView({ tenantSlug, deals }: { tenantSlug: string; deals: Deal[] }) {
+// ---------- Kanban ----------
+
+function KanbanView({ tenantSlug, board }: { tenantSlug: string; board: DealBoardColumn[] }) {
   const dispatch = useAppDispatch();
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }));
   const [dragging, setDragging] = useState<Deal | null>(null);
 
-  const byStage = DEAL_STAGES.reduce<Record<DealStage, Deal[]>>(
-    (acc, s) => {
-      acc[s] = deals.filter((d) => d.stage === s);
-      return acc;
-    },
-    {} as Record<DealStage, Deal[]>,
-  );
+  const allDeals = useMemo(() => board.flatMap((c) => c.deals), [board]);
 
   function onDragStart(e: DragStartEvent) {
-    const d = deals.find((x) => x.id === e.active.id);
-    if (d) setDragging(d);
+    const deal = allDeals.find((d) => d.id === e.active.id);
+    if (deal) setDragging(deal);
   }
 
   async function onDragEnd(e: DragEndEvent) {
     setDragging(null);
     if (!e.over) return;
-    const id = e.active.id as string;
-    const newStage = e.over.id as DealStage;
-    const deal = deals.find((d) => d.id === id);
-    if (!deal || deal.stage === newStage) return;
-    const previous = deal.stage;
-    dispatch(moveDealOptimistic({ id, stage: newStage }));
+
+    const dealId = e.active.id as string;
+    const targetStageId = e.over.id as string;
+    const deal = allDeals.find((d) => d.id === dealId);
+    if (!deal || deal.stage_id === targetStageId) return;
+
     try {
-      await dispatch(updateDeal({ tenantSlug, id, changes: { stage: newStage } })).unwrap();
-    } catch {
-      dispatch(revertStage({ id, stage: previous }));
-      toast.error("Failed to move deal — reverted");
+      await dispatch(moveDealStage({ id: dealId, data: { stageId: targetStageId } })).unwrap();
+    } catch (error) {
+      toast.error(typeof error === "string" ? error : "Failed to move deal");
     }
   }
 
   return (
     <DndContext sensors={sensors} onDragStart={onDragStart} onDragEnd={onDragEnd}>
-      <div className="flex gap-4 overflow-x-auto pb-2">
-        {DEAL_STAGES.map((stage) => (
-          <KanbanColumn key={stage} stage={stage} deals={byStage[stage]} />
+      <div className="flex gap-4 overflow-x-auto pb-2 sm:snap-x sm:snap-mandatory">
+        {board.map((column) => (
+          <KanbanColumn key={column.id} column={column} tenantSlug={tenantSlug} />
         ))}
       </div>
-      <DragOverlay>
-        {dragging && <DealCard deal={dragging} dragging />}
-      </DragOverlay>
+      <DragOverlay>{dragging && <DealCard deal={dragging} tenantSlug={tenantSlug} dragging />}</DragOverlay>
     </DndContext>
   );
 }
 
-function KanbanColumn({ stage, deals }: { stage: DealStage; deals: Deal[] }) {
-  const { setNodeRef, isOver } = useDroppable({ id: stage });
-  const total = deals.reduce((s, d) => s + d.amount, 0);
+function KanbanColumn({ column, tenantSlug }: { column: DealBoardColumn; tenantSlug: string }) {
+  const { setNodeRef, isOver } = useDroppable({ id: column.id });
+  const total = column.deals.reduce((sum, d) => sum + d.amount, 0);
+
   return (
     <div
       ref={setNodeRef}
-      className={`flex w-72 shrink-0 flex-col rounded-lg border bg-muted/30 transition-colors ${
-        isOver ? "bg-primary/5 ring-2 ring-primary/40" : ""
-      }`}
+      className={`flex w-72 shrink-0 snap-start flex-col rounded-lg border bg-muted/30 transition-colors ${isOver ? "bg-primary/5 ring-2 ring-primary/40" : ""
+        }`}
     >
       <div className="flex items-center justify-between border-b px-3 py-2">
         <div className="flex items-center gap-2">
-          <span className="text-sm font-semibold">{STAGE_LABELS[stage]}</span>
+          <span
+            className="h-2 w-2 rounded-full"
+            style={{
+              backgroundColor: column.is_won ? "#22c55e" : column.is_lost ? "#ef4444" : "#3b82f6",
+            }}
+          />
+          <span className="text-sm font-semibold">{column.name}</span>
           <span className="rounded-full bg-background px-1.5 py-0.5 text-[10px] text-muted-foreground">
-            {deals.length}
+            {column.deals.length}
           </span>
         </div>
         <span className="text-xs text-muted-foreground">{fmtMoney(total)}</span>
       </div>
-      <div className="min-h-[100px] space-y-2 p-2">
-        {deals.map((d) => (
-          <DraggableDeal key={d.id} deal={d} />
+      <div className="min-h-[120px] space-y-2 p-2">
+        {column.deals.map((deal) => (
+          <DraggableDeal key={deal.id} deal={deal} tenantSlug={tenantSlug} />
         ))}
-        {deals.length === 0 && (
+        {column.deals.length === 0 && (
           <div className="rounded-md border border-dashed py-6 text-center text-xs text-muted-foreground">
             Drop here
           </div>
@@ -203,152 +169,105 @@ function KanbanColumn({ stage, deals }: { stage: DealStage; deals: Deal[] }) {
   );
 }
 
-function DraggableDeal({ deal }: { deal: Deal }) {
+function DraggableDeal({ deal, tenantSlug }: { deal: Deal; tenantSlug: string }) {
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({ id: deal.id });
   return (
-    <div
-      ref={setNodeRef}
-      {...listeners}
-      {...attributes}
-      className={isDragging ? "opacity-30" : ""}
-    >
-      <DealCard deal={deal} />
+    <div ref={setNodeRef} {...listeners} {...attributes} className={isDragging ? "opacity-30" : ""}>
+      <DealCard deal={deal} tenantSlug={tenantSlug} />
     </div>
   );
 }
 
-function DealCard({ deal, dragging }: { deal: Deal; dragging?: boolean }) {
-  const { tenantSlug } = Route.useParams();
+function DealCard({deal,tenantSlug,dragging}: {deal: Deal;tenantSlug: string;dragging?: boolean;}) {
+  const contactName = formatFullName(deal.contact?.first_name, deal.contact?.last_name);
+  const companyName = deal.leads?.company_name;
+
   return (
     <Link
       to={`/${tenantSlug}/deals/${deal.id}`}
       onClick={(e) => dragging && e.preventDefault()}
-      className={`block rounded-md border bg-card p-3 shadow-sm transition-shadow hover:shadow ${
-        dragging ? "cursor-grabbing shadow-lg ring-2 ring-primary/40" : "cursor-grab"
-      }`}
+      className={`block rounded-md border bg-card p-3 shadow-sm transition-shadow hover:shadow ${dragging ? "cursor-grabbing shadow-lg ring-2 ring-primary/40" : "cursor-grab"
+        }`}
     >
-      <div className="mb-1 flex items-start justify-between gap-2">
-        <div className="min-w-0 text-sm font-medium">{deal.title}</div>
-      </div>
-      <div className="text-xs text-muted-foreground">{deal.company}</div>
-      <div className="mt-2 flex items-center justify-between">
+      <div className="mb-1.5 text-sm font-medium leading-snug">{deal.title}</div>
+
+      {companyName && (
+        <div className="mb-1 flex items-center gap-1 text-xs text-muted-foreground">
+          <Building2 className="h-3 w-3" />
+          {companyName}
+        </div>
+      )}
+      {contactName && (
+        <div className="mb-2 flex items-center gap-1 text-xs text-muted-foreground">
+          <User className="h-3 w-3" />
+          {contactName}
+        </div>
+      )}
+
+      <div className="flex items-center justify-between">
         <span className="text-sm font-semibold">{fmtMoney(deal.amount)}</span>
-        <span className="text-[10px] text-muted-foreground">
-          {new Date(deal.closeDate).toLocaleDateString()}
+        <span className="flex items-center gap-1 text-[10px] text-muted-foreground">
+          <Calendar className="h-3 w-3" />
+          {fmtDate(deal.expected_close_date)}
         </span>
       </div>
     </Link>
   );
 }
 
+// ---------- Table ----------
+
 function TableView({ deals, tenantSlug }: { deals: Deal[]; tenantSlug: string }) {
   return (
-    <div className="overflow-hidden rounded-lg border bg-card">
-      <table className="w-full text-sm">
+    <div className="overflow-x-auto rounded-lg border bg-card">
+      <table className="w-full min-w-[640px] text-sm">
         <thead className="bg-muted/40 text-left text-xs uppercase text-muted-foreground">
           <tr>
             <th className="px-3 py-2 font-medium">Deal</th>
             <th className="px-3 py-2 font-medium">Company</th>
+            <th className="px-3 py-2 font-medium">Contact</th>
             <th className="px-3 py-2 font-medium">Stage</th>
             <th className="px-3 py-2 font-medium">Amount</th>
             <th className="px-3 py-2 font-medium">Close date</th>
           </tr>
         </thead>
         <tbody className="divide-y">
-          {deals.map((d) => (
-            <tr key={d.id} className="hover:bg-muted/40">
-              <td className="px-3 py-2 font-medium">
-                <Link
-                  to={`/${tenantSlug}/deals/${d.id}`}
-                  className="hover:underline"
-                >
-                  {d.title}
+          {deals.map((deal) => (
+            <tr key={deal.id} className="hover:bg-muted/40">
+              <td className="px-3 py-2.5 font-medium">
+                <Link to={`/${tenantSlug}/deals/${deal.id}`} className="hover:underline">
+                  {deal.title}
                 </Link>
               </td>
-              <td className="px-3 py-2 text-muted-foreground">{d.company}</td>
-              <td className="px-3 py-2 capitalize">{d.stage}</td>
-              <td className="px-3 py-2">{fmtMoney(d.amount)}</td>
-              <td className="px-3 py-2 text-muted-foreground">
-                {new Date(d.closeDate).toLocaleDateString()}
+              <td className="px-3 py-2.5 text-muted-foreground">{deal.leads?.company_name ?? "—"}</td>
+              <td className="px-3 py-2.5 text-muted-foreground">
+                {formatFullName(deal.contact?.first_name, deal.contact?.last_name) || "—"}
               </td>
+              <td className="px-3 py-2.5">
+                <span
+                  className="inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-xs font-medium"
+                  style={{
+                    backgroundColor: deal.pipeline?.is_won
+                      ? "#22c55e1a"
+                      : deal.pipeline?.is_lost
+                        ? "#ef44441a"
+                        : "#3b82f61a",
+                    color: deal.pipeline?.is_won
+                      ? "#22c55e"
+                      : deal.pipeline?.is_lost
+                        ? "#ef4444"
+                        : "#3b82f6",
+                  }}
+                >
+                  {deal.pipeline?.name ?? "—"}
+                </span>
+              </td>
+              <td className="px-3 py-2.5">{fmtMoney(deal.amount)}</td>
+              <td className="px-3 py-2.5 text-muted-foreground">{fmtDate(deal.expected_close_date)}</td>
             </tr>
           ))}
         </tbody>
       </table>
     </div>
-  );
-}
-
-function CreateDealDialog({
-  tenantSlug,
-  open,
-  onOpenChange,
-}: {
-  tenantSlug: string;
-  open: boolean;
-  onOpenChange: (v: boolean) => void;
-}) {
-  const dispatch = useAppDispatch();
-  const [draft, setDraft] = useState<Partial<Deal>>({
-    title: "",
-    company: "",
-    amount: 0,
-    stage: "lead",
-    closeDate: new Date().toISOString(),
-  });
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>New deal</DialogTitle>
-        </DialogHeader>
-        <div className="space-y-3">
-          <div className="space-y-1.5">
-            <Label>Title</Label>
-            <Input value={draft.title || ""} onChange={(e) => setDraft({ ...draft, title: e.target.value })} />
-          </div>
-          <div className="space-y-1.5">
-            <Label>Company</Label>
-            <Input value={draft.company || ""} onChange={(e) => setDraft({ ...draft, company: e.target.value })} />
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1.5">
-              <Label>Amount</Label>
-              <Input
-                type="number"
-                value={draft.amount || 0}
-                onChange={(e) => setDraft({ ...draft, amount: Number(e.target.value) })}
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label>Stage</Label>
-              <Select
-                value={draft.stage || "lead"}
-                onValueChange={(v) => setDraft({ ...draft, stage: v as DealStage })}
-              >
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {DEAL_STAGES.map((s) => (
-                    <SelectItem key={s} value={s}>{STAGE_LABELS[s]}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-        </div>
-        <DialogFooter>
-          <Button variant="ghost" onClick={() => onOpenChange(false)}>Cancel</Button>
-          <Button
-            onClick={async () => {
-              await dispatch(createDeal({ tenantSlug, input: draft }));
-              toast.success("Deal created");
-              onOpenChange(false);
-            }}
-          >
-            Create
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
   );
 }

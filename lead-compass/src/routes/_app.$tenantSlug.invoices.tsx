@@ -1,47 +1,39 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { Link, useNavigate, useParams } from "react-router-dom";
+import { useEffect } from "react";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
-import {
-  createInvoice,
-  fetchInvoices,
-  invoicesSelectors,
-} from "@/features/invoices/slice";
+import {fetchInvoices,selectInvoices,selectInvoicesLoading} from "@/features/invoices/service2/slice";
+import type { InvoiceStatus } from "@/features/invoices/service2/types";
 import { PageHeader, TableSkeleton, EmptyState } from "@/components/ui-kit";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
-import type { InvoiceStatus } from "@/lib/mockDb";
-import { toast } from "sonner";
-
-export const Route = createFileRoute("/_app/$tenantSlug/invoices")({
-  ssr: false,
-  component: InvoicesPage,
-});
 
 const STATUS: Record<InvoiceStatus, string> = {
-  draft: "bg-muted text-muted-foreground",
-  sent: "bg-primary/10 text-primary",
-  paid: "bg-success/15 text-success",
-  overdue: "bg-destructive/15 text-destructive",
+  DRAFT: "bg-muted text-muted-foreground",
+  SENT: "bg-primary/10 text-primary",
+  PAID: "bg-success/15 text-success",
+  PARTIALLY_PAID: "bg-amber-100 text-amber-700",
+  OVERDUE: "bg-destructive/15 text-destructive",
+  CANCELLED: "bg-muted text-muted-foreground line-through",
 };
 
-function fmt(n: number) {
+function fmt(n: number, currency: string) {
   return new Intl.NumberFormat("en-US", {
     style: "currency",
-    currency: "USD",
+    currency,
     maximumFractionDigits: 2,
   }).format(n);
 }
 
-function InvoicesPage() {
-  const { tenantSlug } = Route.useParams();
+export function InvoicesPage() {
+  const navigate = useNavigate();
   const dispatch = useAppDispatch();
-  const invoices = useAppSelector(invoicesSelectors.selectAll);
-  const status = useAppSelector((s) => s.invoices.status);
+  const invoices = useAppSelector(selectInvoices);
+  const loading = useAppSelector(selectInvoicesLoading);
+  const { tenantSlug = "" } = useParams();
 
   useEffect(() => {
-    dispatch(fetchInvoices(tenantSlug));
-  }, [dispatch, tenantSlug]);
+    dispatch(fetchInvoices({}));
+  }, [dispatch]);
 
   return (
     <div>
@@ -49,43 +41,24 @@ function InvoicesPage() {
         title="Invoices"
         description="Send, track, and get paid."
         actions={
-          <Button
-            onClick={async () => {
-              const res = await dispatch(
-                createInvoice({
-                  tenantSlug,
-                  input: {
-                    clientName: "New Client",
-                    clientEmail: "billing@client.com",
-                    status: "draft",
-                    lines: [{ id: Math.random().toString(36).slice(2), description: "Service", quantity: 1, unitPrice: 1000 }],
-                    issueDate: new Date().toISOString(),
-                    dueDate: new Date(Date.now() + 15 * 86400_000).toISOString(),
-                  },
-                }),
-              );
-              if (createInvoice.fulfilled.match(res)) {
-                toast.success("Draft invoice created");
-              }
-            }}
-          >
+          <Button onClick={() => navigate(`/${tenantSlug}/invoices/new`)}>
             <Plus className="mr-2 h-4 w-4" /> New invoice
           </Button>
         }
       />
 
       <div className="space-y-4 p-6">
-        {status === "loading" && invoices.length === 0 && <TableSkeleton />}
-        {status !== "loading" && invoices.length === 0 && (
+        {loading && (!invoices || invoices.length === 0) && <TableSkeleton />}
+        {!loading && (!invoices || invoices.length === 0) && (
           <EmptyState title="No invoices yet" description="Create your first invoice to get paid faster." />
         )}
-        {invoices.length > 0 && (
+        {invoices && invoices.length > 0 && (
           <div className="overflow-hidden rounded-lg border bg-card">
             <table className="w-full text-sm">
               <thead className="bg-muted/40 text-left text-xs uppercase text-muted-foreground">
                 <tr>
                   <th className="px-3 py-2 font-medium">Invoice</th>
-                  <th className="px-3 py-2 font-medium">Client</th>
+                  <th className="px-3 py-2 font-medium">Buyer</th>
                   <th className="px-3 py-2 font-medium">Issue date</th>
                   <th className="px-3 py-2 font-medium">Due date</th>
                   <th className="px-3 py-2 font-medium">Total</th>
@@ -93,36 +66,33 @@ function InvoicesPage() {
                 </tr>
               </thead>
               <tbody className="divide-y">
-                {invoices.map((i) => {
-                  const total = i.lines.reduce((s, l) => s + l.quantity * l.unitPrice, 0);
-                  return (
-                    <tr key={i.id} className="hover:bg-muted/40">
-                      <td className="px-3 py-2 font-medium">
-                        <Link
-                          to={`/${tenantSlug}/invoices/${i.id}`}
-                          className="hover:underline"
-                        >
-                          {i.number}
-                        </Link>
-                      </td>
-                      <td className="px-3 py-2 text-muted-foreground">{i.clientName}</td>
-                      <td className="px-3 py-2 text-muted-foreground">
-                        {new Date(i.issueDate).toLocaleDateString()}
-                      </td>
-                      <td className="px-3 py-2 text-muted-foreground">
-                        {new Date(i.dueDate).toLocaleDateString()}
-                      </td>
-                      <td className="px-3 py-2">{fmt(total)}</td>
-                      <td className="px-3 py-2">
-                        <span
-                          className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium capitalize ${STATUS[i.status]}`}
-                        >
-                          {i.status}
-                        </span>
-                      </td>
-                    </tr>
-                  );
-                })}
+                {invoices.map((inv) => (
+                  <tr key={inv.id} className="hover:bg-muted/40">
+                    <td className="px-3 py-2 font-medium">
+                      <Link
+                        to={`/${tenantSlug}/invoices/${inv.id}`}
+                        className="hover:underline"
+                      >
+                        {inv.invoice_number}
+                      </Link>
+                    </td>
+                    <td className="px-3 py-2 text-muted-foreground">{inv.buyer_name}</td>
+                    <td className="px-3 py-2 text-muted-foreground">
+                      {new Date(inv.issue_date).toLocaleDateString()}
+                    </td>
+                    <td className="px-3 py-2 text-muted-foreground">
+                      {new Date(inv.due_date).toLocaleDateString()}
+                    </td>
+                    <td className="px-3 py-2">{fmt(Number(inv.total_amount), inv.currency)}</td>
+                    <td className="px-3 py-2">
+                      <span
+                        className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium capitalize ${STATUS[inv.status]}`}
+                      >
+                        {inv.status.replace("_", " ").toLowerCase()}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
               </tbody>
             </table>
           </div>

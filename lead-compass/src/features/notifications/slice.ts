@@ -17,22 +17,21 @@ interface Extra {
 
 export const fetchNotifications = createAsyncThunk(
   "notifications/fetch",
-  async (tenantSlug: string) =>
-    (await api.get<Notification[]>(`/${tenantSlug}/notifications`)).data,
+  async () => (await api.get<Notification[]>("/notifications")).data,
 );
 
 export const markRead = createAsyncThunk(
   "notifications/read",
   async (args: { tenantSlug: string; id: string }) => {
-    await api.patch(`/${args.tenantSlug}/notifications/${args.id}/read`);
+    await api.patch(`/notifications/${args.id}/read`);
     return args.id;
   },
 );
 
 export const markAllRead = createAsyncThunk(
   "notifications/readAll",
-  async (tenantSlug: string) => {
-    await api.post(`/${tenantSlug}/notifications/read-all`);
+  async () => {
+    await api.patch("/notifications/read-all");
     return true;
   },
 );

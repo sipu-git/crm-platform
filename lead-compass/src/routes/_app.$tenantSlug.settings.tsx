@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { useParams } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { api } from "@/api/client";
 import { PageHeader } from "@/components/ui-kit";
@@ -18,13 +18,8 @@ import {
 } from "@/components/ui/select";
 import { toast } from "sonner";
 
-export const Route = createFileRoute("/_app/$tenantSlug/settings")({
-  ssr: false,
-  component: SettingsPage,
-});
-
-function SettingsPage() {
-  const { tenantSlug } = Route.useParams();
+export function SettingsPage() {
+  const { tenantSlug = "" } = useParams();
   return (
     <div>
       <PageHeader title="Settings" description="Manage your profile, team, and workspace." />

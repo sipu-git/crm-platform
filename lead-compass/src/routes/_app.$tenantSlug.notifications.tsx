@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { useParams } from "react-router-dom";
 import { useEffect } from "react";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import {
@@ -12,13 +12,8 @@ import { Button } from "@/components/ui/button";
 import { Check } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 
-export const Route = createFileRoute("/_app/$tenantSlug/notifications")({
-  ssr: false,
-  component: NotificationsPage,
-});
-
-function NotificationsPage() {
-  const { tenantSlug } = Route.useParams();
+export function NotificationsPage() {
+  const { tenantSlug = "" } = useParams();
   const dispatch = useAppDispatch();
   const items = useAppSelector(notificationsSelectors.selectAll);
 

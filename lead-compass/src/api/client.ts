@@ -1,11 +1,12 @@
 import axios, { AxiosError } from "axios";
-import { mockAdapter } from "@/lib/mockAdapter";
 import { toast } from "sonner";
 
+const BASE_URL = "https://crm-platform-backend-91af.onrender.com/api";
+// const BASE_URL = "http://localhost:5000/api";
 export const api = axios.create({
-  baseURL: "/api",
+  baseURL: BASE_URL,
   timeout: 15000,
-  adapter: mockAdapter,
+  withCredentials: true,
 });
 
 let getAuthToken: () => string | null = () => null;

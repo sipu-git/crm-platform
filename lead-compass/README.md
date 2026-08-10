@@ -4,7 +4,7 @@ A production-quality, multi-tenant CRM SPA. Built as a real, runnable app — no
 
 ## Stack
 
-- **React 19 + TypeScript** on **Vite** (bundled by TanStack Start)
+- **React 19 + TypeScript** on **Vite** with React Router
 - **TanStack Router** — file-based routes with tenant-scoped URLs (`/:tenantSlug/...`)
 - **Redux Toolkit** — feature slices with `createAsyncThunk` + `createEntityAdapter`
 - **Axios** — single configured instance with request/response interceptors

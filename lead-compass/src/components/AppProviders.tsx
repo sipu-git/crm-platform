@@ -6,7 +6,7 @@ import { configureApi } from "@/api/client";
 import { logout } from "@/features/auth/slice";
 import { setCurrentTenant } from "@/features/tenant/slice";
 import { Toaster } from "@/components/ui/sonner";
-import { useRouter } from "@tanstack/react-router";
+import { useNavigate } from "react-router-dom";
 
 function ThemeSync() {
   const theme = useAppSelector((s) => s.ui.theme);
@@ -30,22 +30,19 @@ function ThemeSync() {
 
 function ApiConfigurator() {
   const dispatch = useDispatch();
-  const router = useRouter();
+  const navigate = useNavigate();
   const token = useAppSelector((s) => s.auth.token);
-  const tenantSlug = useAppSelector((s) => s.tenant.currentSlug);
-  const tenants = useAppSelector((s) => s.auth.tenants);
 
   useEffect(() => {
-    const tid = tenants.find((t) => t.slug === tenantSlug)?.id ?? null;
     configureApi({
       getAuthToken: () => token,
-      getTenantId: () => tid,
+      getTenantId: () => null,
       onUnauthorized: () => {
         dispatch(logout());
-        router.navigate({ to: "/login" });
+        navigate("/login");
       },
     });
-  }, [token, tenantSlug, tenants, dispatch, router]);
+  }, [token, dispatch, navigate]);
   return null;
 }
 

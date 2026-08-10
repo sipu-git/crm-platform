@@ -26,8 +26,7 @@ export default tseslint.config(
           paths: [
             {
               name: "server-only",
-              message:
-                "TanStack Start does not use the Next.js `server-only` package. Rename the module to `*.server.ts` or mark it with `@tanstack/react-start/server-only`.",
+              message: "This client-side Vite application does not support the Next.js `server-only` package.",
             },
           ],
         },
