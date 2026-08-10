@@ -1,6 +1,6 @@
 import { dealService } from './deal.service.js';
-import { createDealSchema, updateStageSchema } from './deal.schema.js';
 import { ApiError } from '../../shared/utils/ApiError.js';
+import { successResponse } from '../../shared/utils/ApiResponse.js';
 function getId(req) {
     const { id } = req.params;
     if (typeof id !== 'string')
@@ -9,26 +9,37 @@ function getId(req) {
 }
 export const dealController = {
     async list(req, res) {
-        const ownerId = typeof req.query.ownerId === 'string' ? req.query.ownerId : undefined;
-        const deals = await dealService.list(req.tenantId, ownerId);
-        res.json(deals);
+        const deals = await dealService.list(req.tenantId, req.userId);
+        return res.status(200).json(successResponse("Deal records fetched successfully", deals));
     },
     async getById(req, res) {
         const deal = await dealService.getById(req.tenantId, getId(req));
-        res.json(deal);
+        return res.status(200).json(successResponse("deal record fetched successfully", deal));
     },
-    async create(req, res) {
-        const input = createDealSchema.parse(req.body);
-        const deal = await dealService.create(req.tenantId, req.auth.userId, input);
-        res.status(201).json(deal);
+    async groupStage(req, res) {
+        const deal = await dealService.board(req.tenantId);
+        return res.status(200).json(successResponse("Group data fetched successfully", deal));
+    },
+    async moveStage(req, res) {
+        const { id } = req.params;
+        const { stageId } = req.body;
+        const dealId = Array.isArray(id) ? id[0] : id;
+        const tenantId = req.tenantId;
+        if (!tenantId) {
+            throw new ApiError(401, "Unauthorized!");
+        }
+        if (!dealId) {
+            throw new ApiError(400, "Deal id is required");
+        }
+        const result = await dealService.moveStage(tenantId, dealId, stageId);
+        return res.status(200).json(successResponse("Deal stage updated successfully", result));
     },
     async updateStage(req, res) {
-        const parsed = updateStageSchema.safeParse(req.body);
-        if (!parsed.success) {
-            throw ApiError.badRequest('Invalid request body', parsed.error.flatten());
-        }
-        const { stageId, position } = parsed.data;
-        const deal = await dealService.updateStage(req.tenantId, getId(req), stageId, position);
-        res.json(deal);
+        const deal = await dealService.update(req.tenantId, getId(req), req.body);
+        return res.status(201).json(successResponse("Deal modified successfully!", deal));
+    },
+    async deleteDeal(req, res) {
+        const deal = await dealService.delete(req.tenantId, getId(req));
+        return res.status(201).json(successResponse("Deal modified successfully!", deal));
     },
 };

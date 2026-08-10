@@ -1,34 +1,43 @@
-import { prisma } from "../../../lib/prisma.js";
 export const pipelineRepository = {
-    findById(tenantId, id) {
-        return prisma.pipeline.findFirst({
-            where: { id, tenant_id: tenantId },
-        });
-    },
-    findMany(tenantId) {
-        return prisma.pipeline.findMany({
-            where: { tenant_id: tenantId },
-            orderBy: { sort_order: "asc" },
-        });
-    },
-    create(tenantId, name, sortOrder) {
-        return prisma.pipeline.create({
-            data: {
+    findDefaultStage(tx, tenantId) {
+        return tx.pipeline.findFirst({
+            where: {
                 tenant_id: tenantId,
-                name,
-                sort_order: sortOrder,
+                is_won: false,
+                is_lost: false,
+            },
+            orderBy: {
+                sort_order: "asc"
+            }
+        });
+    },
+    findAllStages(tx, tenantId) {
+        return tx.pipeline.findMany({
+            where: {
+                tenant_id: tenantId,
+            },
+            orderBy: {
+                sort_order: "asc"
+            }
+        });
+    },
+    findStageById(tx, tenantId, stageId) {
+        return tx.pipeline.findFirst({
+            where: {
+                tenant_id: tenantId,
+                id: stageId,
             },
         });
     },
-    update(tenantId, id, data) {
-        return prisma.pipeline.updateMany({
-            where: { id, tenant_id: tenantId },
-            data,
+    seedDefaultStages(tx, tenantId) {
+        return tx.pipeline.createMany({
+            data: [
+                { tenant_id: tenantId, name: "Qualified", sort_order: 1, probability: 10 },
+                { tenant_id: tenantId, name: "Proposal Sent", sort_order: 2, probability: 30 },
+                { tenant_id: tenantId, name: "Negotiation", sort_order: 3, probability: 60 },
+                { tenant_id: tenantId, name: "Won", sort_order: 4, probability: 100, is_won: true },
+                { tenant_id: tenantId, name: "Lost", sort_order: 5, probability: 0, is_lost: true },
+            ],
         });
-    },
-    delete(tenantId, id) {
-        return prisma.pipeline.deleteMany({
-            where: { id, tenant_id: tenantId },
-        });
-    },
+    }
 };

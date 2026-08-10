@@ -12,18 +12,19 @@ import invoiceRoutes from './src/modules/invoice/invoice.routes.js';
 import notificationRoutes from './src/modules/notification/notification.routes.js';
 import auditRoutes from './src/modules/audit/audit.routes.js';
 import communicationRoutes from './src/modules/communications/communication.routes.js';
-import { registerInvoiceListeners } from './src/modules/invoice/invoice.listener.js';
 import { registerNotificationListeners } from './src/modules/notification/notification.listener.js';
 import { registerAuditListeners } from './src/modules/audit/audit.listener.js';
 import { env } from './src/shared/configs/env.js';
 import { requestLogger } from './src/shared/middleware/requestLogger.middleware.js';
 import { errorHandler } from './src/shared/middleware/errorHandler.middleware.js';
 import { connectDB } from './src/shared/configs/db.js';
+import { registerInvoiceListeners } from './src/modules/invoice/total-invoices/invoice.listener.js';
 export function createApp() {
     const app = express();
     connectDB();
     app.use(helmet());
-    app.use(cors({ origin: env.clientUrl, credentials: true }));
+    app.use(cors({ origin: [env.clientUrl, "https://crm-platform-backend-91af.onrender.com"],
+        credentials: true }));
     app.use(express.json({
         verify: (req, _res, buf) => {
             req.rawBody = buf;

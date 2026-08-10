@@ -33,7 +33,11 @@ export const whatsappHookService = {
     async handleIncomingMessage(msg) {
         const fromNumber = toWhatsAppNumber(msg.from);
         const lead = await prisma.leads.findFirst({
-            where: { phone: { contains: fromNumber.slice(-10) } },
+            where: {
+                contact: {
+                    phone: { contains: fromNumber.slice(-10) },
+                },
+            },
         });
         if (!lead) {
             console.warn(`Incoming WhatsApp message from unrecognized number: ${msg.from}`);

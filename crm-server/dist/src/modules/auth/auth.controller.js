@@ -1,11 +1,10 @@
 import { authService } from './auth.service.js';
 import { registerSchema, loginSchema } from './auth.schema.js';
-import { env } from '../../shared/configs/env.js';
 import { successResponse } from '../../shared/utils/ApiResponse.js';
 const REFRESH_COOKIE_OPTIONS = {
     httpOnly: true,
-    secure: env.nodeEnv === 'production',
-    sameSite: 'lax',
+    secure: true,
+    sameSite: 'none',
     path: '/',
     maxAge: 7 * 24 * 60 * 60 * 1000,
 };

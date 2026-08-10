@@ -13,6 +13,13 @@ export const ActivityStatus = {
     COMPLETED: 'COMPLETED',
     CANCELLED: 'CANCELLED'
 };
+export const ActivityTypes = {
+    CALL: 'CALL',
+    EMAIL: 'EMAIL',
+    MEETING: 'MEETING',
+    TASK: 'TASK',
+    NOTE: 'NOTE'
+};
 export const Priority = {
     LOW: 'LOW',
     MEDIUM: 'MEDIUM',
@@ -54,6 +61,19 @@ export const MessageType = {
     FILE: 'FILE',
     NOTE: 'NOTE'
 };
+export const CompanySize = {
+    SELF_EMPLOYED: 'SELF_EMPLOYED',
+    SMALL: 'SMALL',
+    MEDIUM: 'MEDIUM',
+    LARGE: 'LARGE',
+    ENTERPRISE: 'ENTERPRISE'
+};
+export const CompanyStatus = {
+    ACTIVE: 'ACTIVE',
+    INACTIVE: 'INACTIVE',
+    PROSPECT: 'PROSPECT',
+    CHURNED: 'CHURNED'
+};
 export const DealStage = {
     QUALIFICATION: 'QUALIFICATION',
     NEEDS_ANALYSIS: 'NEEDS_ANALYSIS',
@@ -69,6 +89,10 @@ export const InvoiceStatus = {
     PAID: 'PAID',
     OVERDUE: 'OVERDUE',
     CANCELLED: 'CANCELLED'
+};
+export const InvoiceType = {
+    B2B: 'B2B',
+    B2C: 'B2C'
 };
 export const Source = {
     WEBSITE: 'WEBSITE',

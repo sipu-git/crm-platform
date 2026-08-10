@@ -7,7 +7,6 @@ const router = Router();
 router.use(authGuard, tenantContext);
 router.get('/', asyncHandler(contactController.list));
 router.get('/:id', asyncHandler(contactController.getById));
-router.post('/', asyncHandler(contactController.create));
 router.patch('/:id', asyncHandler(contactController.update));
 router.delete('/:id', asyncHandler(contactController.remove));
 export default router;

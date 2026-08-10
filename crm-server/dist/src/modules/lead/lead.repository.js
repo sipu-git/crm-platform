@@ -1,56 +1,70 @@
 import { LeadStatus } from "../../../generated/prisma/enums.js";
-import { prisma } from "../../../lib/prisma.js";
 export const leadsRepository = {
-    create(tenantId, ownerId, companyId, data) {
-        return prisma.leads.create({
+    create(tx, tenantId, companyId, contactId, userId, data) {
+        return tx.leads.create({
             data: {
                 tenant_id: tenantId,
-                company_name: data.company_name,
+                owner_name: data.owner_name,
+                company_name: data.company_name.trim(),
+                project_name: data.project_name.trim(),
+                project_type: data.project_type?.trim(),
                 companyId: companyId,
-                full_name: data.full_name,
+                contactId: contactId,
                 source: data.source,
-                designation: data.designation,
                 status: LeadStatus.NEW,
-                owner_id: ownerId,
+                created_by: userId,
                 created_At: new Date(),
-            },
+                ...(data.assigned_to ? {
+                    assign_to: data.assigned_to
+                } : {})
+            }
         });
     },
-    findByName(tenantId, name) {
-        return prisma.company.findFirst({
+    findByName(tx, tenantId, name) {
+        return tx.company.findFirst({
             where: { tenant_id: tenantId, name },
         });
     },
-    findById(tenantId, id) {
-        return prisma.leads.findFirst({
+    findById(tx, tenantId, id) {
+        return tx.leads.findFirst({
             where: { id, tenant_id: tenantId },
+            include: {
+                company: true,
+                contact: true,
+                assignee: true
+            },
         });
     },
-    findByOwner(tenantId, ownerId) {
-        return prisma.leads.findMany({
+    findByOwner(tx, tenantId, ownerId) {
+        return tx.leads.findMany({
             where: { tenant_id: tenantId, owner_id: ownerId },
             orderBy: { created_At: "desc" },
         });
     },
-    findMany(tenantId, filters) {
-        return prisma.leads.findMany({
+    findMany(tx, tenantId, filters) {
+        return tx.leads.findMany({
             where: {
                 tenant_id: tenantId,
                 ...(filters.status ? { status: filters.status } : {}),
                 ...(filters.assignedTo ? { status: filters.status } : {}),
                 ...(filters.source ? { source: filters.source } : {}),
             },
+            include: {
+                company: true,
+                contact: true,
+                assignee: true
+            },
             orderBy: { created_At: "desc" },
         });
     },
-    assignOwner(tenantId, id, ownerId) {
-        return prisma.leads.updateMany({
+    assignOwner(tx, tenantId, id, ownerId) {
+        return tx.leads.updateMany({
             where: { id, tenant_id: tenantId },
             data: { owner_id: ownerId },
         });
     },
-    markConverted(tenantId, id, contactId) {
-        return prisma.leads.updateMany({
+    markConverted(tx, tenantId, id, contactId) {
+        return tx.leads.updateMany({
             where: { id, tenant_id: tenantId },
             data: {
                 status: LeadStatus.CONTRACTED,
@@ -58,8 +72,8 @@ export const leadsRepository = {
             },
         });
     },
-    updateStatus(tenantId, id, status) {
-        return prisma.leads.updateMany({
+    updateStatus(tx, tenantId, id, status) {
+        return tx.leads.updateMany({
             where: { id, tenant_id: tenantId },
             data: {
                 status,
@@ -67,14 +81,14 @@ export const leadsRepository = {
             },
         });
     },
-    assignLead(tenantId, id, ownerId) {
-        return prisma.leads.updateMany({
+    assignLead(tx, tenantId, id, assignId) {
+        return tx.leads.update({
             where: { id, tenant_id: tenantId },
-            data: { owner_id: ownerId },
+            data: { assigned_to: assignId },
         });
     },
-    updateLead(tenantId, id, data) {
-        return prisma.leads.updateMany({
+    updateLead(tx, tenantId, id, data) {
+        return tx.leads.updateMany({
             where: { id, tenant_id: tenantId },
             data: { ...data, updated_at: new Date() },
         });

@@ -1,43 +1,43 @@
-import { prisma } from "../../../lib/prisma.js";
 export const contactsRepository = {
-    create(tenantId, createdBy, input) {
-        return prisma.contacts.create({
+    create(tx, tenantId, createdBy, input) {
+        return tx.contacts.create({
             data: {
                 tenant_id: tenantId,
                 companyId: input.companyId,
                 first_name: input.firstName,
                 last_name: input.lastName,
                 email: input.email,
+                designation: input.designation,
                 phone: input.phone,
                 created_by: createdBy,
                 updated_at: new Date(),
             },
         });
     },
-    findById(tenantId, id) {
-        return prisma.contacts.findFirst({
+    findById(tx, tenantId, id) {
+        return tx.contacts.findFirst({
             where: { id, tenant_id: tenantId },
         });
     },
-    findMany(tenantId) {
-        return prisma.contacts.findMany({
+    findMany(tx, tenantId) {
+        return tx.contacts.findMany({
             where: { tenant_id: tenantId },
             orderBy: { created_at: "desc" },
         });
     },
-    findByCompany(tenantId, companyId) {
-        return prisma.contacts.findMany({
+    findByCompany(tx, tenantId, companyId) {
+        return tx.contacts.findMany({
             where: { tenant_id: tenantId, company_id: companyId },
             orderBy: { created_at: "desc" },
         });
     },
-    findByEmail(tenantId, email) {
-        return prisma.contacts.findFirst({
+    findByEmail(tx, tenantId, email) {
+        return tx.contacts.findFirst({
             where: { tenant_id: tenantId, email },
         });
     },
-    update(tenantId, id, input) {
-        return prisma.contacts.updateMany({
+    update(tx, tenantId, id, input) {
+        return tx.contacts.updateMany({
             where: { id, tenant_id: tenantId },
             data: {
                 company_id: input.companyId,
@@ -45,12 +45,12 @@ export const contactsRepository = {
                 last_name: input.lastName,
                 email: input.email,
                 phone: input.phone,
-                updated_at: new Date(),
+                designation: input.designation,
             },
         });
     },
-    delete(tenantId, id) {
-        return prisma.contacts.deleteMany({
+    delete(tx, tenantId, id) {
+        return tx.contacts.deleteMany({
             where: { id, tenant_id: tenantId },
         });
     },

@@ -1,5 +1,5 @@
 import { contactService } from './contact.service.js';
-import { createContactSchema, updateContactSchema } from './contact.schema.js';
+import { updateContactSchema } from './contact.schema.js';
 import { ApiError } from '../../shared/utils/ApiError.js';
 function getId(req) {
     const { id } = req.params;
@@ -15,11 +15,6 @@ export const contactController = {
     async getById(req, res) {
         const contact = await contactService.getById(req.tenantId, getId(req));
         res.json(contact);
-    },
-    async create(req, res) {
-        const input = createContactSchema.parse(req.body);
-        const contact = await contactService.create(req.tenantId, req.userId, input);
-        res.status(201).json(contact);
     },
     async update(req, res) {
         const input = updateContactSchema.parse(req.body);

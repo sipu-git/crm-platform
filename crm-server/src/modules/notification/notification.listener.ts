@@ -13,7 +13,7 @@ export function registerNotificationListeners() {
       await notificationService.dispatch(payload.tenantId, payload.assignedTo, {
         channel: "in_app",
         subject: "New lead assigned",
-        message: `New lead assigned: ${lead.full_name}`,
+        message: `New lead assigned: ${lead.company_name}`,
         externalRef: payload.leadId,
       });
     }

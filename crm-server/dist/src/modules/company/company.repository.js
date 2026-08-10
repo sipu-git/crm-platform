@@ -1,19 +1,9 @@
-import { prisma } from "../../../lib/prisma.js";
 export const companyRepository = {
-    create(tenantId, data) {
-        return prisma.company.create({
-            data: {
-                tenant_id: tenantId,
-                name: data.name,
-                industry: data.industry,
-                website: data.website
-            },
-        });
-    },
-    findManyCompanies(tenantId) {
-        return prisma.company.findMany({
+    findManyCompanies(tx, tenantId) {
+        return tx.company.findMany({
             where: { tenant_id: tenantId },
             include: {
+                leads: true,
                 _count: {
                     select: { leads: true },
                 },
@@ -21,24 +11,27 @@ export const companyRepository = {
             orderBy: { created_at: "desc" },
         });
     },
-    findCompany(tenantId, id) {
-        return prisma.company.findFirst({
+    findCompany(tx, tenantId, id) {
+        return tx.company.findFirst({
             where: { tenant_id: tenantId, id },
+            include: {
+                leads: true,
+            }
         });
     },
-    modify(tenantId, id, data) {
-        return prisma.company.update({
-            where: { id },
+    modify(tx, tenantId, id, data) {
+        return tx.company.update({
+            where: { id, tenant_id: tenantId },
             data,
         });
     },
-    delete(tenantId, id) {
-        return prisma.company.deleteMany({
+    delete(tx, tenantId, id) {
+        return tx.company.deleteMany({
             where: { id, tenant_id: tenantId },
         });
     },
-    filterCompany(tenantId, filters) {
-        return prisma.company.findMany({
+    filterCompany(tx, tenantId, filters) {
+        return tx.company.findMany({
             where: {
                 tenant_id: tenantId,
                 ...(filters.industry ? { industry: filters.industry } : {}),
@@ -46,6 +39,28 @@ export const companyRepository = {
                 ...(filters.page ? { website: filters.page } : {}),
                 ...(filters.limit ? { website: filters.limit } : {}),
             },
+            include: {
+                leads: true
+            },
+            orderBy: { created_at: "desc" },
+        });
+    },
+    upsertStubByName(tx, tenantId, ownerId, companyName, soruce) {
+        return tx.company.upsert({
+            where: {
+                tenant_id_name: {
+                    tenant_id: tenantId,
+                    name: companyName.trim(),
+                }
+            },
+            update: {},
+            create: {
+                tenant_id: tenantId,
+                name: companyName.trim(),
+                owner_name: ownerId,
+                source: soruce ?? 'OTHER',
+                company_status: 'PROSPECT',
+            }
         });
     }
 };
