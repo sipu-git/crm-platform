@@ -25,7 +25,7 @@ export function createApp() {
 
   connectDB();
   app.use(helmet());
-  app.use(cors({ origin: [env.clientUrl,"https://crm-platform-backend-91af.onrender.com"], 
+  app.use(cors({ origin: [env.clientUrl,"https://crm-platform-backend-91af.onrender.com","https://crm-platform-weld.vercel.app"], 
     credentials: true }));
   app.use(express.json({
     verify: (req: any, _res, buf) => {
