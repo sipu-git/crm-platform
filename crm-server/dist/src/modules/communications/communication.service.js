@@ -19,13 +19,21 @@ export const communicationService = {
         if (NOT_YET_IMPLEMENTED.has(data.channel)) {
             throw new ApiError(400, `${data.channel} channel is not implemented yet`);
         }
-        const lead = await prisma.leads.findFirst({
-            where: { id: leadId },
-            select: { id: true, phone: true },
-        });
-        if (!lead) {
-            throw new ApiError(404, "Lead not found");
-        }
+       // communication.service.js — fixed
+const lead = await prisma.leads.findFirst({
+  where: { id: leadId },
+  select: {
+    id: true,
+    tenant_id: true,     
+    companyId: true,
+    contact: {
+      select: { phone: true },
+    },
+  },
+});
+if (!lead?.contact?.phone) {
+  throw ApiError.badRequest("This lead has no phone number on file");
+}
         switch (data.channel) {
             case CommunicationChannel.WHATSAPP:
                 return this.sendWhatsApp(data, {

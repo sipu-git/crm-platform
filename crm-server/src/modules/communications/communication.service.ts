@@ -31,9 +31,16 @@ export const communicationService = {
 
     const lead = await prisma.leads.findFirst({
       where: { id: leadId },
-      select: { id: true, phone: true },
+      select: {
+        id: true,
+        tenant_id: true,       // add whatever else send() actually needs
+        companyId: true,
+        contact: {
+          select: { phone: true },
+        },
+      },
     });
-    if (!lead) {
+    if (!lead?.contact?.phone) {
       throw new ApiError(404, "Lead not found");
     }
 
@@ -44,7 +51,7 @@ export const communicationService = {
           tenantId,
           companyId,
           createdBy,
-          leadPhone: lead.phone,
+          leadPhone: lead.contact.phone,
         });
       default:
         throw new ApiError(400, `${data.channel} channel is not implemented yet`);
