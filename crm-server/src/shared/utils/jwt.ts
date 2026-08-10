@@ -7,6 +7,7 @@ export interface AccessTokenPayload {
   userId: string;
   tenantId: string;
   role: Role;
+  companyId?: string;
 }
 
 

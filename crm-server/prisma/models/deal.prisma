@@ -4,17 +4,19 @@ model Deal {
     title               String
     amount              Decimal  @default(0)
     contact_id          String
+    lead_id             String
     stage_id            String
     owner_id            String
     expected_close_date DateTime
     created_at          DateTime @default(now())
-    updated_at          DateTime @default(now())
+    updated_at          DateTime @updatedAt
 
     activities     Activities[]
-    Invoice        Invoice[]
     communications Communications[]
+    invoice        Invoice[]
 
     tenant   Tenant   @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
+    leads    Leads   @relation(fields: [lead_id], references: [id], onDelete: Cascade)
     contact  Contacts @relation(fields: [contact_id], references: [id], onDelete: Cascade)
     pipeline Pipeline @relation(fields: [stage_id], references: [id], onDelete: Cascade)
     owner    User     @relation(fields: [owner_id], references: [id], onDelete: Cascade)

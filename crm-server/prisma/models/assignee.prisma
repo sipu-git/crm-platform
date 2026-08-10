@@ -1,0 +1,15 @@
+model Assignee {
+    id          String  @id @default(cuid())
+    tenant_id   String
+    full_name   String
+    designation String
+    department  String?
+    userId      String? @unique
+
+    leads      Leads[]
+    activities Activities[]
+    user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+    tenant Tenant  @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
+
+    @@index([tenant_id])
+}

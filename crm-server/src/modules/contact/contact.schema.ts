@@ -5,6 +5,7 @@ export const createContactSchema = z.object({
   lastName: z.string().min(1),
   email: z.string().email(),
   phone: z.string().min(1),
+  designation: z.string().min(1),
   companyId: z.string().cuid(),
 });
 

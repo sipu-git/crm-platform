@@ -5,115 +5,129 @@ import { leadsRepository } from './lead.repository.js';
 import { LeadStatus } from '../../../generated/prisma/enums.js';
 import { contactsRepository } from '../contact/contact.repository.js';
 import { prisma } from '../../../lib/prisma.js';
+import { companyRepository } from '../company/company.repository.js';
+import { dealRepository } from '../deal/deal.repository.js';
+import { pipelineRepository } from '../deal/pipeline.repository.js';
+import { addDays } from 'date-fns';
+import { assignRepository } from './lead-assignment/assign.repository.js';
+import { CreateAssignInputs } from './lead-assignment/assign.schema.js';
 
 export const leadService = {
-  list(tenantId: string, filters: LeadFilters) {
-    return leadsRepository.findMany(tenantId, filters);
+  async list(tenantId: string, filters: LeadFilters) {
+    const leads = await prisma.$transaction(async (tx) => {
+      return leadsRepository.findMany(tx, tenantId, filters);
+    });
+    if (!leads || leads.length === 0) throw ApiError.notFound('No leads found');
+    return leads;
   },
 
   async getById(tenantId: string, id: string) {
-    const lead = await leadsRepository.findById(tenantId, id);
+    const lead = await prisma.$transaction(async (tx) => {
+      return leadsRepository.findById(tx, tenantId, id);
+    })
     if (!lead) throw ApiError.notFound('Lead not found');
     return lead;
   },
-  async create(tenantId: string, ownerId: string, input: CreateLeadInput) {
-    return await prisma.$transaction(async (tx) => {
-      let company = await tx.company.findFirst({
-        where: {
-          tenant_id: tenantId,
-          name: input.company_name.trim(),
-        },
-      });
-      if (!company) {
-        company = await tx.company.create({
-          data: {
-            tenant_id: tenantId,
-            name: input.company_name.trim(),
-          },
-        });
-      }
-
-      // 3. Check duplicate lead
-      const duplicateLead = await tx.leads.findFirst({
-        where: {
-          tenant_id: tenantId,
-          companyId: company.id,
-          full_name: input.full_name.trim(),
-        },
-      });
-
-      if (duplicateLead) {
-        throw ApiError.conflict("Lead already exists for this company.");
-      }
-
-      // 4. Create lead
-      const lead = await tx.leads.create({
-        data: {
-          tenant_id: tenantId,
-          company_name: company.name,
-          companyId: company.id,
-          full_name: input.full_name.trim(),
-          designation: input.designation,
-          source: input.source,
-          status: LeadStatus.NEW,
-          created_At: new Date(),
-          owner_id: ownerId,
-        },
-      });
-
-      return lead;
-    }).then((lead) => {
-      eventBus.emit("lead.created", {
+  async create(tenantId: string, userId: string, input: CreateLeadInput) {
+    const lead = await prisma.$transaction(async (tx) => {
+      const company = await companyRepository.upsertStubByName(
+        tx,
         tenantId,
-        leadId: lead.id,
+        userId,
+        input.company_name.trim(),
+        input.source
+      );
+
+      const contact = await contactsRepository.create(tx, tenantId, userId, {
+        companyId: company.id,
+        firstName: input.first_name.trim(),
+        lastName: input.last_name?.trim(),
+        designation: input.designation,
+        email: input.email,
+        phone: input.phone,
       });
 
-      return lead;
+      return leadsRepository.create(tx, tenantId, company.id, contact.id, userId, input);
     });
-  },
-  async updateStatus(tenantId: string, id: string, status: LeadStatus) {
-    const result = await leadsRepository.updateStatus(tenantId, id, status);
-    if (result.count === 0) throw ApiError.notFound('Lead not found');
 
-    if (status === 'QUALIFIED') {
-      eventBus.emit('lead.qualified', { leadId: id, tenantId });
-    } else if (status === 'DISQUALIFIED') {
-      eventBus.emit('lead.disqualified', { leadId: id, tenantId });
+    eventBus.emit("lead.created", { leadId: lead.id, tenantId });
+    return lead;
+  },
+
+  async updateStatus(tenantId: string, id: string, status: LeadStatus, actingUserId: string) {
+    const result = await prisma.$transaction(async (tx) => {
+      const lead = await leadsRepository.findById(tx, tenantId, id);
+
+      if (!lead) {
+        throw ApiError.notFound("Lead not found");
+      }
+
+      if (lead.status === status) {
+        throw ApiError.badRequest(`Lead is already ${status}`);
+      }
+
+      const updatedLead = await leadsRepository.updateStatus(tx, tenantId, id, status);
+      let deal = null;
+
+      if (status === "QUALIFIED") {
+        const defaultStage = await pipelineRepository.findDefaultStage(tx, tenantId);
+
+        if (!defaultStage) {
+          throw ApiError.notFound("No pipeline configured for this tenant");
+        }
+
+        deal = await dealRepository.create(tx, tenantId, actingUserId, {
+          title: `${lead.company_name} opportunity`,
+          leadId: lead.id,
+          contactId: lead.contactId,
+          stageId: defaultStage.id,
+          expectedCloseDate: addDays(new Date(), 30),
+          amount: 0,
+        });
+
+      }
+
+      return { lead: updatedLead, deal };
+    });
+
+    if (result.deal) {
+      eventBus.emit("deal.created", { tenantId, dealId: result.deal.id, leadId: id });
     }
-  },
 
-  async updateLead(tenantId: string, id: string, data: Partial<UpdateLeadInput>) {
-    const result = await leadsRepository.updateLead(tenantId, id, data);
-    if (result.count === 0) throw ApiError.notFound('Lead not found');
+    return result;
   },
-
-  async convertToContact(tenantId: string, id: string) {
-    const lead = await leadsRepository.findById(tenantId, id);
+  async updateLead(tenantId: string, id: string, data: any) {
+    const lead = await prisma.$transaction(async (tx) => {
+      const lead = await leadsRepository.findById(tx, tenantId, id);
+      if (!lead) throw ApiError.notFound('Lead not found');
+      return leadsRepository.updateLead(tx, tenantId, id, data);
+    });
     if (!lead) throw ApiError.notFound('Lead not found');
-    if (lead.status !== 'QUALIFIED') {
-      throw ApiError.badRequest('Only qualified leads can be converted');
-    }
-
-    const [firstName, ...rest] = lead.full_name.split(' ');
-    const lastName = rest.join(' ');
-
-    const contact = await contactsRepository.create(tenantId, lead.owner_id, {
-      firstName,
-      lastName,
-      email: lead.email ?? '',
-      phone: lead.phone ?? '',
-      companyId: lead.companyId ?? '',
-      // companyId:lead.,
-    });
-
-    await leadsRepository.updateStatus(tenantId, id, 'CONTRACTED');
-    eventBus.emit('lead.converted', { leadId: id, tenantId, contactId: contact.id });
-
-    return contact;
+    return lead;
   },
-  async assign(tenantId: string, id: string, ownerId: string) {
-    const result = await leadsRepository.assignLead(tenantId, id, ownerId);
-    if (result.count === 0) throw ApiError.notFound('Lead not found');
-    return leadsRepository.findById(tenantId, id);
+  // async convertToContact(tenantId: string, id: string) {
+  //   const lead = await prisma.$transaction(async (tx) => {
+  //     const lead = await leadsRepository.findById(tx, tenantId, id);
+  //     if (!lead) throw ApiError.notFound('Lead not found');
+  //     return leadsRepository.findById(tx, tenantId, id);
+  //   });
+
+  //   await leadsRepository.updateStatus(tenantId, id, 'CONTRACTED');
+  //   eventBus.emit('lead.converted', { leadId: id, tenantId, contactId: contact.id });
+
+  //   return contact;
+  // },
+  async assign(tenantId: string, id: string, assignId: string) {
+    const lead = await prisma.$transaction(async (tx) => {
+      const existingLead = await leadsRepository.findById(tx, tenantId, id);
+      if (!existingLead) throw ApiError.notFound("Lead Record doesn't exist!");
+
+      let assignee = await assignRepository.viewAssignee(tx, tenantId, assignId);
+      if (!assignee) {
+        throw ApiError.badRequest("Assignee not found — create them first via POST /assignees");
+      }
+      return leadsRepository.assignLead(tx, tenantId, id, assignee.id);
+    });
+    return lead;
   },
 };

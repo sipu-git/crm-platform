@@ -7,11 +7,12 @@ model Tenant {
     pipeline       Pipeline[]
     deals          Deal[]
     activities     Activities[]
-    Invoice        Invoice[]
     notification   Notification[]
     lead           Leads[]
+    assignee       Assignee[]
     communications Communications[]
     audits         AuditLogs[]
+    invoice        Invoice[]
     created_at     DateTime         @default(now())
 
     @@index([name])

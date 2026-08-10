@@ -1,29 +1,59 @@
 import { prisma } from "../../../lib/prisma.js";
-import type { CreateDealInput } from "./deal.schema.js";
+import { PrismaClientTx } from "../../shared/utils/prisma.types.js";
+import type { CreateDealInput, UpdateStageInput } from "./deal.schema.js";
 
 export const dealRepository = {
-  findMany(tenantId: string, ownerId?: string) {
-    return prisma.deal.findMany({
+  findMany(tx: PrismaClientTx, tenantId: string, ownerId?: string) {
+    return tx.deal.findMany({
       where: { tenant_id: tenantId, ...(ownerId ? { owner_id: ownerId } : {}) },
-      orderBy: [{ stage_id: "asc" }, { created_at: "asc" }],
-      include: { contact: true },
+      include: {
+        contact: true, pipeline: true,
+        owner: {
+          select: {
+            id: true,
+            full_name: true,
+          },
+        },
+        leads: {
+          include: {
+            assignee: true,
+          }
+        }
+      },
+      orderBy: {
+        created_at: "desc"
+      },
     });
   },
 
-  findById(tenantId: string, id: string) {
-    return prisma.deal.findFirst({
+  findById(tx: PrismaClientTx, tenantId: string, id: string) {
+    return tx.deal.findFirst({
       where: { id, tenant_id: tenantId },
-      include: { contact: true },
+      include: {
+        contact: true, pipeline: true, owner: {
+          select: {
+            id: true,
+            full_name: true,
+          }
+        },
+        leads: {
+          include: {
+            assignee: true,
+          }
+        }
+
+      },
     });
   },
 
-  create(tenantId: string, ownerId: string, data: CreateDealInput) {
-    return prisma.deal.create({
+  create(tx: PrismaClientTx, tenantId: string, ownerId: string, data: CreateDealInput) {
+    return tx.deal.create({
       data: {
         tenant_id: tenantId,
         owner_id: ownerId,
         title: data.title,
-        value: data.value,
+        amount: data.amount,
+        lead_id: data.leadId,
         contact_id: data.contactId,
         stage_id: data.stageId,
         expected_close_date: data.expectedCloseDate,
@@ -31,27 +61,50 @@ export const dealRepository = {
     });
   },
 
- updateStage(tenantId: string,id: string,
-  stageId: string,probability: number,position?: number
-) {
-  return prisma.deal.updateMany({
-    where: { id, tenant_id: tenantId },
-    data: {
-      stage_id: stageId,
-      probability,
-      ...(position !== undefined ? { position } : {}),
-      updated_at: new Date(),
-    },
-  });
-},
-
-  findIdleDeals(tenantId: string, idleSinceDate: Date, closedStageIds: string[] = []) {
-    return prisma.deal.findMany({
-      where: {
-        tenant_id: tenantId,
-        ...(closedStageIds.length ? { stage_id: { notIn: closedStageIds } } : {}),
-        updated_at: { lt: idleSinceDate },
+  findGroupedByStage(tx: PrismaClientTx, tenantId: string) {
+    return tx.pipeline.findMany({
+      where: { tenant_id: tenantId },
+      orderBy: { sort_order: "asc" },
+      include: {
+        deals: {
+          where: { tenant_id: tenantId },
+          include: {
+            contact: { select: { first_name: true, last_name: true } },
+          },
+          orderBy: { created_at: "desc" },
+        },
       },
     });
   },
-};
+
+  moveStage(tx: PrismaClientTx, tenantId: string, dealId: string, stageId: string) {
+    return tx.deal.updateMany({
+      where: {
+        id: dealId,
+        tenant_id: tenantId
+      },
+      data: {
+        stage_id: stageId
+      }
+    })
+  },
+
+  update(tx: PrismaClientTx, tenantId: string, dealId: string, data: UpdateStageInput) {
+    return tx.deal.updateMany({
+      where: {
+        id: dealId,
+        tenant_id: tenantId
+      },
+      data,
+    })
+  },
+
+  delete(tx: PrismaClientTx, tenantId: string, dealId: string) {
+    return tx.deal.deleteMany({
+      where: {
+        id: dealId,
+        tenant_id: tenantId
+      }
+    })
+  }
+}

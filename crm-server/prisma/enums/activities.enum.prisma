@@ -5,6 +5,14 @@ enum ActivityStatus {
     CANCELLED
 }
 
+enum ActivityTypes{
+    CALL
+    EMAIL
+    MEETING
+    TASK
+    NOTE
+}
+
 enum Priority {
     LOW
     MEDIUM

@@ -1,0 +1,15 @@
+import { Router } from 'express';
+import { invoiceController } from './invoice.controller.js';
+import { asyncHandler } from '../../../shared/middleware/asyncHandler.middleware.js';
+// import { requireRole } from '../../../shared/configs/rbac.js';
+import { validate } from '../../../shared/middleware/validate.middeware.js';
+import { updateInvoiceSchema } from './invoice.schema.js';
+
+const router = Router();
+
+router.get('/', asyncHandler(invoiceController.list));
+router.get('/:id', asyncHandler(invoiceController.getById));
+router.patch('/:id/modify-invoice', validate({ body: updateInvoiceSchema }), asyncHandler(invoiceController.modifyInvoice));
+router.patch('/:id/mark-paid', asyncHandler(invoiceController.markPaid));
+
+export default router;

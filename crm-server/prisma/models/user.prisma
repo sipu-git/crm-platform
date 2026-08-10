@@ -1,21 +1,23 @@
 model User {
-    id           String   @id @default(cuid())
+    id           String         @id @default(cuid())
     tenantId     String
-    tenant       Tenant   @relation(fields: [tenantId], references: [id])
+    tenant       Tenant         @relation(fields: [tenantId], references: [id])
     full_name    String
     company_name String
-    email        String   @unique
+    email        String         @unique
     password     String
     role         Role
-    createdAt    DateTime @default(now())
-    updatedAt    DateTime @updatedAt
-
+    createdAt    DateTime       @default(now())
+    updatedAt    DateTime       @updatedAt
     leads        Leads[]
     contacts     Contacts[]
     activities   Activities[]
     deal         Deal[]
+    assignee     Assignee?
     notification Notification[]
-    audits AuditLogs[]
+    audits       AuditLogs[]
+    // company      Company[]
+
     @@unique([tenantId, email])
     @@index([tenantId])
 }

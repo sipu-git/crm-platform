@@ -1,25 +1,28 @@
 model Leads {
-    id                   String     @id @default(cuid())
-    tenant_id            String
-    full_name            String
-    company_name         String
-    designation          String?
-    companyId            String
-    source               Source
-    status               LeadStatus
-    owner_id             String
-    converted_contact_id String?
-    created_At           DateTime
-    updated_at           DateTime   @default(now())
-    email                String?
-    phone                String?
+    id           String     @id @default(cuid())
+    tenant_id    String
+    company_name String
+    companyId    String
+    contactId    String
+    project_name String
+    project_type String?
+    assigned_to  String?
+    source       Source
+    status       LeadStatus
+    created_by   String
+    owner_name   String
+    created_At   DateTime   @default(now())
+    updated_at   DateTime   @updatedAt
 
-    company Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
-    owner   User      @relation(fields: [owner_id], references: [id], onDelete: Cascade)
-    tenant  Tenant    @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
-    contact Contacts? @relation(fields: [converted_contact_id], references: [id], onDelete: Cascade)
+    company  Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+    assignee Assignee? @relation(fields: [assigned_to], references: [id], onDelete: Cascade)
+    creator  User      @relation(fields: [created_by], references: [id], onDelete: Cascade)
+    tenant   Tenant    @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
+    contact  Contacts? @relation(fields: [contactId], references: [id], onDelete: Cascade)
 
     communications Communications[]
+    deal           Deal[]
 
     @@index([tenant_id])
+    @@index([assigned_to])
 }

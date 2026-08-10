@@ -1,0 +1,14 @@
+enum CompanySize {
+  SELF_EMPLOYED
+  SMALL      // 1-50
+  MEDIUM     // 51-200
+  LARGE      // 201-1000
+  ENTERPRISE // 1000+
+}
+
+enum CompanyStatus {
+  ACTIVE
+  INACTIVE
+  PROSPECT
+  CHURNED
+}

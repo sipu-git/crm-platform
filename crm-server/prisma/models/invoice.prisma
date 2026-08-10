@@ -1,24 +1,63 @@
 model Invoice {
-    id             String        @id @default(cuid())
-    tenant_id      String
-    invoice_number String        @unique
-    deal_id        String
-    contact_id     String
-    company_id     String
+    id        String @id @default(cuid())
+    tenant_id String
+
+    invoice_number String
+    invoice_type   InvoiceType
     status         InvoiceStatus
-    issue_date     DateTime
-    due_date       DateTime
-    paid_at        DateTime?
-    tax_amount     Decimal       @default(0)
-    total_amount   Decimal       @default(0)
-    notes          String?
-    created_at     DateTime      @default(now())
-    updated_at     DateTime
 
-    tenant  Tenant   @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
-    deal    Deal     @relation(fields: [deal_id], references: [id], onDelete: Cascade)
-    contact Contacts @relation(fields: [contact_id], references: [id], onDelete: Cascade)
-    company Company  @relation(fields: [company_id], references: [id], onDelete: Cascade)
+    deal_id    String?
+    contact_id String?
+    company_id String?
 
-    @@index([tenant_id, invoice_number])
+    issue_date DateTime
+    due_date   DateTime
+    paid_at    DateTime?
+
+    currency String @default("INR")
+
+    seller_name    String
+    seller_gstin   String?
+    seller_address String?
+    seller_state   String?
+
+    // Buyer snapshot
+    buyer_name      String
+    buyer_gstin     String?
+    buyer_address   String?
+    buyer_state     String?
+    // Amounts
+    subtotal        Decimal @default(0)
+    discount_amount Decimal @default(0)
+    taxable_amount  Decimal @default(0)
+
+    // Taxes
+    cgst_amount Decimal @default(0)
+    sgst_amount Decimal @default(0)
+    igst_amount Decimal @default(0)
+    tax_amount  Decimal @default(0)
+
+    // Final amounts
+    total_amount Decimal @default(0)
+    amount_paid  Decimal @default(0)
+    amount_due   Decimal @default(0)
+
+    notes String?
+    terms String?
+
+    created_at DateTime @default(now())
+    updated_at DateTime @updatedAt
+
+    tenant  Tenant    @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
+    deal    Deal?     @relation(fields: [deal_id], references: [id], onDelete: SetNull)
+    contact Contacts? @relation(fields: [contact_id], references: [id], onDelete: SetNull)
+    company Company?  @relation(fields: [company_id], references: [id], onDelete: SetNull)
+
+    items InvoiceItem[]
+
+    @@unique([tenant_id, invoice_number])
+    @@index([tenant_id, status])
+    @@index([tenant_id, deal_id])
+    @@index([tenant_id, contact_id])
+    @@index([tenant_id, company_id])
 }

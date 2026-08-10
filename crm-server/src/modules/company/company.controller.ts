@@ -3,7 +3,6 @@ import { createCompanySchema, updateCompanySchema } from "./company.schema.js";
 import { companyService } from "./company.service.js";
 import { successResponse } from "../../shared/utils/ApiResponse.js";
 
-
 export const companyController = {
     async getById(req: Request, res: Response) {
         const id = req.params.id as any;
@@ -14,11 +13,12 @@ export const companyController = {
         return res.status(200).json(successResponse("company found successfully", lead));
       },
     
-    async create(req: Request, res: Response) {
-        const input = createCompanySchema.parse(req.body);
-        const company = await companyService.create(req.tenantId! , input);
-        return res.status(201).json(successResponse("company created successfully", company));
-    },
+    // async create(req: Request, res: Response) {
+    //     const input = createCompanySchema.parse(req.body);
+    //     const company = await companyService.create(req.tenantId! , input);
+    //     return res.status(201).json(successResponse("company created successfully", company));
+    // },
+
     async viewListCompanies(req: Request, res: Response) {
         const companies = await companyService.listCompanies(req.tenantId!);
         return res.status(200).json(successResponse("companies found successfully", companies));

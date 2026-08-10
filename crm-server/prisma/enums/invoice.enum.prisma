@@ -5,3 +5,8 @@ enum InvoiceStatus {
     OVERDUE
     CANCELLED
 }
+
+enum InvoiceType {
+    B2B
+    B2C
+}

@@ -99,24 +99,25 @@ export const communicationService = {
       throw err;
     }
   },
-  async viewCommunications(tenantId: string,leadId:string) {
+  async viewCommunications(tenantId: string, leadId: string) {
     const findLead = await prisma.leads.findFirst({
-      where:{
-        id:leadId,
-        tenant_id:tenantId
-      }
-    })
-    if(!findLead){
-      throw new ApiError(404,"Lead not found")
+      where: { id: leadId, tenant_id: tenantId },
+      include: { contact: true },
+    });
+
+    if (!findLead) {
+      throw new ApiError(404, "Lead not found");
     }
-    return await prisma.communications.findMany({
-      where: {
-        lead_id:leadId,
-        tenant_id:tenantId
-      },
-      orderBy: {
-        created_at: "desc",
-      },
-    })
+
+    const communications = await prisma.communications.findMany({
+      where: { lead_id: leadId, tenant_id: tenantId },
+      include: { contact: true },
+      orderBy: { created_at: "desc" },
+    });
+
+    return {
+      contact: findLead.contact,
+      communications,
+    };
   },
 };

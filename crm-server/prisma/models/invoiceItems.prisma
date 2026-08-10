@@ -1,0 +1,34 @@
+model InvoiceItem {
+  id              String   @id @default(cuid())
+  invoice_id      String
+//   product_id      String?
+  description     String
+  quantity        Decimal?  @default(1)
+  unit_price      Decimal?
+  discount_amount Decimal  @default(0)
+  // Taxable value
+  taxable_amount  Decimal
+  // GST
+  tax_rate        Decimal  @default(0)
+  cgst_rate       Decimal  @default(0)
+  cgst_amount     Decimal  @default(0)
+  sgst_rate       Decimal  @default(0)
+  sgst_amount     Decimal  @default(0)
+  igst_rate       Decimal  @default(0)
+  igst_amount     Decimal  @default(0)
+
+  // Final line total
+  total_amount    Decimal
+
+  // Indian tax classification
+  hsn_code        String?
+  sac_code        String?
+
+  created_at      DateTime @default(now())
+  updated_at      DateTime @updatedAt
+
+  invoice         Invoice  @relation(fields: [invoice_id],references: [id],onDelete: Cascade)
+//   Product         Product? @relation(fields: [product_id],references: [id],onDelete: SetNull)
+
+  @@index([invoice_id])
+}

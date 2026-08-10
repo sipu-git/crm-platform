@@ -1,39 +1,45 @@
-import { prisma } from "../../../lib/prisma.js";
+import { PrismaClientTx } from "../../shared/utils/prisma.types";
 
 export const pipelineRepository = {
-  findById(tenantId: string, id: string) {
-    return prisma.pipeline.findFirst({
-      where: { id, tenant_id: tenantId },
-    });
-  },
-
-  findMany(tenantId: string) {
-    return prisma.pipeline.findMany({
-      where: { tenant_id: tenantId },
-      orderBy: { sort_order: "asc" },
-    });
-  },
-
-  create(tenantId: string, name: string, sortOrder: number) {
-    return prisma.pipeline.create({
-      data: {
+  findDefaultStage(tx: PrismaClientTx, tenantId: string) {
+    return tx.pipeline.findFirst({
+      where: {
         tenant_id: tenantId,
-        name,
-        sort_order: sortOrder,
+        is_won: false,
+        is_lost: false,
       },
-    });
+      orderBy: {
+        sort_order: "asc"
+      }
+    })
   },
-
-  update(tenantId: string, id: string, data: { name?: string; sort_order?: number }) {
-    return prisma.pipeline.updateMany({
-      where: { id, tenant_id: tenantId },
-      data,
-    });
+  findAllStages(tx: PrismaClientTx, tenantId: string) {
+    return tx.pipeline.findMany({
+      where: {
+        tenant_id: tenantId,
+      },
+      orderBy: {
+        sort_order: "asc"
+      }
+    })
   },
-
-  delete(tenantId: string, id: string) {
-    return prisma.pipeline.deleteMany({
-      where: { id, tenant_id: tenantId },
-    });
+  findStageById(tx: PrismaClientTx, tenantId: string, stageId: string) {
+    return tx.pipeline.findFirst({
+      where: {
+        tenant_id: tenantId,
+        id: stageId,
+      },
+    })
   },
-};
+  seedDefaultStages(tx: PrismaClientTx, tenantId: string) {
+    return tx.pipeline.createMany({
+      data: [
+        { tenant_id: tenantId, name: "Qualified", sort_order: 1, probability: 10 },
+        { tenant_id: tenantId, name: "Proposal Sent", sort_order: 2, probability: 30 },
+        { tenant_id: tenantId, name: "Negotiation", sort_order: 3, probability: 60 },
+        { tenant_id: tenantId, name: "Won", sort_order: 4, probability: 100, is_won: true },
+        { tenant_id: tenantId, name: "Lost", sort_order: 5, probability: 0, is_lost: true },
+      ],
+    })
+  }
+}

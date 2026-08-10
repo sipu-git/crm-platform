@@ -20,12 +20,6 @@ export const contactController = {
     res.json(contact);
   },
 
-  async create(req: Request, res: Response) {
-    const input = createContactSchema.parse(req.body);
-    const contact = await contactService.create(req.tenantId!, req.userId!, input);
-    res.status(201).json(contact);
-  },
-
   async update(req: Request, res: Response) {
     const input = updateContactSchema.parse(req.body);
     const contact = await contactService.update(req.tenantId!, getId(req), input);

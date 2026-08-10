@@ -1,10 +1,28 @@
 model Company {
-    id         String   @id @default(cuid())
-    tenant_id  String
-    name       String
-    industry   String?
-    website    Json?
-    created_at DateTime @default(now())
+    id             String        @id @default(cuid())
+    tenant_id      String
+    name           String
+    legal_name     String?
+    industry       String?
+    size           CompanySize?
+    annual_revenue Decimal?      @db.Decimal(15, 2)
+    company_status CompanyStatus @default(ACTIVE)
+    website        String?
+    email          String?
+    phone          String?
+    address_line1  String?
+    address_line2  String?
+    city           String?
+    state          String?
+    country        String?
+    postal_code    String?
+    source         String?
+    tags           String[]
+    custom_fields  Json?
+
+    owner_name     String
+    created_at     DateTime @default(now())
+    updated_at   DateTime @updatedAt
 
     contact        Contacts[]
     activities     Activities[]
@@ -13,6 +31,7 @@ model Company {
     communications Communications[]
 
     tenant Tenant @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
-
-    @@index([tenant_id])
+  
+    @@unique([tenant_id,name])
+    @@index([tenant_id,legal_name])
 }

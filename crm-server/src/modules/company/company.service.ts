@@ -1,36 +1,42 @@
 import { CreateCompanyBody } from "./company.schema.js";
 import { companyRepository } from "./company.repository.js";
 import { ApiError } from "../../shared/utils/ApiError.js";
+import { prisma } from "../../../lib/prisma.js";
 
 export const companyService = {
-    async create(tenantId: string, data: CreateCompanyBody) {
-        const existing = await companyRepository.findCompany(tenantId, data.name);
-        if (existing) {
-            throw ApiError.badRequest("Company already exists") || new Error("Company already exists");
-        }
-        return await companyRepository.create(tenantId, data);
+    async listCompanies(tenantId: string) {
+        const company = await prisma.$transaction(async (tx) => {
+            return companyRepository.findManyCompanies(tx, tenantId);
+        });
+        if (!company || company.length === 0) throw ApiError.notFound('No companies found');
+        return company;
     },
-    listCompanies(tenantId: string) {
-        const existing = companyRepository.findManyCompanies(tenantId);
-        if(!existing) throw ApiError.notFound("No companies found");
-        return existing;
+    async findCompany(tenantId: string, id: string) {
+        const company = await prisma.$transaction(async (tx) => {
+            return companyRepository.findCompany(tx, tenantId, id);
+        });
+        if (!company) throw ApiError.notFound('Company not found');
+        return company;
     },
-    findCompany(tenantId: string, id: string) {
-        const existing = companyRepository.findCompany(tenantId, id);
-        if(!existing) throw ApiError.notFound("Company not found");
-        return companyRepository.findCompany(tenantId, id);
+    async deleteCompany(tenantId: string, id: string) {
+        const companty = await prisma.$transaction(async (tx) => {
+            return companyRepository.delete(tx, tenantId, id);
+        });
+        if (!companty) throw ApiError.notFound('Company not found');
+        return companty;
     },
-    deleteCompany(tenantId: string, id: string) {
-        const existing = companyRepository.findCompany(tenantId, id);
-        if(!existing) throw ApiError.notFound("Company not found");
-        return companyRepository.delete(tenantId, id);
+    async filterCompany(tenantId: string, filters: any) {
+        const company = await prisma.$transaction(async (tx) => {
+            return companyRepository.filterCompany(tx, tenantId, filters);
+        });
+        if (!company || company.length === 0) throw ApiError.notFound('No companies found');
+        return company;
     },
-    filterCompany(tenantId: string, filters: any) {
-        return companyRepository.filterCompany(tenantId, filters);
+    async modify(tenantId: string, id: string, data: any) {
+        const company = await prisma.$transaction(async (tx) => {
+            return companyRepository.modify(tx, tenantId, id, data);
+        });
+        if (!company) throw ApiError.notFound('Company not found');
+        return company;
     },
-    modify(tenantId: string, id: string, data: any) {
-        const existing = companyRepository.findCompany(tenantId, id);
-        if(!existing) throw ApiError.notFound("Company not found");
-        return companyRepository.modify(tenantId, id, data);
-    }
 };

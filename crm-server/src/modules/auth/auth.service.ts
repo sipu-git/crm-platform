@@ -2,6 +2,7 @@ import { prisma } from '../../../lib/prisma.js';
 import { eventBus } from '../../shared/event-bus/index.js';
 import { ApiError } from '../../shared/utils/ApiError.js';
 import { signAccessToken, signRefreshToken, verifyRefreshToken } from '../../shared/utils/jwt.js';
+import { pipelineRepository } from '../deal/pipeline.repository.js';
 import type { RegisterInput, LoginInput } from './auth.schema.js';
 import bcrypt from 'bcrypt'
 
@@ -9,19 +10,25 @@ export const authService = {
   async register(input: RegisterInput) {
     const existingTenantUser = await prisma.user.findFirst({ where: { email: input.email } });
     if (existingTenantUser) throw ApiError.badRequest('An account with this email already exists');
-
-    const tenant = await prisma.tenant.create({ data: { name: input.company_name } });
     const passwordHash = await bcrypt.hash(input.password, 10);
 
-    const user = await prisma.user.create({
-      data: {
-        tenantId: tenant.id,
-        full_name: input.full_name,
-        company_name: input.company_name,
-        email: input.email,
-        password: passwordHash,
-        role: 'ADMIN',
-      },
+    const { tenant, user } = await prisma.$transaction(async (tx) => {
+      const tenant = await tx.tenant.create({ data: { name: input.company_name } });
+
+      await pipelineRepository.seedDefaultStages(tx, tenant.id);
+
+      const user = await tx.user.create({
+        data: {
+          tenantId: tenant.id,
+          full_name: input.full_name,
+          company_name: input.company_name,
+          email: input.email,
+          password: passwordHash,
+          role: 'ADMIN',
+        },
+      });
+
+      return { tenant, user };
     });
 
     eventBus.emit('user.registered', { userId: user.id, tenantId: tenant.id });

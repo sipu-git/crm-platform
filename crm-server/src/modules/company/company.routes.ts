@@ -5,7 +5,7 @@ import { authGuard } from '../../shared/middleware/authGuard.middleware.js';
 import { tenantContext } from '../../shared/middleware/tenantContext.middleware.js';
 import { asyncHandler } from '../../shared/middleware/asyncHandler.middleware.js';
 import { validate } from '../../shared/middleware/validate.middeware.js';
-import { createCompanySchema, idParamSchema, updateCompanySchema } from './company.schema.js';
+import { idParamSchema, updateCompanySchema } from './company.schema.js';
 
 const router = express.Router();
 router.use(authGuard, tenantContext);
@@ -13,7 +13,7 @@ router.use(authGuard, tenantContext);
 router.get('/view-company-list', asyncHandler(companyController.viewListCompanies));
 router.get('/filter-company-list', asyncHandler(companyController.filters));
 router.get('/:id', validate({ params: idParamSchema }), asyncHandler(companyController.getById));
-router.post('/', validate({ body: createCompanySchema }), asyncHandler(companyController.create));
+// router.post('/', validate({ body: createCompanySchema }), asyncHandler(companyController.create));
 router.patch('/:id', validate({ body: updateCompanySchema }), asyncHandler(companyController.update));
 router.delete('/:id', validate({ params: idParamSchema }), asyncHandler(companyController.delete));
 
