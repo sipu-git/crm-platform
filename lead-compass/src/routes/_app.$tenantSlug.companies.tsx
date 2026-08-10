@@ -101,89 +101,92 @@ export function CompaniesPage() {
         )}
 
         {!!filtered.length && (
-          <div className="overflow-hidden rounded-lg border bg-card">
-            <table className="w-full text-sm">
-              <thead className="bg-muted/40 text-left text-xs uppercase text-muted-foreground">
-                <tr>
-                  <th className="px-3 py-2 font-medium">Company</th>
-                  <th className="px-3 py-2 font-medium">Industry</th>
-                  <th className="px-3 py-2 font-medium">Size</th>
-                  <th className="px-3 py-2 font-medium">Status</th>
-                  <th className="px-3 py-2 font-medium">Location</th>
-                  <th className="px-3 py-2 font-medium">Website</th>
-                  <th className="px-3 py-2 font-medium">Owner</th>
-                  <th className="px-3 py-2 text-right font-medium">Total leads</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y">
-                {filtered.map((company) => (
-                  <tr
-                    key={company.id}
-                    className="cursor-pointer hover:bg-muted/40"
-                    onClick={() => navigate(`/${tenantSlug}/company/${company.id}`)}
-                  >
-                    <td className="px-3 py-3 font-medium">
-                      <span className="flex items-center gap-2">
-                        <span className="grid h-7 w-7 place-items-center rounded bg-primary/10 text-primary">
-                          <Building2 className="h-4 w-4" />
-                        </span>
-                        {company.name}
-                      </span>
-                    </td>
-
-                    <td className="px-3 py-3 text-muted-foreground">
-                      {company.industry || "—"}
-                    </td>
-
-                    <td className="px-3 py-3 text-muted-foreground">
-                      {company.size || "—"}
-                    </td>
-
-                    <td className="px-3 py-3">
-                      {company.company_status ? (
-                        <Badge
-                          variant="outline"
-                          className={statusVariant[company.company_status] ?? ""}
-                        >
-                          {company.company_status}
-                        </Badge>
-                      ) : (
-                        "—"
-                      )}
-                    </td>
-
-                    <td className="px-3 py-3 text-muted-foreground">
-                      {formatLocation(company.city, company.country)}
-                    </td>
-
-                    <td className="px-3 py-3 text-muted-foreground">
-                      {company.website ? (
-                        <a
-                          href={company.website}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="inline-flex items-center gap-1 text-primary hover:underline"
-                          onClick={(event) => event.stopPropagation()}
-                        >
-                          <Globe className="h-3.5 w-3.5" />
-                          {company.website.replace(/^https?:\/\//, "")}
-                        </a>
-                      ) : (
-                        "—"
-                      )}
-                    </td>
-
-                    <td className="px-3 py-3 text-muted-foreground">
-                      {company.leads?.[0]?.owner_name || "—"}
-                    </td>
-
-                    <td className="px-3 py-3 text-right font-medium">
-                      {company._count?.leads ?? 0}
-                    </td>
+          <div className="overflow-hidden rounded-md border bg-card">
+            <div className="overflow-x-auto scroller-hide rounded-lg border bg-card">
+              <table className="w-full text-sm">
+                <thead className="bg-muted/40 text-left text-xs uppercase text-muted-foreground">
+                  <tr>
+                    <th className="px-3 py-2 font-medium">Company</th>
+                    <th className="px-3 py-2 font-medium">Industry</th>
+                    <th className="px-3 py-2 font-medium">Size</th>
+                    <th className="px-3 py-2 font-medium">Status</th>
+                    <th className="px-3 py-2 font-medium">Location</th>
+                    <th className="px-3 py-2 font-medium">Website</th>
+                    <th className="px-3 py-2 font-medium">Owner</th>
+                    <th className="px-3 py-2 text-right font-medium">Total leads</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody className="divide-y">
+                  {filtered.map((company) => (
+                    <tr
+                      key={company.id}
+                      className="cursor-pointer hover:bg-muted/40"
+                      onClick={() => navigate(`/${tenantSlug}/company/${company.id}`)}
+                    >
+                      <td className="px-3 py-3 font-medium">
+                        <span className="flex items-center gap-2">
+                          <span className="grid h-7 w-7 place-items-center rounded bg-primary/10 text-primary">
+                            <Building2 className="h-4 w-4" />
+                          </span>
+                          {company.name}
+                        </span>
+                      </td>
+
+                      <td className="px-3 py-3 text-muted-foreground">
+                        {company.industry || "—"}
+                      </td>
+
+                      <td className="px-3 py-3 text-muted-foreground">
+                        {company.size || "—"}
+                      </td>
+
+                      <td className="px-3 py-3">
+                        {company.company_status ? (
+                          <Badge
+                            variant="outline"
+                            className={statusVariant[company.company_status] ?? ""}
+                          >
+                            {company.company_status}
+                          </Badge>
+                        ) : (
+                          "—"
+                        )}
+                      </td>
+
+                      <td className="px-3 py-3 text-muted-foreground">
+                        {formatLocation(company.city, company.country)}
+                      </td>
+
+                      <td className="px-3 py-3 text-muted-foreground">
+                        {company.website ? (
+                          <a
+                            href={company.website}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="inline-flex items-center gap-1 text-primary hover:underline"
+                            onClick={(event) => event.stopPropagation()}
+                          >
+                            <Globe className="h-3.5 w-3.5" />
+                            {company.website.replace(/^https?:\/\//, "")}
+                          </a>
+                        ) : (
+                          "—"
+                        )}
+                      </td>
+
+                      <td className="px-3 py-3 text-muted-foreground">
+                        {company.leads?.[0]?.owner_name || "—"}
+                      </td>
+
+                      <td className="px-3 py-3 text-right font-medium">
+                        {company._count?.leads ?? 0}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
           </div>
         )}
       </div>

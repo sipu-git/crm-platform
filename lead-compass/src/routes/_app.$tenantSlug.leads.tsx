@@ -92,52 +92,54 @@ export function LeadsPage() {
           />
         )}
         {filtered.length > 0 && (
-          <div className="overflow-hidden rounded-lg border bg-card">
-            <table className="w-full text-sm">
-              <thead className="bg-muted/40 text-left text-xs uppercase text-muted-foreground">
-                <tr>
-                  <th className="px-3 py-2 font-medium">Name</th>
-                  <th className="px-3 py-2 font-medium">Company</th>
-                  <th className="px-3 py-2 font-medium">Designation</th>
-                  <th className="px-3 py-2 font-medium">Source</th>
-                  <th className="px-3 py-2 font-medium">Status</th>
-                  <th className="px-3 py-2 font-medium">Email</th>
-                  <th className="px-3 py-2 font-medium">Phone</th>
-                  <th className="px-3 py-2 font-medium">Project</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y">
-                {filtered.map((l) => (
-                  <tr
-                    key={l.id}
-                    className="cursor-pointer hover:bg-muted/40"
-                    onClick={() => navigate(`/${tenantSlug}/lead/${l.id}`)}
-                  >
-                    <td className="px-3 py-2 font-medium">{l.contact?.first_name} {l.contact?.last_name}</td>
-                    <td className="px-3 py-2 text-muted-foreground">{l.company_name}</td>
-                    <td className="px-3 py-2 text-muted-foreground">{l.contact?.designation}</td>
-                    <td className="px-3 py-2 capitalize text-muted-foreground">
-                      {l.source.toLowerCase()}
-                    </td>
-                    <td className="px-3 py-2">
-                      <span
-                        className="inline-flex rounded-full px-2 py-0.5 text-xs font-medium capitalize"
-                        style={{
-                          backgroundColor: `${LEAD_STATUS_COLORS[l.status]}22`,
-                          color: LEAD_STATUS_COLORS[l.status],
-                        }}
-                      >
-                        {l.status.toLowerCase()}
-                      </span>
-                    </td>
-                    <td className="px-3 py-2 text-muted-foreground">{l.contact?.email}</td>
-                    <td className="px-3 py-2 text-muted-foreground">{l.contact?.phone}</td>
-                    <td className="px-3 py-2 text-muted-foreground">{l.project_name}</td>
-                    
+          <div className="overflow-hidden rounded-md border bg-card">
+            <div className="overflow-x-auto scroller-hide rounded-lg border bg-card">
+              <table className="w-full text-sm">
+                <thead className="bg-muted/40 text-left text-xs uppercase text-muted-foreground">
+                  <tr>
+                    <th className="px-3 py-2 font-medium">Name</th>
+                    <th className="px-3 py-2 font-medium">Company</th>
+                    <th className="px-3 py-2 font-medium">Designation</th>
+                    <th className="px-3 py-2 font-medium">Source</th>
+                    <th className="px-3 py-2 font-medium">Status</th>
+                    <th className="px-3 py-2 font-medium">Email</th>
+                    <th className="px-3 py-2 font-medium">Phone</th>
+                    <th className="px-3 py-2 font-medium">Project</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody className="divide-y">
+                  {filtered.map((l) => (
+                    <tr
+                      key={l.id}
+                      className="cursor-pointer hover:bg-muted/40"
+                      onClick={() => navigate(`/${tenantSlug}/lead/${l.id}`)}
+                    >
+                      <td className="px-3 py-2 font-medium">{l.contact?.first_name} {l.contact?.last_name}</td>
+                      <td className="px-3 py-2 text-muted-foreground">{l.company_name}</td>
+                      <td className="px-3 py-2 text-muted-foreground">{l.contact?.designation}</td>
+                      <td className="px-3 py-2 capitalize text-muted-foreground">
+                        {l.source.toLowerCase()}
+                      </td>
+                      <td className="px-3 py-2">
+                        <span
+                          className="inline-flex rounded-full px-2 py-0.5 text-xs font-medium capitalize"
+                          style={{
+                            backgroundColor: `${LEAD_STATUS_COLORS[l.status]}22`,
+                            color: LEAD_STATUS_COLORS[l.status],
+                          }}
+                        >
+                          {l.status.toLowerCase()}
+                        </span>
+                      </td>
+                      <td className="px-3 py-2 text-muted-foreground">{l.contact?.email}</td>
+                      <td className="px-3 py-2 text-muted-foreground">{l.contact?.phone}</td>
+                      <td className="px-3 py-2 text-muted-foreground">{l.project_name}</td>
+
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         )}
       </div>

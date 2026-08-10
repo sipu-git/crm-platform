@@ -137,6 +137,15 @@
   --sidebar-ring: oklch(0.607 0.222 276);
 }
 
+.scrollbar-hide {
+  -ms-overflow-style: none;   /* IE and legacy Edge */
+  scrollbar-width: none;      /* Firefox */
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;              /* Chrome, Safari, and other WebKit/Blink browsers */
+}
+
 @layer base {
   * {
     border-color: var(--color-border);

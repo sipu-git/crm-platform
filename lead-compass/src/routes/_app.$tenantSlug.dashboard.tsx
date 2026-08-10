@@ -16,12 +16,12 @@ import { fetchInvoices, selectInvoices, selectInvoicesLoading } from "@/features
 
 function fmtMoney(n: number) {
   return new Intl.NumberFormat("en-US", {
-    style: "currency", currency: "USD", maximumFractionDigits: 0,
+    style: "currency", currency: "INR", maximumFractionDigits: 0,
   }).format(n);
 }
 
 export function DashboardPage() {
-const dispatch = useDispatch<AppDispatch>();
+  const dispatch = useDispatch<AppDispatch>();
   const deals = useSelector(selectDeals);
   const dealsLoading = useSelector(selectDealsLoading);
 
@@ -44,7 +44,7 @@ const dispatch = useDispatch<AppDispatch>();
 
   const kpis = useMemo(() => {
     const openDeals = deals.filter((d) => !d.pipeline?.is_won && !d.pipeline?.is_lost);
-    const pipelineValue = openDeals.reduce((sum, d) => sum + (d.amount || 0), 0);
+    const pipelineValue = openDeals.reduce((sum, d) => sum + Number(d.amount || 0), 0);
 
     const now = new Date();
     const overdueInvoices = invoices.filter(
@@ -65,7 +65,7 @@ const dispatch = useDispatch<AppDispatch>();
       const stageName = d.pipeline?.name ?? "Unknown";
       const entry = map.get(stageName) || { count: 0, value: 0 };
       entry.count += 1;
-      entry.value += d.amount || 0;
+      entry.value += Number(d.amount || 0);
       map.set(stageName, entry);
     });
     return Array.from(map.entries()).map(([stage, v]) => ({ stage, ...v }));
@@ -76,12 +76,10 @@ const dispatch = useDispatch<AppDispatch>();
     for (let i = 5; i >= 0; i--) {
       map.set(format(startOfMonth(subMonths(new Date(), i)), "MMM yyyy"), 0);
     }
-    invoices
-      .filter((inv) => inv.issue_date)
-      .forEach((inv) => {
-        const key = format(startOfMonth(new Date(inv.issue_date)), "MMM yyyy");
-        if (map.has(key)) map.set(key, (map.get(key) ?? 0) + Number(inv.total_amount || 0));
-      });
+    invoices.filter((inv) => inv.issue_date && inv.status === "PAID").forEach((inv) => {
+      const key = format(startOfMonth(new Date(inv.issue_date)), "MMM yyyy");
+      if (map.has(key)) map.set(key, (map.get(key) ?? 0) + Number(inv.total_amount || 0));
+    });
     return Array.from(map.entries()).map(([month, revenue]) => ({ month, revenue }));
   }, [invoices]);
 
@@ -118,8 +116,17 @@ const dispatch = useDispatch<AppDispatch>();
                       <LineChart data={trend}>
                         <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
                         <XAxis dataKey="month" stroke="var(--muted-foreground)" fontSize={12} />
-                        <YAxis stroke="var(--muted-foreground)" fontSize={12} />
-                        <Tooltip contentStyle={{ background: "var(--popover)", border: "1px solid var(--border)", borderRadius: 8, fontSize: 12 }} />
+                        <YAxis
+                          stroke="var(--muted-foreground)"
+                          fontSize={12}
+                          tickFormatter={(value: number) => fmtMoney(value)}
+                          width={80}
+                        />
+                        <Tooltip
+                          contentStyle={{ background: "var(--popover)", border: "1px solid var(--border)", borderRadius: 8, fontSize: 12 }}
+                          formatter={(value: number) => [fmtMoney(value), "Revenue"]}
+                          labelFormatter={(label: string) => label}
+                        />
                         <Line type="monotone" dataKey="revenue" stroke="var(--primary)" strokeWidth={2} dot={{ r: 3 }} />
                       </LineChart>
                     </ResponsiveContainer>

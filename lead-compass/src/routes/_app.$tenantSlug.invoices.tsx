@@ -53,7 +53,8 @@ export function InvoicesPage() {
           <EmptyState title="No invoices yet" description="Create your first invoice to get paid faster." />
         )}
         {invoices && invoices.length > 0 && (
-          <div className="overflow-hidden rounded-lg border bg-card">
+          <div className="overflow-hidden rounded-md border bg-card">
+            <div className="overflow-x-auto scroller-hide rounded-lg border bg-card">
             <table className="w-full text-sm">
               <thead className="bg-muted/40 text-left text-xs uppercase text-muted-foreground">
                 <tr>
@@ -95,6 +96,7 @@ export function InvoicesPage() {
                 ))}
               </tbody>
             </table>
+          </div>
           </div>
         )}
       </div>

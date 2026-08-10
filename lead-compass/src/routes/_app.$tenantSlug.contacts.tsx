@@ -6,8 +6,10 @@ import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { deleteContact, fetchContacts } from "@/features/contacts/slice";
 import { PageHeader, EmptyState, TableSkeleton } from "@/components/ui-kit";
 import { Button } from "@/components/ui/button";
-import {AlertDialog,AlertDialogAction,AlertDialogCancel,AlertDialogContent,AlertDialogDescription,
-  AlertDialogFooter,AlertDialogHeader,AlertDialogTitle} from "@/components/ui/alert-dialog";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription,
+  AlertDialogFooter, AlertDialogHeader, AlertDialogTitle
+} from "@/components/ui/alert-dialog";
 import { formatFullName } from "@/hooks/use-format";
 
 export function ContactsPage() {
@@ -50,59 +52,61 @@ export function ContactsPage() {
         )}
 
         {!!contacts.length && (
-          <div className="overflow-hidden rounded-lg border bg-card">
-            <table className="w-full text-sm">
-              <thead className="bg-muted/40 text-left text-xs uppercase text-muted-foreground">
-                <tr>
-                  <th className="px-3 py-2 font-medium">Name</th>
-                  <th className="px-3 py-2 font-medium">Designation</th>
-                  <th className="px-3 py-2 font-medium">Email</th>
-                  <th className="px-3 py-2 font-medium">Phone</th>
-                  <th className="px-3 py-2" />
-                </tr>
-              </thead>
-              <tbody className="divide-y">
-                {contacts.map((contact) => (
-                  <tr key={contact.id} className="hover:bg-muted/40">
-                    <td className="px-3 py-3 font-medium">
-                      {formatFullName(contact.first_name, contact.last_name)}
-                    </td>
-                    <td className="px-3 py-3 text-muted-foreground">
-                      {contact.designation || "—"}
-                    </td>
-                    <td className="px-3 py-3 text-muted-foreground">
-                      {contact.email ? (
-                        <span className="inline-flex items-center gap-1">
-                          <Mail className="h-3.5 w-3.5" />
-                          {contact.email}
-                        </span>
-                      ) : (
-                        "—"
-                      )}
-                    </td>
-                    <td className="px-3 py-3 text-muted-foreground">
-                      {contact.phone ? (
-                        <span className="inline-flex items-center gap-1">
-                          <Phone className="h-3.5 w-3.5" />
-                          {contact.phone}
-                        </span>
-                      ) : (
-                        "—"
-                      )}
-                    </td>
-                    <td className="px-3 py-3 text-right">
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        onClick={() => setPendingDeleteId(contact.id)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </td>
+          <div className="overflow-hidden rounded-md border bg-card">
+            <div className="overflow-x-auto scroller-hide rounded-lg border bg-card">
+              <table className="w-full text-sm">
+                <thead className="bg-muted/40 text-left text-xs uppercase text-muted-foreground">
+                  <tr>
+                    <th className="px-3 py-2 font-medium">Name</th>
+                    <th className="px-3 py-2 font-medium">Designation</th>
+                    <th className="px-3 py-2 font-medium">Email</th>
+                    <th className="px-3 py-2 font-medium">Phone</th>
+                    <th className="px-3 py-2" />
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody className="divide-y">
+                  {contacts.map((contact) => (
+                    <tr key={contact.id} className="hover:bg-muted/40">
+                      <td className="px-3 py-3 font-medium">
+                        {formatFullName(contact.first_name, contact.last_name)}
+                      </td>
+                      <td className="px-3 py-3 text-muted-foreground">
+                        {contact.designation || "—"}
+                      </td>
+                      <td className="px-3 py-3 text-muted-foreground">
+                        {contact.email ? (
+                          <span className="inline-flex items-center gap-1">
+                            <Mail className="h-3.5 w-3.5" />
+                            {contact.email}
+                          </span>
+                        ) : (
+                          "—"
+                        )}
+                      </td>
+                      <td className="px-3 py-3 text-muted-foreground">
+                        {contact.phone ? (
+                          <span className="inline-flex items-center gap-1">
+                            <Phone className="h-3.5 w-3.5" />
+                            {contact.phone}
+                          </span>
+                        ) : (
+                          "—"
+                        )}
+                      </td>
+                      <td className="px-3 py-3 text-right">
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          onClick={() => setPendingDeleteId(contact.id)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         )}
       </div>

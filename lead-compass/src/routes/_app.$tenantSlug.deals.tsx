@@ -16,7 +16,7 @@ type ViewMode = "kanban" | "table";
 function fmtMoney(n: number) {
   return new Intl.NumberFormat("en-US", {
     style: "currency",
-    currency: "USD",
+    currency: "INR",
     maximumFractionDigits: 0,
   }).format(n);
 }
@@ -132,7 +132,7 @@ function KanbanView({ tenantSlug, board }: { tenantSlug: string; board: DealBoar
 
 function KanbanColumn({ column, tenantSlug }: { column: DealBoardColumn; tenantSlug: string }) {
   const { setNodeRef, isOver } = useDroppable({ id: column.id });
-  const total = column.deals.reduce((sum, d) => sum + d.amount, 0);
+  const total = column.deals.reduce((sum, d) => sum + Number(d.amount || 0), 0);
 
   return (
     <div
@@ -219,8 +219,9 @@ function DealCard({deal,tenantSlug,dragging}: {deal: Deal;tenantSlug: string;dra
 
 function TableView({ deals, tenantSlug }: { deals: Deal[]; tenantSlug: string }) {
   return (
-    <div className="overflow-x-auto rounded-lg border bg-card">
-      <table className="w-full min-w-[640px] text-sm">
+    <div className="overflow-hidden rounded-md border bg-card">
+    <div className="overflow-x-auto scroller-hide rounded-lg border bg-card">
+      <table className="w-full text-sm">
         <thead className="bg-muted/40 text-left text-xs uppercase text-muted-foreground">
           <tr>
             <th className="px-3 py-2 font-medium">Deal</th>
@@ -268,6 +269,7 @@ function TableView({ deals, tenantSlug }: { deals: Deal[]; tenantSlug: string })
           ))}
         </tbody>
       </table>
+    </div>
     </div>
   );
 }
