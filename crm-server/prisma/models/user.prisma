@@ -16,8 +16,9 @@ model User {
     assignee     Assignee?
     notification Notification[]
     audits       AuditLogs[]
-    // company      Company[]
-
+    deviceToken  DeviceToken[]
+    company      Company[]
+    
     @@unique([tenantId, email])
     @@index([tenantId])
 }

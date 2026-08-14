@@ -1,4 +1,4 @@
-import { Lead } from "../leads/lead.types";
+import { Lead } from "../leads/service1/lead.types";
 import { CompanySize, CompanyStatus } from "./company.validate";
 
 export interface Company {
@@ -47,7 +47,7 @@ export interface CreateCompany {
   source?: string;
   tags?: string[];
   custom_fields?: Record<string, unknown>;
-  owner_name: string;
+  // owner_name: string;
 }
 
 export type UpdateCompany = Partial<CreateCompany>;

@@ -61,7 +61,8 @@ export function ContactsPage() {
                     <th className="px-3 py-2 font-medium">Designation</th>
                     <th className="px-3 py-2 font-medium">Email</th>
                     <th className="px-3 py-2 font-medium">Phone</th>
-                    <th className="px-3 py-2" />
+                    <th className="px-3 py-2 font-medium">Leads</th>
+                    <th className="px-3 py-2 font-medium" >Action</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y">
@@ -93,7 +94,10 @@ export function ContactsPage() {
                           "—"
                         )}
                       </td>
-                      <td className="px-3 py-3 text-right">
+                      <td className="px-3 py-3">
+                        {contact._count?.leads ?? 0}
+                      </td>
+                      <td className="px-3 py-3">
                         <Button
                           size="icon"
                           variant="ghost"

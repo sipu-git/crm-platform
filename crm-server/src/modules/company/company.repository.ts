@@ -1,9 +1,7 @@
 import { prisma } from "../../../lib/prisma.js";
 import { PrismaClientTx } from "../../shared/utils/prisma.types.js";
-import { CreateCompanyBody, FilterCompanyQuery, UpdateCompanyBody } from "./company.schema.js";
 
 export const companyRepository = {
-    
     findManyCompanies(tx: PrismaClientTx, tenantId: string) {
         return tx.company.findMany({
             where: { tenant_id: tenantId },
@@ -62,7 +60,7 @@ export const companyRepository = {
             create: {
                 tenant_id: tenantId,
                 name: companyName.trim(),
-                owner_name: ownerId,
+                owner_id: ownerId,
                 source: soruce ?? 'OTHER',
                 company_status: 'PROSPECT',
             }

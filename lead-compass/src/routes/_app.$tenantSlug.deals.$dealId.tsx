@@ -1,18 +1,19 @@
 import { useEffect, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
-import { fetchDeal, updateDeal, selectDealDetail, selectDealsLoading, clearDealDetail } from "@/features/deals/slice";
+import { fetchDeal, updateDeal, selectDealDetail, selectDealsLoading, clearDealDetail, deleteDeal } from "@/features/deals/slice";
 import { fetchInvoices, selectInvoices, selectInvoicesLoading } from "@/features/invoices/service2/slice";
 import { PageHeader } from "@/components/ui-kit";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { ArrowLeft, Pencil, Check, X } from "lucide-react";
+import { ArrowLeft, Pencil, Check, X, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { formatFullName } from "@/hooks/use-format";
 import { toast } from "sonner";
 import { ActivityTab } from "@/components/activities/ActivityTabs";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 
 function fmt(n: number) {
   return new Intl.NumberFormat("en-US", {
@@ -36,6 +37,9 @@ export function DealDetail() {
   const [isEditingAmount, setIsEditingAmount] = useState(false);
   const [amountDraft, setAmountDraft] = useState("");
   const [savingAmount, setSavingAmount] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const navigate = useNavigate()
 
   useEffect(() => {
     if (dealId) dispatch(fetchDeal(dealId));
@@ -112,17 +116,58 @@ export function DealDetail() {
     }
   }
 
+  async function handleDeleteDeal() {
+    try {
+      setIsDeleting(true);
+      await dispatch(deleteDeal(deal!.id)).unwrap();
+      toast.success("Deal deleted");
+      navigate(`/${tenantSlug}/deals`);
+    } catch (err) {
+      toast.error("Failed to delete deal");
+    } finally {
+      setIsDeleting(false);
+      setDeleteDialogOpen(false);
+    }
+  }
+
   return (
     <div>
       <PageHeader
         title={deal.title}
         description={`${companyName ?? "No company"} • ${fmt(deal.amount)} • Closes ${new Date(deal.expected_close_date).toLocaleDateString()}`}
         actions={
-          <Button asChild variant="outline">
-            <Link to={`/${tenantSlug}/deals`}>
-              <ArrowLeft className="mr-2 h-4 w-4" /> Back
-            </Link>
-          </Button>
+          <div className="flex items-center gap-2">
+            <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+              <AlertDialogTrigger asChild>
+                <Button variant="destructive" size="sm">
+                  <Trash2 className="mr-2 h-4 w-4" /> Delete
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Delete this deal?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    This will permanently delete "{deal.title}". This action cannot be undone.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={handleDeleteDeal}
+                    disabled={isDeleting}
+                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                  >
+                    {isDeleting ? "Deleting..." : "Delete"}
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+            <Button asChild variant="outline">
+              <Link to={`/${tenantSlug}/deals`}>
+                <ArrowLeft className="mr-2 h-4 w-4" /> Back
+              </Link>
+            </Button>
+          </div>
         }
       />
       <div className="p-6">

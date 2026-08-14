@@ -1,5 +1,7 @@
 // src/features/contacts/contacts.types.ts
 
+import { Lead } from "../leads/service1/lead.types";
+
 export interface Contact {
     id: string;
     tenant_id: string;
@@ -12,6 +14,9 @@ export interface Contact {
     created_by: string;
     created_at?: string;
     updated_at?: string;
+    lead?: Lead | null;
+    _count?: { leads: number };
+
 }
 
 // Fields a user actually supplies when a contact is created —

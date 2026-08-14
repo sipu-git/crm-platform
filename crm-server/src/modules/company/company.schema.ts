@@ -32,7 +32,6 @@ export const createCompanySchema = z.object({
   source: z.string().trim().optional(),
   tags: z.array(z.string().trim()).optional(),
   custom_fields: z.record(z.string(), z.unknown()).optional(),
-  owner_name: z.string(),
 });
 
 export const updateCompanySchema = createCompanySchema.partial()
@@ -42,7 +41,6 @@ export const filterCompanySchema = z.object({
   industry: z.string().trim().optional(),
   size: z.enum(CompanySize).optional(),
   company_status: z.enum(CompanyStatus).optional(),
-  owner_id: z.string().cuid().optional(),
   page: z.coerce.number().int().min(1).default(1),
   limit: z.coerce.number().int().min(1).max(100).default(20),
 });

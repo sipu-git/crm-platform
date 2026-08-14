@@ -16,7 +16,7 @@ export const createLeadSchema = z.object({
         .string({ message: msg.company_name.required })
         .trim()
         .min(1, msg.company_name.required),
-    owner_name: z.string({ message: msg.owner_name.required }).trim().min(1, msg.owner_name.required),
+    // owner_name: z.string({ message: msg.owner_name.required }).trim().min(1, msg.owner_name.required),
     project_name:z.string({message:msg.project_name.required}).trim().min(1,msg.project_name.required),
     project_type: z.string().trim().optional(),
     email: z

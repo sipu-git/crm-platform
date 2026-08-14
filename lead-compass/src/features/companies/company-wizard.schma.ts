@@ -3,7 +3,7 @@ import { CreateCompanyBody, createCompanySchema } from "./company.validate";
 export const basicInfoSchema = createCompanySchema.pick({
     name: true,
     legal_name: true,
-    owner_name: true,
+    // owner_name: true,
     industry: true,
     size: true,
     annual_revenue: true,
@@ -31,7 +31,7 @@ export const additionalSchema = createCompanySchema.pick({
     company_status: true,
     source: true,
     tags: true,
-    owner_name: true,
+    // owner_name: true,
 });
 
 export const companyStepSchemas = [

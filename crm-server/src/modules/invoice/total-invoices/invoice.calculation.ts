@@ -21,10 +21,32 @@ export interface InvoiceHeaderInput {
     terms?: string;
 }
 
-export async function generateInvoiceNumber(tx: PrismaClientTx, tenantId: string) {
-    const count = await tx.invoice.count({ where: { tenant_id: tenantId } });
-    const year = new Date().getFullYear();
-    return `INV-${year}-${String(count + 1).padStart(5, "0")}`;
+function getCompanyPrefix(companyName: string): string {
+  const cleaned = companyName.trim().toUpperCase().replace(/[^A-Z]/g, "");
+  return (cleaned.slice(0, 3) || "GEN").padEnd(3, "X"); // pad if name is 1-2 letters
+}
+
+export async function generateInvoiceNumber(
+  tx: PrismaClientTx,
+  tenantId: string,
+  companyName: string
+): Promise<string> {
+  const year = new Date().getFullYear();
+  const prefix = getCompanyPrefix(companyName);
+
+  const MAX_ATTEMPTS = 5;
+  for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
+    const random = Math.floor(1000 + Math.random() * 9000); // 4-digit random, 1000-9999
+    const invoice_number = `${prefix}-${year}-${random}`;
+
+    const existing = await tx.invoice.findUnique({
+      where: { tenant_id_invoice_number: { tenant_id: tenantId, invoice_number } },
+    });
+
+    if (!existing) return invoice_number;
+  }
+
+  return `${prefix}-${year}-${Date.now().toString().slice(-6)}`;
 }
 
 export type InvoiceUpdatableFields = Omit<InvoiceHeaderInput, "deal_id" | "contact_id" | "company_id" | "invoice_type"> & {

@@ -7,6 +7,7 @@ import { logout } from "@/features/auth/slice";
 import { setCurrentTenant } from "@/features/tenant/slice";
 import { Toaster } from "@/components/ui/sonner";
 import { useNavigate } from "react-router-dom";
+import { PushNotificationManager } from "@/features/notifications/PushNotificationManager";
 
 function ThemeSync() {
   const theme = useAppSelector((s) => s.ui.theme);
@@ -46,6 +47,11 @@ function ApiConfigurator() {
   return null;
 }
 
+function PushNotifications() {
+  const token = useAppSelector((s) => s.auth.token);
+  return <PushNotificationManager authenticated={Boolean(token)} />;
+}
+
 export function TenantSwitchHelper({
   onSwitch,
 }: {
@@ -64,6 +70,7 @@ export function AppProviders({ children }: { children: ReactNode }) {
     <Provider store={store}>
       <ThemeSync />
       <ApiConfigurator />
+      <PushNotifications />
       {children}
       <Toaster richColors position="top-right" />
     </Provider>

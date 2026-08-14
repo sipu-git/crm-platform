@@ -112,8 +112,7 @@ export function CompaniesPage() {
                     <th className="px-3 py-2 font-medium">Status</th>
                     <th className="px-3 py-2 font-medium">Location</th>
                     <th className="px-3 py-2 font-medium">Website</th>
-                    <th className="px-3 py-2 font-medium">Owner</th>
-                    <th className="px-3 py-2 text-right font-medium">Total leads</th>
+                    <th className="px-3 py-2 font-medium">Total leads</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y">
@@ -174,11 +173,11 @@ export function CompaniesPage() {
                         )}
                       </td>
 
-                      <td className="px-3 py-3 text-muted-foreground">
+                      {/* <td className="px-3 py-3 text-muted-foreground">
                         {company.leads?.[0]?.owner_name || "—"}
-                      </td>
+                      </td> */}
 
-                      <td className="px-3 py-3 text-right font-medium">
+                      <td className="px-3 py-3 font-medium">
                         {company._count?.leads ?? 0}
                       </td>
                     </tr>

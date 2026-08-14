@@ -17,5 +17,6 @@ router.post('/', validate({ body: createLeadSchema }), asyncHandler(leadControll
 router.patch('/:id/status', validate({ body: updateLeadStatusSchema }), asyncHandler(leadController.updateStatus));
 router.patch('/modify-lead/:id', validate({ body: updateLeadSchema }), asyncHandler(leadController.updateLead));
 router.patch('/:id/assign', asyncHandler(leadController.assign));
+router.delete('/:id/delete', asyncHandler(leadController.deleteLead));
 
 export default router;

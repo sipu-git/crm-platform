@@ -4,7 +4,7 @@ import { PrismaClientTx } from "../../../shared/utils/prisma.types";
 import { generateInvoiceNumber, InvoiceHeaderInput, InvoiceUpdatableFields } from "./invoice.calculation";
 
 export const invoiceRepository = {
-  findMany(tx: PrismaClientTx, tenantId: string, status?: InvoiceStatus,dealId?:string) {
+  findMany(tx: PrismaClientTx, tenantId: string, status?: InvoiceStatus, dealId?: string) {
     return tx.invoice.findMany({
       where: { tenant_id: tenantId, ...(status ? { status } : {}), ...(dealId ? { deal_id: dealId } : {}) },
       orderBy: { created_at: "desc" },
@@ -20,7 +20,6 @@ export const invoiceRepository = {
   },
 
   async createDraftFromDeal(tx: PrismaClientTx, tenantId: string, dealId: string, amount: number, dueDate: Date) {
-    const invoice_number = await generateInvoiceNumber(tx, tenantId);
 
     const deal = await tx.deal.findUnique({
       where: {
@@ -50,11 +49,12 @@ export const invoiceRepository = {
       throw new Error("Seller information not found");
     }
 
-    const company = deal.leads.company_name;
+    let companyDetail = deal.leads.company_name;
 
-    if (!company) {
+    if (!companyDetail) {
       throw new Error("Buyer company not found for this deal");
     }
+    const invoice_number = await generateInvoiceNumber(tx, tenantId, companyDetail);
 
     return tx.invoice.create({
       data: {
@@ -69,7 +69,7 @@ export const invoiceRepository = {
         // Seller
         seller_name: seller.company_name,
         // Buyer
-        buyer_name: company,
+        buyer_name: companyDetail,
         subtotal: amount,
         discount_amount: 0,
         taxable_amount: amount,
@@ -124,9 +124,12 @@ export const invoiceRepository = {
     });
   },
 
-  delete(tx: PrismaClientTx, id: string) {
+  delete(tx: PrismaClientTx, tenantId: string, id: string) {
     return tx.invoice.delete({
-      where: { id },
+      where: {
+        tenant_id: tenantId,
+        id
+      },
     });
   },
 };

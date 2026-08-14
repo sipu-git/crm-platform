@@ -13,6 +13,8 @@ model Tenant {
     communications Communications[]
     audits         AuditLogs[]
     invoice        Invoice[]
+    deviceToken  DeviceToken[]
+
     created_at     DateTime         @default(now())
 
     @@index([name])

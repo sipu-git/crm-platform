@@ -38,7 +38,7 @@ export interface Lead {
   project_name: string;
   project_type?: string;
   contactId?: string;
-  owner_name: string;
+  // owner_name: string;
   source: Source;
   status: LeadStatus;
   company?: Company | null;
@@ -59,7 +59,7 @@ export interface CreateLeadInput {
   project_type?: string;
   designation: string;
   company_name: string;
-  owner_name: string;
+  // owner_name: string;
   email: string;
   phone: string;
   source: Source;

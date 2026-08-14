@@ -11,5 +11,6 @@ router.get('/', asyncHandler(invoiceController.list));
 router.get('/:id', asyncHandler(invoiceController.getById));
 router.patch('/:id/modify-invoice', validate({ body: updateInvoiceSchema }), asyncHandler(invoiceController.modifyInvoice));
 router.patch('/:id/mark-paid', asyncHandler(invoiceController.markPaid));
+router.delete('/:id', asyncHandler(invoiceController.dropInvoice));
 
 export default router;

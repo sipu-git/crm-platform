@@ -8,7 +8,6 @@ export const leadsRepository = {
     return tx.leads.create({
       data: {
         tenant_id: tenantId,
-        owner_name: data.owner_name,
         company_name: data.company_name.trim(),
         project_name: data.project_name.trim(),
         project_type: data.project_type?.trim(),
@@ -62,12 +61,12 @@ export const leadsRepository = {
       orderBy: { created_At: "desc" },
     });
   },
-  assignOwner(tx: PrismaClientTx, tenantId: string, id: string, ownerId: string) {
-    return tx.leads.updateMany({
-      where: { id, tenant_id: tenantId },
-      data: { owner_id: ownerId },
-    });
-  },
+  // assignOwner(tx: PrismaClientTx, tenantId: string, id: string, ownerId: string) {
+  //   return tx.leads.updateMany({
+  //     where: { id, tenant_id: tenantId },
+  //     data: { owner_i: ownerId },
+  //   });
+  // },
 
   markConverted(tx: PrismaClientTx, tenantId: string, id: string, contactId: string) {
     return tx.leads.updateMany({
@@ -99,6 +98,11 @@ export const leadsRepository = {
       data: { ...data, updated_at: new Date() },
     });
   },
+  deleteLead(tx: PrismaClientTx, tenantId: string, id: string) {
+    return tx.leads.delete({
+      where: { id, tenant_id: tenantId },
+    });
+  }
 };
 
 

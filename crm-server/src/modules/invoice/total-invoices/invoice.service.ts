@@ -47,4 +47,13 @@ export const invoiceService = {
 
     return invoice;
   },
+
+  async removeInvoice(tenantId: string, id: string) {
+    const invoice = await prisma.$transaction(async (tx) => {
+      const findInvoice = await invoiceRepository.findById(tx, tenantId, id);
+      if (!findInvoice) throw ApiError.notFound('Invoice not found');
+      return invoiceRepository.delete(tx, tenantId, id);
+    })
+    return invoice;
+  }
 };

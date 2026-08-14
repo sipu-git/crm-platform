@@ -1,39 +1,42 @@
 import { prisma } from '../../../../lib/prisma.js';
 import { eventBus } from '../../../shared/event-bus/index.js';
 import { invoiceRepository } from './invoice.repository.js';
-// invoice.listener.ts
+
 export function registerInvoiceListeners() {
   eventBus.on(
     "deal.won",
     async (payload: { dealId: string; tenantId: string }) => {
-      console.log("[deal.won] received", payload); // TEMP: confirm listener fires
-
-      const deal = await prisma.deal.findUnique({
-        where: { id: payload.dealId, tenant_id: payload.tenantId }, // scope by tenant
-      });
-
-      if (!deal) {
-        console.error(`[deal.won] deal ${payload.dealId} not found for tenant ${payload.tenantId}`);
-        return;
-      }
-
-      if (deal.amount == null) {
-        console.error(`[deal.won] deal ${payload.dealId} has null amount, cannot create invoice`);
-        return;
-      }
-
-      const dueDate = new Date();
-      dueDate.setDate(dueDate.getDate() + 14);
+      console.log("[invoice][deal.won] received", payload);
 
       try {
+        const deal = await prisma.deal.findUnique({
+          where: { id: payload.dealId, tenant_id: payload.tenantId },
+        });
+
+        if (!deal) {
+          console.error(`[invoice][deal.won] deal ${payload.dealId} not found for tenant ${payload.tenantId}`);
+          return;
+        }
+
+        if (deal.amount == null) {
+          console.error(`[invoice][deal.won] deal ${payload.dealId} has null amount, cannot create invoice`);
+          return;
+        }
+
+        const amount = typeof deal.amount === "number" ? deal.amount : deal.amount.toNumber();
+
+        const dueDate = new Date();
+        dueDate.setDate(dueDate.getDate() + 14);
+
         await prisma.$transaction(async (tx) => {
           await invoiceRepository.createDraftFromDeal(
-            tx, payload.tenantId, deal.id, deal.amount.toNumber(), dueDate
+            tx, payload.tenantId, deal.id, amount, dueDate
           );
         });
-        console.log(`[deal.won] invoice created for deal ${deal.id}`);
+
+        console.log(`[invoice][deal.won] invoice created for deal ${deal.id}`);
       } catch (err) {
-        console.error(`[deal.won] createDraftFromDeal failed for deal ${deal.id}:`, err);
+        console.error(`[invoice][deal.won] handler failed for deal ${payload.dealId}:`, err);
       }
     }
   );

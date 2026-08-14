@@ -16,9 +16,9 @@ export const leadValidationMessages = {
   project_name:{
 required:"Project name is required",
   },
-  owner_name: {
-    required: "Owner name is required",
-  },
+  // owner_name: {
+  //   required: "Owner name is required",
+  // },
   email: {
     required: "Email is required",
     invalid: "Enter a valid email address",

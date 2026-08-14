@@ -5,10 +5,10 @@ export const companyValidationMessages = {
     min: "Company name must be at least 2 characters",
     max: "Company name must be under 120 characters",
   },
-  owner_name: {
-    required: "Company owner name is required",
-    invalid: "Select a valid owner",
-  },
+  // owner_name: {
+  //   required: "Company owner name is required",
+  //   invalid: "Select a valid owner",
+  // },
   legal_name: {
     max: "Legal name must be under 160 characters",
   },

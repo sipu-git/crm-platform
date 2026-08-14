@@ -1,6 +1,6 @@
 import { NotificationStatus } from "../../../generated/prisma/enums.js";
 import { notificationRepository, CreateNotificationInput } from "./notification.repository.js";
-import { emitToUser } from "./socket.js";
+import { sendPush } from "./push-worker.js";
 
 export class NotificationNotFoundError extends Error {
   constructor(id: string) {
@@ -34,24 +34,11 @@ export const notificationService = {
     return notificationRepository.findUnread(tenantId, userId);
   },
 
-  /**
-   * Get full notification history for a user.
-   */
-  async getAllNotifications(tenantId: string, userId: string) {
-    return notificationRepository.findMany(tenantId, userId);
+  async getAllNotifications(tenantId: string, userId: string, options?: { limit?: number; cursor?: string }) {
+    return notificationRepository.findMany(tenantId, userId, options);
   },
 
-  /**
-   * Central dispatch — persists the notification in PENDING status
-   * AND pushes it live via Socket.io. Actual delivery through the
-   * external channel (email/sms/push) is handled separately by a
-   * worker that later calls markSent / markFailed.
-   */
-  async dispatch(
-    tenantId: string,
-    userId: string,
-    input: SendNotificationInput
-  ) {
+  async dispatch(tenantId: string, userId: string, input: SendNotificationInput) {
     assertNonEmpty(input.channel, "channel");
     assertNonEmpty(input.subject, "subject");
     assertNonEmpty(input.message, "message");
@@ -66,13 +53,12 @@ export const notificationService = {
       sent_at: new Date(),
     };
 
-    const notification = await notificationRepository.create(
-      tenantId,
-      userId,
-      data
-    );
+    console.log("[dispatch] inserting notification with recipient_id:", JSON.stringify(userId), "length:", userId.length);
+    const notification = await notificationRepository.create(tenantId, userId, data);
+    console.log("[dispatch] notification row created:", notification.id);
 
-    emitToUser(userId, "notification:new", notification);
+    await sendPush(tenantId, notification);
+    console.log("[dispatch] sendPush() completed");
 
     return notification;
   },
@@ -89,11 +75,11 @@ export const notificationService = {
       throw new NotificationNotFoundError(id);
     }
 
-    emitToUser(notification.recipient_id, "notification:status", {
-      id,
-      status: NotificationStatus.SENT,
-      externalRef,
-    });
+    // emitToUser(notification.recipient_id, "notification:status", {
+    //   id,
+    //   status: NotificationStatus.SENT,
+    //   externalRef,
+    // });
 
     return result;
   },
@@ -107,13 +93,7 @@ export const notificationService = {
       throw new NotificationNotFoundError(id);
     }
 
-    const result = await notificationRepository.updateStatus(tenantId,id,NotificationStatus.FAILED,{ errorMessage });
-
-    emitToUser(notification.recipient_id, "notification:status", {
-      id,
-      status: NotificationStatus.FAILED,
-      errorMessage,
-    });
+    const result = await notificationRepository.updateStatus(tenantId, id, NotificationStatus.FAILED, { errorMessage });
 
     return result;
   },
@@ -132,17 +112,16 @@ export const notificationService = {
       throw new NotificationNotFoundError(id);
     }
 
-    emitToUser(userId, "notification:read", { id });
-
     return result;
   },
 
-  /**
-   * Mark every unread notification for a user as read.
-   */
   async markAllAsRead(tenantId: string, userId: string) {
     const result = await notificationRepository.markAllRead(tenantId, userId);
-    emitToUser(userId, "notification:read-all", {});
     return result;
   },
+
+  async removeNotification(tenantId: string, userId: string, messageId?: string[]) {
+    const remove = await notificationRepository.removeNotifications(tenantId, userId, messageId)
+    return remove;
+  }
 };

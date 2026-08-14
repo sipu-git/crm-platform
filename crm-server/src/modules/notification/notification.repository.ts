@@ -19,10 +19,15 @@ export const notificationRepository = {
     });
   },
 
-  findMany(tenantId: string, userId: string) {
+  findMany(tenantId: string, userId: string, options: { limit?: number; cursor?: string } = {}) {
     return prisma.notification.findMany({
       where: { tenant_id: tenantId, recipient_id: userId },
       orderBy: { created_at: "desc" },
+      take: options.limit ?? 50,
+      ...(options.cursor && {
+        skip: 1,
+        cursor: { id: options.cursor },
+      }),
     });
   },
 
@@ -78,4 +83,17 @@ export const notificationRepository = {
       data: { isRead: true },
     });
   },
+
+  removeNotifications(tenantId: string, userId: string, messageId?: string[]) {
+    return prisma.notification.deleteMany({
+      where: {
+        tenant_id: tenantId,
+        recipient_id: userId,
+        ...(messageId && messageId.length > 0 ? { id: { in: messageId } } : {}),
+      }
+    })
+
+  }
+
 };
+

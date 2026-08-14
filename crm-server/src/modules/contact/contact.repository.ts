@@ -28,6 +28,12 @@ export const contactsRepository = {
   findMany(tx: PrismaClientTx, tenantId: string) {
     return tx.contacts.findMany({
       where: { tenant_id: tenantId },
+      include: {
+        lead: true,
+        _count: {
+          select: { lead: true },
+        },
+      },
       orderBy: { created_at: "desc" },
     });
   },

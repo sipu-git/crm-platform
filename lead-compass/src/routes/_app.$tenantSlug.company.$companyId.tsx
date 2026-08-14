@@ -135,7 +135,7 @@ export function CompanyDetailPage() {
     return {
       name: rest.name ?? undefined,
       legal_name: rest.legal_name ?? undefined,
-      owner_name: rest.leads?.[0]?.owner_name ?? undefined,
+      // owner_name: rest.leads?.[0]?.owner_name ?? undefined,
       industry: rest.industry ?? undefined,
       size: rest.size ?? undefined,
       annual_revenue: rest.annual_revenue ?? undefined,
@@ -457,7 +457,7 @@ export function CompanyDetailPage() {
             <div className="grid grid-cols-2 gap-x-6 gap-y-4">
               <ReadRow label="Status" value={company.company_status} />
               <ReadRow label="Source" value={company.source} />
-              <ReadRow label="Owner" value={company.leads?.[0]?.owner_name ? <span className="inline-flex items-center gap-1"><User className="h-3.5 w-3.5 text-slate-400" />{company.leads?.[0]?.owner_name}</span> : undefined} />
+              {/* <ReadRow label="Owner" value={company.leads?.[0]?.owner_name ? <span className="inline-flex items-center gap-1"><User className="h-3.5 w-3.5 text-slate-400" />{company.leads?.[0]?.owner_name}</span> : undefined} /> */}
               <ReadRow
                 label="Tags"
                 value={

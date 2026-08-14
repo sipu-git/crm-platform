@@ -8,7 +8,6 @@ export const createLeadSchema = z.object({
   project_name: z.string().min(1),
   project_type: z.string().optional(),
   company_name: z.string().min(1),
-  owner_name: z.string(),
   email: z.string().email(),
   phone: z.string().min(1),
   designation: z.string("The designation field is required!"),

@@ -3,7 +3,8 @@ import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { setSidebarCollapsed } from "@/features/ui/slice";
 import { switchTenant } from "@/components/AppProviders";
 import { logout } from "@/features/auth/slice";
-import {BarChart3,Users,Kanban,FileText,Bell,Settings,ChevronsLeft,
+import {
+  BarChart3, Users, Kanban, FileText, Bell, Settings, ChevronsLeft,
   ChevronsRight,
   LogOut,
   Menu,
@@ -33,6 +34,7 @@ import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { setTheme, type ThemeMode } from "@/features/ui/slice";
 import { useState } from "react";
+import { NotificationBell } from "./NotificationBell";
 
 const NAV_GROUPS = [
   {
@@ -268,6 +270,7 @@ export function AppShell({ tenantSlug }: { tenantSlug: string }) {
           </div>
 
           <div className="ml-auto flex items-center gap-1">
+            <NotificationBell tenantSlug={tenantSlug} />
             {/* <NotificationsBell tenantSlug={tenantSlug} /> */}
             <ThemeMenu />
             <UserMenu />

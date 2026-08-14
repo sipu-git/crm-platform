@@ -9,8 +9,7 @@ import { PageHeader } from "@/components/ui-kit";
 import { viewLead, updateLead, deleteLead, clearLeadDetail, updateLeadStatus } from "@/features/leads/service1/slice";
 import { type Lead, type LeadStatus, type Source, LEAD_STATUSES, LEAD_SOURCES, LEAD_STATUS_COLORS } from "@/features/leads/service1/lead.types";
 import {
-  Pencil, Check, X, Trash2, ArrowLeft, Mail, Phone, Building2, Briefcase,
-  Lightbulb, ShieldCheck,
+  Pencil, Check, X, Trash2, ArrowLeft, Mail, Phone, Building2, Briefcase, Lightbulb, ShieldCheck,
   Clock, User, Circle, PhoneCall, ThumbsUp, ThumbsDown, UserCog,
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
@@ -332,17 +331,30 @@ export function LeadDetailPage() {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      {LEAD_STATUSES.map((s) => (
-                        <SelectItem key={s} value={s}>
-                          <span
-                            className="flex items-center gap-2"
-                            style={{ color: LEAD_STATUS_COLORS[s] }}
+                      {LEAD_STATUSES.map((s) => {
+                        const optionIndex = LEAD_STATUSES.indexOf(s);
+                        const currentIndex = LEAD_STATUSES.indexOf(lead.status);
+                        const isBackward = optionIndex < currentIndex;
+                        return (
+                          <SelectItem
+                            key={s}
+                            value={s}
+                            disabled={isBackward}
+                            title={isBackward ? "This lead has already moved past this stage" : undefined}
                           >
-                            {STATUS_ICON_MAP[s]}
-                            {s.charAt(0) + s.slice(1).toLowerCase()}
-                          </span>
-                        </SelectItem>
-                      ))}
+                            <span
+                              className="flex items-center gap-2"
+                              style={{
+                                color: isBackward ? "var(--muted-foreground)" : LEAD_STATUS_COLORS[s],
+                                opacity: isBackward ? 0.5 : 1,
+                              }}
+                            >
+                              {STATUS_ICON_MAP[s]}
+                              {s.charAt(0) + s.slice(1).toLowerCase()}
+                            </span>
+                          </SelectItem>
+                        );
+                      })}
                     </SelectContent>
                   </Select>
                 </div>

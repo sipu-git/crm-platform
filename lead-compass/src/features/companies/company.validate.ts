@@ -28,7 +28,7 @@ export const createCompanySchema = z.object({
     .min(2, msg.name.min)
     .max(120, msg.name.max),
   legal_name: z.string().trim().max(160, msg.legal_name.max).optional(),
-  owner_name: z.string().trim().max(160, msg.owner_name.invalid),
+  // owner_name: z.string().trim().max(160, msg.owner_name.invalid),
   industry: z.string().trim().max(80, msg.industry.max).optional(),
   size: z.enum(CompanySize, { message: msg.size.invalid }).optional(),
   annual_revenue: z.coerce

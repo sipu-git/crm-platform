@@ -30,4 +30,8 @@ export const invoiceController = {
     const invoice = await invoiceService.markPaid(req.tenantId!, getId(req));
     return res.status(200).json(successResponse("Invoices marked successfully!", invoice));
   },
+  async dropInvoice(req: Request, res: Response) {
+    const invoice = await invoiceService.removeInvoice(req.tenantId!, getId(req));
+    return res.status(200).json(successResponse("Invoice deleted successfully!", invoice));
+  },
 };

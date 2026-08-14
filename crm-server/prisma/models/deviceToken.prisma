@@ -1,0 +1,15 @@
+model DeviceToken {
+  id          String   @id @default(cuid())
+  tenant_id   String
+  user_id     String
+  token       String   @unique
+  platform    String   @default("web")
+  created_at  DateTime @default(now())
+  last_used_at DateTime @updatedAt
+
+  tenant Tenant @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([user_id])
+  @@index([tenant_id])
+}

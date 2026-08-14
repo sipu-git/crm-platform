@@ -20,7 +20,7 @@ model Company {
     tags           String[]
     custom_fields  Json?
 
-    owner_name     String
+    owner_id     String?
     created_at     DateTime @default(now())
     updated_at   DateTime @updatedAt
 
@@ -31,6 +31,7 @@ model Company {
     communications Communications[]
 
     tenant Tenant @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
+    owner User? @relation(fields: [owner_id], references: [id], onDelete: Cascade)
   
     @@unique([tenant_id,name])
     @@index([tenant_id,legal_name])

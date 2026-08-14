@@ -11,6 +11,7 @@ import { pipelineRepository } from '../deal/pipeline.repository.js';
 import { addDays } from 'date-fns';
 import { assignRepository } from './lead-assignment/assign.repository.js';
 import { CreateAssignInputs } from './lead-assignment/assign.schema.js';
+import { LeadStatusOrder } from './lead.util.js';
 
 export const leadService = {
   async list(tenantId: string, filters: LeadFilters) {
@@ -31,21 +32,27 @@ export const leadService = {
   async create(tenantId: string, userId: string, input: CreateLeadInput) {
     const lead = await prisma.$transaction(async (tx) => {
       const company = await companyRepository.upsertStubByName(
-        tx,
-        tenantId,
-        userId,
-        input.company_name.trim(),
-        input.source
+        tx, tenantId, userId, input.company_name.trim(), input.source
       );
 
-      const contact = await contactsRepository.create(tx, tenantId, userId, {
-        companyId: company.id,
-        firstName: input.first_name.trim(),
-        lastName: input.last_name?.trim(),
-        designation: input.designation,
-        email: input.email,
-        phone: input.phone,
-      });
+      let contact = input.email ? await tx.contacts.findFirst({
+        where: { tenant_id: tenantId, companyId: company.id, email: input.email },
+      })
+        : input.phone
+          ? await tx.contacts.findFirst({
+            where: { tenant_id: tenantId, companyId: company.id, phone: input.phone },
+          }) : null;
+
+      if (!contact) {
+        contact = await contactsRepository.create(tx, tenantId, userId, {
+          companyId: company.id,
+          firstName: input.first_name.trim(),
+          lastName: input.last_name?.trim(),
+          designation: input.designation,
+          email: input.email,
+          phone: input.phone,
+        });
+      }
 
       return leadsRepository.create(tx, tenantId, company.id, contact.id, userId, input);
     });
@@ -53,7 +60,7 @@ export const leadService = {
     eventBus.emit("lead.created", { leadId: lead.id, tenantId });
     return lead;
   },
-
+  
   async updateStatus(tenantId: string, id: string, status: LeadStatus, actingUserId: string) {
     const result = await prisma.$transaction(async (tx) => {
       const lead = await leadsRepository.findById(tx, tenantId, id);
@@ -64,6 +71,16 @@ export const leadService = {
 
       if (lead.status === status) {
         throw ApiError.badRequest(`Lead is already ${status}`);
+      }
+
+      const currentIndex = LeadStatusOrder.indexOf(lead.status)
+      const targetIndex = LeadStatusOrder.indexOf(status)
+      if (currentIndex === -1 || targetIndex === -1) {
+        throw ApiError.badRequest(`Unrecognized lead status transition: ${lead.status} → ${status}`);
+      }
+
+      if (targetIndex < currentIndex) {
+        throw ApiError.badRequest(`Cannot move lead backward from "${lead.status}" to "${status}"`);
       }
 
       const updatedLead = await leadsRepository.updateStatus(tx, tenantId, id, status);
@@ -89,7 +106,11 @@ export const leadService = {
 
       return { lead: updatedLead, deal };
     });
-
+    eventBus.emit("lead.status_changed", {
+      leadId: id,
+      tenantId,
+      status,
+    });
     if (result.deal) {
       eventBus.emit("deal.created", { tenantId, dealId: result.deal.id, leadId: id });
     }
@@ -128,6 +149,16 @@ export const leadService = {
       }
       return leadsRepository.assignLead(tx, tenantId, id, assignee.id);
     });
+
+    eventBus.emit("lead.assigned", { leadId: id, tenantId, assignedTo: assignId });
+
     return lead;
   },
+  async delete(tenantId: string, id: string) {
+    const lead = await prisma.$transaction(async (tx) => {
+      return leadsRepository.deleteLead(tx, tenantId, id);
+    })
+    eventBus.emit("lead.deleted", { leadId: id, tenantId });
+    return lead;
+  }
 };

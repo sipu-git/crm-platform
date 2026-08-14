@@ -9,6 +9,7 @@
 
     "strict": true,
     "esModuleInterop": true,
+    "resolveJsonModule": true,   // ← add this
     "ignoreDeprecations": "6.0",
     "skipLibCheck": true
   },

@@ -62,4 +62,12 @@ export const leadController = {
     const lead = await leadService.assign(req.tenantId!, id, assignId);
     return res.status(200).json(successResponse('Lead assigned successfully!', lead));
   },
+  async deleteLead(req: Request, res: Response){
+  const id = req.params.id as any;
+  if (!id) {
+    return res.status(400).json({ message: 'Lead id is required' });
+  }
+  const lead = await leadService.delete(req.tenantId!, id);
+  return res.status(200).json(successResponse('Lead deleted successfully!', lead));
+}
 };

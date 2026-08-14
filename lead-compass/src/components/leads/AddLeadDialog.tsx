@@ -36,7 +36,6 @@ const emptyDraft = (): Partial<CreateLeadInput> => ({
   project_name: "",
   project_type: "",
   company_name: "",
-  owner_name: "",
   email: "",
   phone: "",
   source: LEAD_SOURCES[0],
@@ -152,14 +151,14 @@ export function AddLeadDialog({
               placeholder="e-commerce"
             />
           </Field>
-          <Field label="Owner name" error={errors.owner_name}>
+          {/* <Field label="Owner name" error={errors.owner_name}>
             <input
               className={inputClass}
               value={draft.owner_name ?? ""}
               onChange={(e) => update("owner_name", e.target.value)}
               placeholder="Who owns this relationship at their end"
             />
-          </Field>
+          </Field> */}
 
           <div className="grid grid-cols-2 gap-4">
             <Field label="Email" error={errors.email}>
