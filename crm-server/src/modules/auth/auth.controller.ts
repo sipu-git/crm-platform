@@ -10,6 +10,7 @@ const REFRESH_COOKIE_OPTIONS = {
   sameSite: 'none' as const,
   path: '/',
   maxAge: 7 * 24 * 60 * 60 * 1000,
+  partitioned: true,
 };
 
 export const authController = {
