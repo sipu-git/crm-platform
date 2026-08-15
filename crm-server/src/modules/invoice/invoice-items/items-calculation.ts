@@ -20,7 +20,7 @@ export interface ComputedInvoiceItem {
   sac_code?: string;
 }
 
-type InvoiceItemCalculationInput = Omit<CreateInvoiceItemInput, "description"> & {
+type InvoiceItemCalculationInput = Omit<CreateInvoiceItemInput, "description" | "tax_rate"> & {
   description: string;
 };
 
@@ -88,13 +88,18 @@ export function recomputeInvoiceItemAmounts(
   patch: UpdateInvoiceItemInput
 ): ComputedInvoiceItem {
   const merged: InvoiceItemCalculationInput = {
-    ...existing,
-    ...patch,
     description: patch.description?.trim() || existing.description,
+    quantity: patch.quantity ?? existing.quantity,
+    unit_price: patch.unit_price ?? existing.unit_price,
+    discount_amount: patch.discount_amount ?? existing.discount_amount,
+    cgst_rate: patch.cgst_rate ?? existing.cgst_rate,
+    sgst_rate: patch.sgst_rate ?? existing.sgst_rate,
+    igst_rate: patch.igst_rate ?? existing.igst_rate,
+    hsn_code: patch.hsn_code ?? existing.hsn_code,
+    sac_code: patch.sac_code ?? existing.sac_code,
   };
   return computeInvoiceItemAmounts(merged);
 }
-
 function round2(n: number): number {
   return Math.round(n * 100) / 100;
 }

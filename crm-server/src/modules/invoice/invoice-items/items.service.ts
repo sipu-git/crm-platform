@@ -81,19 +81,23 @@ export const invoiceItemsService = {
             if (invoice.status !== "DRAFT") {
                 throw ApiError.badRequest("Cannot add items to an invoice that has already been sent");
             }
-            let description = data.description?.trim();
+
+            let description: string | undefined = data.description?.trim();
 
             if (!description) {
-                description = await resolveDefaultDescription(
-                    tx,
-                    tenantId,
-                    invoice
-                );
+                description = await resolveDefaultDescription(tx, tenantId, invoice);
             }
+
             if (!description) {
                 throw ApiError.badRequest("Invoice item description is required");
             }
-            const computed = computeInvoiceItemAmounts({ ...data, description });
+
+            // Explicit, guaranteed-string binding — if THIS line errors,
+            // it tells you narrowing isn't the problem; resolveDefaultDescription's
+            // declared return type is.
+            const resolvedDescription: string = description;
+
+            const computed = computeInvoiceItemAmounts({ ...data, description: resolvedDescription });
             const item = await invoiceItemsRepository.create(tx, invoiceId, computed);
 
             await recalculateInvoiceTotals(tx, tenantId, invoiceId);
