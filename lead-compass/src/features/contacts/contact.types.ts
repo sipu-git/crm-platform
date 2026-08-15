@@ -15,7 +15,7 @@ export interface Contact {
     created_at?: string;
     updated_at?: string;
     lead?: Lead | null;
-    _count?: { leads: number };
+    _count?: { lead: number };
 
 }
 

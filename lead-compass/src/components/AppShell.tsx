@@ -80,11 +80,11 @@ function NavList({
 }) {
   const { pathname } = useLocation();
   return (
-    <nav className="flex-1 space-y-4 px-2 py-3">
+    <nav className="flex-1 space-y-4 px-2">
       {NAV_GROUPS.map((group) => (
         <div key={group.label}>
           {!collapsed && (
-            <div className="px-3 pb-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground/70">
+            <div className="px-3 pb-1 text-[11px] font-semibold uppercase tracking-wide text-sidebar-foreground/50">
               {group.label}
             </div>
           )}
@@ -102,7 +102,7 @@ function NavList({
                     "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors",
                     active
                       ? "bg-primary/10 text-primary"
-                      : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                      : "text-sidebar-foreground/70 hover:bg-sidebar-accent-foreground hover:text-sidebar-primary-foreground",
                     collapsed && "justify-center px-2",
                   )}
                   title={collapsed ? n.label : undefined}
@@ -121,14 +121,14 @@ function NavList({
 
 function Brand({ collapsed, name }: { collapsed: boolean; name: string }) {
   return (
-    <div className={cn("flex items-center gap-2 px-4 py-4", collapsed && "justify-center px-2")}>
+    <div className={cn("flex items-center gap-2 px-4 py-4 border-b mb-6 border-sidebar-border", collapsed && "justify-center px-2")}>
       <div className="grid h-8 w-8 shrink-0 place-items-center rounded-md bg-primary text-primary-foreground font-bold">
         C
       </div>
       {!collapsed && (
         <div className="min-w-0">
           <div className="truncate text-sm font-semibold">Clearview CRM</div>
-          <div className="truncate text-xs text-muted-foreground">{name}</div>
+          <div className="truncate text-xs text-sidebar-foreground/60">{name}</div>
         </div>
       )}
     </div>
@@ -146,8 +146,8 @@ function ThemeMenu() {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="icon" aria-label="Theme">
-          {theme === "dark" ? <Moon className="h-4 w-4" /> : theme === "light" ? <Sun className="h-4 w-4" /> : <Laptop className="h-4 w-4" />}
+        <Button variant="ghost" size="icon" aria-label="Theme" className="hover:bg-sidebar-accent-foreground">
+          {theme === "dark" ? <Moon className="h-4 w-4" /> : theme === "light" ? <Sun className="h-4 w-4 text-primary" /> : <Laptop className="h-4 w-4" />}
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
@@ -181,11 +181,11 @@ function UserMenu() {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" className="h-9 gap-2 px-2">
+        <Button variant="ghost" className="h-9 gap-2 px-2 hover:bg-sidebar-accent-foreground">
           <Avatar className="h-7 w-7">
-            <AvatarFallback className="text-xs">{initials}</AvatarFallback>
+            <AvatarFallback className="text-xs bg-[hsla(264,97%,15%,1)] text-primary">{initials}</AvatarFallback>
           </Avatar>
-          <span className="hidden text-sm md:inline">{user?.name}</span>
+          <span className="hidden text-sm md:inline text-sidebar-accent">{user?.name}</span>
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-56">
@@ -213,20 +213,18 @@ export function AppShell({ tenantSlug }: { tenantSlug: string }) {
   const [mobileOpen, setMobileOpen] = useState(false);
 
   return (
-    <div className="flex h-screen w-full
-    bg-[linear-gradient(45deg,#edf4fd,#eff3fd,#f1f2fc,#f2f0fc,#f4effc,#f6eefb,#f8edfb,#f9ebfa,#fbeafa)]
-    dark:bg-[linear-gradient(45deg,#000000,#040204,#080408,#0c060b,#10080f,#130913,#170b17,#1b0d1a,#1f0f1e)]
-    " >
+    <div className="flex h-screen w-full [background:var(--app-bg)]">
       {/* Desktop sidebar */}
       <aside
         className={cn(
-          "hidden shrink-0 flex-col border-r bg-sidebar text-sidebar-foreground transition-[width] duration-200 md:flex",
+          "hidden shrink-0 flex-col border-r border-sidebar-border text-sidebar-foreground transition-[width] duration-200 md:flex",
+          "[background:var(--sidebar)]",
           collapsed ? "w-16" : "w-60",
         )}
       >
         <Brand collapsed={collapsed} name={tenantSlug} />
         <NavList slug={tenantSlug} collapsed={collapsed} />
-        <div className="border-t p-2">
+        <div className="border-t border-sidebar-border p-2">
           <Button
             variant="ghost"
             size="sm"
@@ -246,7 +244,7 @@ export function AppShell({ tenantSlug }: { tenantSlug: string }) {
 
       {/* Main column */}
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="flex h-14 shrink-0 items-center gap-2 border-b bg-card px-4">
+        <header className="flex h-14 shrink-0 items-center gap-2 border-b border-sidebar-border px-4 [background:var(--sidebar)] text-sidebar-foreground">
           {/* Mobile menu */}
           <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
             <SheetTrigger asChild>
@@ -254,7 +252,10 @@ export function AppShell({ tenantSlug }: { tenantSlug: string }) {
                 <Menu className="h-5 w-5" />
               </Button>
             </SheetTrigger>
-            <SheetContent side="left" className="w-64 p-0">
+            <SheetContent
+              side="left"
+              className="w-64 border-sidebar-border p-0 text-sidebar-foreground [background:var(--sidebar)]"
+            >
               <Brand collapsed={false} name={tenantSlug} />
               <NavList slug={tenantSlug} collapsed={false} onNavigate={() => setMobileOpen(false)} />
             </SheetContent>
@@ -265,7 +266,7 @@ export function AppShell({ tenantSlug }: { tenantSlug: string }) {
           <div className="ml-2 hidden max-w-md flex-1 md:block">
             <div className="relative">
               <Search className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input placeholder="Search leads, deals, invoices..." className="h-9 pl-9" />
+              <Input placeholder="Search leads, deals, invoices..." className="h-9 pl-9 border-sidebar-border" />
             </div>
           </div>
 

@@ -40,7 +40,7 @@ export function NotificationBell({ tenantSlug }: { tenantSlug: string }) {
     <DropdownMenu open={open} onOpenChange={setOpen}>
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" size="icon" className="relative">
-          <Bell className="h-5 w-5" />
+          <Bell className="h-5 w-5 text-primary" />
           {unreadCount > 0 && (
             <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-medium leading-none text-white">
               {unreadCount > 99 ? "99+" : unreadCount}

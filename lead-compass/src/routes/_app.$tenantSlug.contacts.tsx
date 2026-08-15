@@ -11,12 +11,15 @@ import {
   AlertDialogFooter, AlertDialogHeader, AlertDialogTitle
 } from "@/components/ui/alert-dialog";
 import { formatFullName } from "@/hooks/use-format";
+import { useNavigate, useParams } from "react-router-dom";
 
 export function ContactsPage() {
   const dispatch = useAppDispatch();
   const contacts = useAppSelector((state) => state.contacts.contacts);
   const loading = useAppSelector((state) => state.contacts.loading);
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
+  const { tenantSlug = "" } = useParams<{ tenantSlug: string; leadId: string }>();
+  const navigate = useNavigate();
 
   useEffect(() => {
     dispatch(fetchContacts());
@@ -67,7 +70,7 @@ export function ContactsPage() {
                 </thead>
                 <tbody className="divide-y">
                   {contacts.map((contact) => (
-                    <tr key={contact.id} className="hover:bg-muted/40">
+                    <tr onClick={() => navigate(`/${tenantSlug}/communications/${contact.lead?.id}`)} key={contact.id} className="hover:bg-muted/40 cursor-pointer">
                       <td className="px-3 py-3 font-medium">
                         {formatFullName(contact.first_name, contact.last_name)}
                       </td>
@@ -95,7 +98,7 @@ export function ContactsPage() {
                         )}
                       </td>
                       <td className="px-3 py-3">
-                        {contact._count?.leads ?? 0}
+                        {contact._count?.lead ?? 0}
                       </td>
                       <td className="px-3 py-3">
                         <Button

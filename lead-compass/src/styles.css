@@ -85,13 +85,14 @@
   --chart-3: oklch(0.769 0.174 70);
   --chart-4: oklch(0.637 0.237 25);
   --chart-5: oklch(0.554 0.046 257);
-  --sidebar: oklch(1 0 0);
-  --sidebar-foreground: oklch(0.208 0.042 265);
+  --sidebar: radial-gradient(125% 125% at 50% 10%, #070112 40%, #010133 100%);
+  --sidebar-foreground: oklch(0.965 0.005 247);
   --sidebar-primary: oklch(0.511 0.229 274);
   --sidebar-primary-foreground: oklch(0.984 0.003 247);
+--sidebar-border: oklch(100% 0.00011 271.152 / 0.255);
+  /* unchanged, still works fine as a hover highlight on dark bg */
   --sidebar-accent: oklch(0.968 0.007 247);
   --sidebar-accent-foreground: oklch(0.208 0.042 265);
-  --sidebar-border: oklch(0.929 0.013 255);
   --sidebar-ring: oklch(0.511 0.229 274);
 }
 
