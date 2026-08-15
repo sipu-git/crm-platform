@@ -5,11 +5,24 @@ import type { CreateInvoiceItemInput, UpdateInvoiceItemInput } from "./invoice-i
 import { ApiError } from "../../../shared/utils/ApiError";
 import { invoiceRepository } from "../total-invoices/invoice.repository";
 import { prisma } from "../../../../lib/prisma";
+import { leadsRepository } from "../../lead/lead.repository";
 
 async function findInvoiceOrThrow(tx: PrismaClientTx, tenantId: string, invoiceId: string) {
     const invoice = await invoiceRepository.findById(tx, tenantId, invoiceId);
     if (!invoice) throw ApiError.notFound("Invoice not found");
     return invoice;
+}
+async function resolveDefaultDescription(tx: PrismaClientTx, tenantId: string,
+    invoice: {
+        deal: {
+            lead_id: string
+        } | null
+    }
+
+): Promise<string | undefined> {
+    if (!invoice.deal?.lead_id) return undefined;
+    const lead = await leadsRepository.findById(tx, tenantId, invoice.deal?.lead_id);
+    return lead?.project_name ?? undefined;
 }
 
 async function recalculateInvoiceTotals(tx: PrismaClientTx, tenantId: string, invoiceId: string) {
@@ -68,8 +81,19 @@ export const invoiceItemsService = {
             if (invoice.status !== "DRAFT") {
                 throw ApiError.badRequest("Cannot add items to an invoice that has already been sent");
             }
+            let description = data.description?.trim();
 
-            const computed = computeInvoiceItemAmounts(data);
+            if (!description) {
+                description = await resolveDefaultDescription(
+                    tx,
+                    tenantId,
+                    invoice
+                );
+            }
+            if (!description) {
+                throw ApiError.badRequest("Invoice item description is required");
+            }
+            const computed = computeInvoiceItemAmounts({ ...data, description });
             const item = await invoiceItemsRepository.create(tx, invoiceId, computed);
 
             await recalculateInvoiceTotals(tx, tenantId, invoiceId);

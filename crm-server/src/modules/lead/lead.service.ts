@@ -10,24 +10,31 @@ import { dealRepository } from '../deal/deal.repository.js';
 import { pipelineRepository } from '../deal/pipeline.repository.js';
 import { addDays } from 'date-fns';
 import { assignRepository } from './lead-assignment/assign.repository.js';
-import { CreateAssignInputs } from './lead-assignment/assign.schema.js';
 import { LeadStatusOrder } from './lead.util.js';
+import { cacheQuery } from '../../shared/redis/query.js';
+import redisService from '../../shared/redis/caching.js';
 
 export const leadService = {
   async list(tenantId: string, filters: LeadFilters) {
-    const leads = await prisma.$transaction(async (tx) => {
-      return leadsRepository.findMany(tx, tenantId, filters);
-    });
-    if (!leads || leads.length === 0) throw ApiError.notFound('No leads found');
-    return leads;
+    const redisKey = `lead-list-${tenantId}-${JSON.stringify(filters)}`;
+    return cacheQuery(redisKey, 200, async () => {
+      const leads = await prisma.$transaction(async (tx) => {
+        return leadsRepository.findMany(tx, tenantId, filters);
+      });
+      if (!leads || leads.length === 0) throw ApiError.notFound('No leads found');
+      return leads;
+    })
   },
 
   async getById(tenantId: string, id: string) {
-    const lead = await prisma.$transaction(async (tx) => {
-      return leadsRepository.findById(tx, tenantId, id);
+    const redisKey = `lead-get-${tenantId}-${id}`;
+    return cacheQuery(redisKey, 300, async () => {
+      const lead = await prisma.$transaction(async (tx) => {
+        return leadsRepository.findById(tx, tenantId, id);
+      })
+      if (!lead) throw ApiError.notFound('Lead not found');
+      return lead;
     })
-    if (!lead) throw ApiError.notFound('Lead not found');
-    return lead;
   },
   async create(tenantId: string, userId: string, input: CreateLeadInput) {
     const lead = await prisma.$transaction(async (tx) => {
@@ -56,11 +63,18 @@ export const leadService = {
 
       return leadsRepository.create(tx, tenantId, company.id, contact.id, userId, input);
     });
+    await Promise.all([
+      redisService.deleteByPattern(`lead-get-${tenantId}-*`),
+      redisService.deleteByPattern(`lead-list-${tenantId}-*`),
+      redisService.deleteByPattern(`company-list-${tenantId}-*`),
+      redisService.deleteByPattern(`contact-list-${tenantId}-*`),
+      redisService.deleteByPattern(`communications-${tenantId}-*`),
+    ])
 
     eventBus.emit("lead.created", { leadId: lead.id, tenantId });
     return lead;
   },
-  
+
   async updateStatus(tenantId: string, id: string, status: LeadStatus, actingUserId: string) {
     const result = await prisma.$transaction(async (tx) => {
       const lead = await leadsRepository.findById(tx, tenantId, id);
@@ -106,6 +120,12 @@ export const leadService = {
 
       return { lead: updatedLead, deal };
     });
+    await Promise.all([
+      redisService.deleteByPattern(`lead-get-${tenantId}-*`),
+      redisService.deleteByPattern(`lead-list-${tenantId}-*`),
+      redisService.deleteByPattern(`deal-list-${tenantId}-*`),
+    ])
+
     eventBus.emit("lead.status_changed", {
       leadId: id,
       tenantId,
@@ -123,21 +143,14 @@ export const leadService = {
       if (!lead) throw ApiError.notFound('Lead not found');
       return leadsRepository.updateLead(tx, tenantId, id, data);
     });
+    await Promise.all([
+      redisService.deleteByPattern(`lead-get-${tenantId}-*`),
+      redisService.deleteByPattern(`lead-list-${tenantId}-*`)
+    ])
     if (!lead) throw ApiError.notFound('Lead not found');
     return lead;
   },
-  // async convertToContact(tenantId: string, id: string) {
-  //   const lead = await prisma.$transaction(async (tx) => {
-  //     const lead = await leadsRepository.findById(tx, tenantId, id);
-  //     if (!lead) throw ApiError.notFound('Lead not found');
-  //     return leadsRepository.findById(tx, tenantId, id);
-  //   });
 
-  //   await leadsRepository.updateStatus(tenantId, id, 'CONTRACTED');
-  //   eventBus.emit('lead.converted', { leadId: id, tenantId, contactId: contact.id });
-
-  //   return contact;
-  // },
   async assign(tenantId: string, id: string, assignId: string) {
     const lead = await prisma.$transaction(async (tx) => {
       const existingLead = await leadsRepository.findById(tx, tenantId, id);
@@ -149,7 +162,10 @@ export const leadService = {
       }
       return leadsRepository.assignLead(tx, tenantId, id, assignee.id);
     });
-
+    await Promise.all([
+      redisService.deleteByPattern(`lead-get-${tenantId}-*`),
+      redisService.deleteByPattern(`lead-list-${tenantId}-*`)
+    ])
     eventBus.emit("lead.assigned", { leadId: id, tenantId, assignedTo: assignId });
 
     return lead;
@@ -158,6 +174,10 @@ export const leadService = {
     const lead = await prisma.$transaction(async (tx) => {
       return leadsRepository.deleteLead(tx, tenantId, id);
     })
+    await Promise.all([
+      redisService.deleteByPattern(`lead-get-${tenantId}-*`),
+      redisService.deleteByPattern(`lead-list-${tenantId}-*`)
+    ])
     eventBus.emit("lead.deleted", { leadId: id, tenantId });
     return lead;
   }

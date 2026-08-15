@@ -4,6 +4,8 @@ import {
   CommunicationStatus,
 } from "../../../generated/prisma/enums.js";
 import { prisma } from "../../../lib/prisma.js";
+import { cacheQuery } from "../../shared/redis/query.js";
+import redisService from "../../shared/redis/caching.js";
 import { ApiError } from "../../shared/utils/ApiError.js";
 import { toWhatsAppNumber } from "../../shared/utils/phoneZone.js";
 import { SendCommunicationDto } from "./dto/communication.dto.js";
@@ -33,7 +35,7 @@ export const communicationService = {
       where: { id: leadId },
       select: {
         id: true,
-        tenant_id: true,       // add whatever else send() actually needs
+        tenant_id: true,
         companyId: true,
         contact: {
           select: { phone: true },
@@ -66,7 +68,7 @@ export const communicationService = {
     if (!rawTo) {
       throw new ApiError(400, "No phone number available for this lead — add one before messaging via WhatsApp");
     }
-    const to = toWhatsAppNumber(rawTo)
+    const to = toWhatsAppNumber(rawTo);
 
     const communication = await prisma.communications.create({
       data: {
@@ -83,6 +85,10 @@ export const communicationService = {
         created_by: ctx.createdBy,
       },
     });
+
+    // A new communications row exists now regardless of send outcome below —
+    // bust the cached list immediately so it doesn't serve a stale result.
+    await redisService.delete(`communications-${ctx.tenantId}-${ctx.leadId}`);
 
     try {
       const response = await whatsAppService.sendTextMessage(to, data.body ?? "");
@@ -106,25 +112,29 @@ export const communicationService = {
       throw err;
     }
   },
+
   async viewCommunications(tenantId: string, leadId: string) {
-    const findLead = await prisma.leads.findFirst({
-      where: { id: leadId, tenant_id: tenantId },
-      include: { contact: true },
+    const redisCache = `communications-${tenantId}-${leadId}`;
+    return cacheQuery(redisCache, 200, async () => {
+      const findLead = await prisma.leads.findFirst({
+        where: { id: leadId, tenant_id: tenantId },
+        include: { contact: true },
+      });
+
+      if (!findLead) {
+        throw new ApiError(404, "Lead not found");
+      }
+
+      const communications = await prisma.communications.findMany({
+        where: { lead_id: leadId, tenant_id: tenantId },
+        include: { contact: true },
+        orderBy: { created_at: "desc" },
+      });
+
+      return {
+        contact: findLead.contact,
+        communications,
+      };
     });
-
-    if (!findLead) {
-      throw new ApiError(404, "Lead not found");
-    }
-
-    const communications = await prisma.communications.findMany({
-      where: { lead_id: leadId, tenant_id: tenantId },
-      include: { contact: true },
-      orderBy: { created_at: "desc" },
-    });
-
-    return {
-      contact: findLead.contact,
-      communications,
-    };
   },
 };

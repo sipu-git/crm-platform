@@ -1,23 +1,31 @@
 import { prisma } from '../../../lib/prisma.js';
+import { cacheQuery } from '../../shared/redis/query.js';
 import { ApiError } from '../../shared/utils/ApiError.js';
 import { contactsRepository } from './contact.repository.js';
 import type { CreateContactInput, UpdateContactInput } from './contact.schema.js';
+import redisService from '../../shared/redis/caching.js';
 
 export const contactService = {
   async list(tenantId: string) {
-    const contact = await prisma.$transaction(async (tx) => {
-      return contactsRepository.findMany(tx, tenantId);
-    });
-    if (!contact) throw ApiError.notFound('No contacts found');
-    return contact;
+    let redisKey = `contact-list-${tenantId}`;
+    return cacheQuery(redisKey, 300, async () => {
+      const contact = await prisma.$transaction(async (tx) => {
+        return contactsRepository.findMany(tx, tenantId);
+      });
+      if (!contact) throw ApiError.notFound('No contacts found');
+      return contact;
+    })
   },
 
   async getById(tenantId: string, id: string) {
-    const contact = await prisma.$transaction(async (tx) => {
-      return contactsRepository.findById(tx, tenantId, id);
-    });
-    if (!contact) throw ApiError.notFound('Contact not found');
-    return contact;
+    let redisKey = `contact-get-${tenantId}-${id}`;
+    return cacheQuery(redisKey, 300, async () => {
+      const contact = await prisma.$transaction(async (tx) => {
+        return contactsRepository.findById(tx, tenantId, id);
+      });
+      if (!contact) throw ApiError.notFound('Contact not found');
+      return contact;
+    })
   },
 
   async update(tenantId: string, id: string, input: UpdateContactInput) {
@@ -26,6 +34,10 @@ export const contactService = {
       if (result.count === 0) throw ApiError.notFound('Contact not found');
       return contactsRepository.findById(tx, tenantId, id);
     });
+    await Promise.all([
+      redisService.deleteByPattern(`contact-get-${tenantId}-*`),
+      redisService.deleteByPattern(`contact-list-${tenantId}-*`)
+    ])
     return contact;
   },
 
@@ -35,6 +47,11 @@ export const contactService = {
       if (result.count === 0) throw ApiError.notFound('Contact not found');
       return result;
     });
+    await Promise.all([
+      redisService.deleteByPattern(`contact-get-${tenantId}-*`),
+      redisService.deleteByPattern(`contact-list-${tenantId}-*`)
+    ])
+
     return contact;
   },
 }
