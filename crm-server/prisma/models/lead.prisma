@@ -2,13 +2,13 @@ model Leads {
     id           String     @id @default(cuid())
     tenant_id    String
     company_name String
+    project_name String?
+    project_type String?
     companyId    String
     contactId    String
-    project_name String
-    project_type String?
     assigned_to  String?
     source       Source
-    status       LeadStatus
+    status       LeadStatus @default(NEW)
     created_by   String
     created_At   DateTime   @default(now())
     updated_at   DateTime   @updatedAt
@@ -21,6 +21,7 @@ model Leads {
 
     communications Communications[]
     deal           Deal[]
+    project        Project[]
 
     @@index([tenant_id])
     @@index([assigned_to])

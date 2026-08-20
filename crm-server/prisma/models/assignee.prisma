@@ -8,6 +8,7 @@ model Assignee {
 
     leads      Leads[]
     activities Activities[]
+    project    Project[]
     user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
     tenant Tenant  @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
 

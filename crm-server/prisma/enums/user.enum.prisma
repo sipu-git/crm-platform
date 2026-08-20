@@ -5,3 +5,9 @@ enum Role {
     FINANCE
     CLIENT
 }
+
+enum TenantStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+}

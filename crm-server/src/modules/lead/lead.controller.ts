@@ -19,12 +19,6 @@ export const leadController = {
     const lead = await leadService.getById(req.tenantId!, id);
     return res.status(200).json(successResponse("Lead fetch successfully!", lead))
   },
-
-  async create(req: Request, res: Response) {
-    const lead = await leadService.create(req.tenantId!, req.auth!.userId, req.body);
-    return res.status(201).json(successResponse("Lead created successfully!", lead))
-  },
-
   async updateStatus(req: Request, res: Response) {
     const id = req.params.id as any;
     if (!id) {

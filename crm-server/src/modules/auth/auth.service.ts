@@ -71,4 +71,5 @@ export const authService = {
       user: { id: user.id, name: user.full_name, email: user.email, role: user.role, tenantId: user.tenantId },
     };
   },
+
 };

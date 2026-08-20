@@ -10,7 +10,7 @@ import redisService from '../../../shared/redis/caching';
 export const invoiceService = {
   async list(tenantId: string, status?: InvoiceStatus, dealId?: string) {
     const redisKey = `invoice-list-${tenantId}-${status}-${dealId}`;
-    return cacheQuery(redisKey, 300, async () => {
+    return cacheQuery(redisKey, 200, async () => {
       const invoice = await prisma.$transaction(async (tx) => {
         return invoiceRepository.findMany(tx, tenantId, status, dealId);
       })
@@ -20,7 +20,7 @@ export const invoiceService = {
 
   async getById(tenantId: string, id: string) {
     const redisCache = `invoice-get-${tenantId}-${id}`;
-    return cacheQuery(redisCache, 300, async () => {
+    return cacheQuery(redisCache, 400, async () => {
       const invoice = await prisma.$transaction(async (tx) => {
         const findInvoice = await invoiceRepository.findById(tx, tenantId, id);
         if (!findInvoice) throw ApiError.notFound('Invoice not found');

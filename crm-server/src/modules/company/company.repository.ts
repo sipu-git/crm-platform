@@ -17,9 +17,13 @@ export const companyRepository = {
     findCompany(tx: PrismaClientTx, tenantId: string, id: string) {
         return tx.company.findFirst({
             where: { tenant_id: tenantId, id },
-            include:{
-                leads: true,
-            }
+            include: {
+                _count: {
+                    select: {
+                        leads: true
+                    }
+                }
+            },
         });
     },
     modify(tx: PrismaClientTx, tenantId: string, id: string, data: any) {
@@ -34,18 +38,19 @@ export const companyRepository = {
         });
     },
     filterCompany(tx: PrismaClientTx, tenantId: string, filters: any) {
+        const page = Number(filters.page) || 1;
+        const limit = Number(filters.limit) || 20;
+
         return tx.company.findMany({
             where: {
                 tenant_id: tenantId,
-                ...(filters.industry ? { industry: filters.industry as any } : {}),
-                ...(filters.company ? { name: filters.company as any } : {}),
-                ...(filters.page ? { website: filters.page as any } : {}),
-                ...(filters.limit ? { website: filters.limit as any } : {}),
+                ...(filters.industry ? { industry: filters.industry } : {}),
+                ...(filters.company ? { name: { contains: filters.company, mode: "insensitive" } } : {}),
             },
-            include:{
-                leads: true
-            },
+            include: { leads: true },
             orderBy: { created_at: "desc" },
+            skip: (page - 1) * limit,
+            take: limit,
         });
     },
     upsertStubByName(tx: PrismaClientTx, tenantId: string, ownerId: string, companyName: string, soruce?: string) {

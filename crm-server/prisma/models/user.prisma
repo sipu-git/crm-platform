@@ -18,7 +18,7 @@ model User {
     audits       AuditLogs[]
     deviceToken  DeviceToken[]
     company      Company[]
-    
+    project      Project[]
     @@unique([tenantId, email])
     @@index([tenantId])
 }

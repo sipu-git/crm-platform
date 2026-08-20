@@ -11,7 +11,7 @@ import redisService from '../../shared/redis/caching';
 export const dealService = {
   async getById(tenantId: string, id: string) {
     const cacheKey = `deal-get-${tenantId}-${id}`;
-    return cacheQuery(cacheKey, 300, async () => {
+    return cacheQuery(cacheKey, 400, async () => {
       const deal = await prisma.$transaction(async (tx) => {
         return dealRepository.findById(tx, tenantId, id);
       })
@@ -22,7 +22,7 @@ export const dealService = {
 
   async list(tenantId: string, ownerId: string) {
     const cacheKey = `deal-list-${tenantId}-${ownerId}`;
-    return cacheQuery(cacheKey, 300, async () => {
+    return cacheQuery(cacheKey, 200, async () => {
       const deal = await prisma.$transaction(async (tx) => {
         return dealRepository.findMany(tx, tenantId, ownerId);
       })
@@ -33,7 +33,7 @@ export const dealService = {
 
   async board(tenantId: string) {
     const cacheKey = `deal-board-${tenantId}`;
-    return cacheQuery(cacheKey, 300, async () => {
+    return cacheQuery(cacheKey, 500, async () => {
       const deal = await prisma.$transaction(async (tx) => {
         return dealRepository.findGroupedByStage(tx, tenantId);
       })

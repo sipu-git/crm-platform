@@ -16,7 +16,7 @@ export const assigneeService = {
   },
   async list(tenantId: string) {
     const redisCache = `assign-list-${tenantId}`;
-    return cacheQuery(redisCache, 300, async () =>
+    return cacheQuery(redisCache, 400, async () =>
       prisma.$transaction((tx) => assignRepository.findAllByTenant(tx, tenantId)));
   },
 

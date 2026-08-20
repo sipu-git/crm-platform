@@ -13,9 +13,24 @@ model Tenant {
     communications Communications[]
     audits         AuditLogs[]
     invoice        Invoice[]
-    deviceToken  DeviceToken[]
-
+    deviceToken    DeviceToken[]
+    project        Project[]
     created_at     DateTime         @default(now())
+
+    // --- new fields ---
+    gst_number     String?
+    pan_number     String?
+    address        String?
+    city           String?
+    state          String?
+    country        String?
+    pincode        String?
+    website        String?
+    logo_url       String?
+    industry       String?
+    company_size   String?
+    status         TenantStatus     @default(ACTIVE)
+    updated_at     DateTime         @updatedAt
 
     @@index([name])
 }

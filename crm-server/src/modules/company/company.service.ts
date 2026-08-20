@@ -8,7 +8,7 @@ import redisService from '../../shared/redis/caching.js';
 export const companyService = {
     async listCompanies(tenantId: string) {
         const redisKey = `company-list-${tenantId}`;
-        return cacheQuery(redisKey, 300, async () => {
+        return cacheQuery(redisKey, 400, async () => {
             const company = await prisma.$transaction(async (tx) => {
                 return companyRepository.findManyCompanies(tx, tenantId);
             });
@@ -19,7 +19,7 @@ export const companyService = {
     
     async findCompany(tenantId: string, id: string) {
         const redisKey = `company-get-${tenantId}-${id}`;
-        return cacheQuery(redisKey, 300, async () => {
+        return cacheQuery(redisKey, 200, async () => {
             const company = await prisma.$transaction(async (tx) => {
                 return companyRepository.findCompany(tx, tenantId, id);
             });

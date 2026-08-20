@@ -8,7 +8,7 @@ import redisService from '../../shared/redis/caching.js';
 export const contactService = {
   async list(tenantId: string) {
     let redisKey = `contact-list-${tenantId}`;
-    return cacheQuery(redisKey, 300, async () => {
+    return cacheQuery(redisKey, 500, async () => {
       const contact = await prisma.$transaction(async (tx) => {
         return contactsRepository.findMany(tx, tenantId);
       });
@@ -19,13 +19,19 @@ export const contactService = {
 
   async getById(tenantId: string, id: string) {
     let redisKey = `contact-get-${tenantId}-${id}`;
-    return cacheQuery(redisKey, 300, async () => {
+    return cacheQuery(redisKey, 200, async () => {
       const contact = await prisma.$transaction(async (tx) => {
         return contactsRepository.findById(tx, tenantId, id);
       });
       if (!contact) throw ApiError.notFound('Contact not found');
       return contact;
     })
+  },
+  async autoFillByEmail(tenantId: string, email: string) {
+    const contact = await prisma.$transaction(async (tx) => {
+      return contactsRepository.autoFillByEmail(tx, tenantId, email)
+    })
+    return contact;
   },
 
   async update(tenantId: string, id: string, input: UpdateContactInput) {

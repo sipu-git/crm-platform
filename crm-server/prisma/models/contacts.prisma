@@ -5,7 +5,7 @@ model Contacts {
     first_name  String
     last_name   String?
     designation String?
-    email       String?
+    email       String   @unique
     phone       String?
     created_by  String
     created_at  DateTime @default(now())
@@ -20,7 +20,7 @@ model Contacts {
     lead           Leads[]
     communications Communications[]
     invoice        Invoice[]
-    
+    project        Project[]
     @@unique([tenant_id, companyId, email])
     @@index([tenant_id])
 }

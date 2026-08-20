@@ -4,6 +4,7 @@ model Activities {
     deal_id      String
     contact_id   String
     company_id   String
+    project_id   String?
     title        String
     description  String
     status       ActivityStatus
@@ -19,6 +20,7 @@ model Activities {
     tenant   Tenant    @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
     deal     Deal      @relation(fields: [deal_id], references: [id], onDelete: Cascade)
     contacts Contacts  @relation(fields: [contact_id], references: [id], onDelete: Cascade)
+    prject   Project?  @relation(fields: [project_id], references: [id], onDelete: Cascade)
     company  Company   @relation(fields: [company_id], references: [id], onDelete: Cascade)
     user     User      @relation(fields: [created_by], references: [id], onDelete: Cascade)
     assignee Assignee? @relation(fields: [assigned_to], references: [id], onDelete: SetNull)

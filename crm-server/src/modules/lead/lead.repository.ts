@@ -1,5 +1,4 @@
 import { Source, LeadStatus } from "../../../generated/prisma/enums.js";
-import { prisma } from "../../../lib/prisma.js";
 import { PrismaClientTx } from "../../shared/utils/prisma.types.js";
 import { CreateLeadInput, UpdateLeadInput } from "./lead.schema.js";
 

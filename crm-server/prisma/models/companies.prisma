@@ -29,7 +29,8 @@ model Company {
     Invoice        Invoice[]
     leads          Leads[]
     communications Communications[]
-
+    project   Project[]
+    
     tenant Tenant @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
     owner User? @relation(fields: [owner_id], references: [id], onDelete: Cascade)
   

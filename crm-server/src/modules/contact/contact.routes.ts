@@ -5,8 +5,8 @@ import { authGuard } from '../../shared/middleware/authGuard.middleware.js';
 import { tenantContext } from '../../shared/middleware/tenantContext.middleware.js';
 
 const router = Router();
+router.get('/auto-fetch', asyncHandler(contactController.autoFillForm));
 router.use(authGuard, tenantContext);
-
 router.get('/', asyncHandler(contactController.list));
 router.get('/:id', asyncHandler(contactController.getById));
 router.patch('/:id', asyncHandler(contactController.update));

@@ -22,6 +22,14 @@ export const contactsRepository = {
   findById(tx: PrismaClientTx, tenantId: string, id: string) {
     return tx.contacts.findFirst({
       where: { id, tenant_id: tenantId },
+      include: {
+        company: true,
+        _count: {
+          select: {
+            lead: true
+          }
+        }
+      }
     });
   },
 
@@ -38,6 +46,17 @@ export const contactsRepository = {
     });
   },
 
+  autoFillByEmail(tx:PrismaClientTx,tenantId:string,email:string) {
+    return tx.contacts.findFirst({
+      where:{
+        tenant_id:tenantId,
+        email:email
+      },
+      include:{
+        company:true
+      }
+    })
+  },
   findByCompany(tx: PrismaClientTx, tenantId: string, companyId: string) {
     return tx.contacts.findMany({
       where: { tenant_id: tenantId, company_id: companyId },

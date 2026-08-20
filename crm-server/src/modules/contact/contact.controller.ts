@@ -19,6 +19,16 @@ export const contactController = {
     const contact = await contactService.getById(req.tenantId!, getId(req));
     res.json(contact);
   },
+  async autoFillForm(req: Request, res: Response) {
+   
+    const email = req.query.email as string;
+    if (!email) {
+      return res.status(400).json({ success: false, message: "email query param is required" });
+    }
+
+    const contact = await contactService.autoFillByEmail(req.tenantId!, email);
+    return res.json({ success: true, data: contact ?? null });
+  },
 
   async update(req: Request, res: Response) {
     const input = updateContactSchema.parse(req.body);

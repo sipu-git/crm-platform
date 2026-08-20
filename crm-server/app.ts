@@ -12,6 +12,8 @@ import invoiceRoutes from './src/modules/invoice/invoice.routes.js';
 import notificationRoutes from './src/modules/notification/notification.routes.js';
 import auditRoutes from './src/modules/audit/audit.routes.js';
 import communicationRoutes from './src/modules/communications/communication.routes.js';
+import projectRoutes from './src/modules/projects/project.routes.js';
+import profileRoutes from './src/modules/profiles/profile.routes.js';
 import { registerNotificationListeners } from './src/modules/notification/notification.listener.js';
 import { registerAuditListeners } from './src/modules/audit/audit.listener.js';
 import { env } from './src/shared/configs/env.js';
@@ -29,8 +31,11 @@ export function createApp() {
       policy: "cross-origin"
     }
   }));
-  app.use(cors({ origin: [env.clientUrl,"https://crm-platform-backend-91af.onrender.com","https://crm-platform-weld.vercel.app"], 
-    credentials: true }));
+  app.use(cors({
+    origin: [env.clientUrl, "https://crm-platform-backend-91af.onrender.com",
+      "https://crm-platform-weld.vercel.app", "http://localhost:3000", "https://crm-landing-application.vercel.app"],
+    credentials: true
+  }));
   app.use(express.json({
     verify: (req: any, _res, buf) => {
       req.rawBody = buf
@@ -51,6 +56,8 @@ export function createApp() {
   app.use('/api/notifications', notificationRoutes);
   app.use('/api/audit', auditRoutes);
   app.use('/api/communications', communicationRoutes);
+  app.use('/api/project', projectRoutes);
+  app.use('/api/profile', profileRoutes);
 
   app.use(errorHandler);
 

@@ -12,11 +12,15 @@ declare global {
 
 export function authGuard(req: Request, _res: Response, next: NextFunction) {
   const header = req.headers.authorization;
-  if (!header?.startsWith('Bearer ')) {
+  const bearerToken = header?.startsWith('Bearer ') ? header.replace('Bearer ', '') : undefined;
+  const cookieToken = req.cookies?.access_token;
+
+  const token = cookieToken ?? bearerToken;
+
+  if (!token) {
     return next(ApiError.unauthorized('Missing access token'));
   }
 
-  const token = header.replace('Bearer ', '');
   try {
     req.auth = verifyAccessToken(token);
     next();

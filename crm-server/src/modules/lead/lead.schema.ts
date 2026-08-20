@@ -2,15 +2,11 @@ import { z } from 'zod';
 import { LeadStatus, Source } from '../../../generated/prisma/enums.js';
 
 export const createLeadSchema = z.object({
-  first_name: z.string().min(1),
-  last_name: z.string().min(1),
   source: z.enum(Source).default(Source.OTHER),
   project_name: z.string().min(1),
   project_type: z.string().optional(),
   company_name: z.string().min(1),
-  email: z.string().email(),
-  phone: z.string().min(1),
-  designation: z.string("The designation field is required!"),
+  status: z.enum(LeadStatus).default(LeadStatus.NEW),
   assigned_to: z.string().cuid().optional()
 });
 

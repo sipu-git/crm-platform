@@ -36,44 +36,6 @@ export const leadService = {
       return lead;
     })
   },
-  async create(tenantId: string, userId: string, input: CreateLeadInput) {
-    const lead = await prisma.$transaction(async (tx) => {
-      const company = await companyRepository.upsertStubByName(
-        tx, tenantId, userId, input.company_name.trim(), input.source
-      );
-
-      let contact = input.email ? await tx.contacts.findFirst({
-        where: { tenant_id: tenantId, companyId: company.id, email: input.email },
-      })
-        : input.phone
-          ? await tx.contacts.findFirst({
-            where: { tenant_id: tenantId, companyId: company.id, phone: input.phone },
-          }) : null;
-
-      if (!contact) {
-        contact = await contactsRepository.create(tx, tenantId, userId, {
-          companyId: company.id,
-          firstName: input.first_name.trim(),
-          lastName: input.last_name?.trim(),
-          designation: input.designation,
-          email: input.email,
-          phone: input.phone,
-        });
-      }
-
-      return leadsRepository.create(tx, tenantId, company.id, contact.id, userId, input);
-    });
-    await Promise.all([
-      redisService.deleteByPattern(`lead-get-${tenantId}-*`),
-      redisService.deleteByPattern(`lead-list-${tenantId}-*`),
-      redisService.deleteByPattern(`company-list-${tenantId}-*`),
-      redisService.deleteByPattern(`contact-list-${tenantId}-*`),
-      redisService.deleteByPattern(`communications-${tenantId}-*`),
-    ])
-
-    eventBus.emit("lead.created", { leadId: lead.id, tenantId });
-    return lead;
-  },
 
   async updateStatus(tenantId: string, id: string, status: LeadStatus, actingUserId: string) {
     const result = await prisma.$transaction(async (tx) => {
