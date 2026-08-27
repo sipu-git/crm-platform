@@ -7,6 +7,8 @@ import {
   updateInvoiceItem,
   deleteInvoiceItem,
 } from "@/features/invoices/service1/slice";
+import { fetchCompanies } from "@/features/companies/slice";
+import type { Company } from "@/features/companies/company.types";
 import type { CreateInvoiceLineItemInput } from "@/features/invoices/service2/types";
 import { PageHeader } from "@/components/ui-kit";
 import { Button } from "@/components/ui/button";
@@ -14,16 +16,31 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft, Plus, Trash2, Pencil, Check, X } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  ArrowLeft,
+  Plus,
+  Trash2,
+  Pencil,
+  Check,
+  X,
+  Building2,
+  Sparkles,
+  ExternalLink,
+  ChevronDown,
+} from "lucide-react";
 import { toast } from "sonner";
 
-function fmt(n: number, currency: string) {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency,
-    maximumFractionDigits: 2,
-  }).format(n);
-}
+import { formatCurrency } from "@/lib/currency";
+
+const fmt = (n: number, _currency?: string) => formatCurrency(n, { maximumFractionDigits: 2 });
 
 const STATUS_COLOR: Record<string, string> = {
   DRAFT: "bg-muted text-muted-foreground",
@@ -53,6 +70,8 @@ export function InvoiceDetail() {
   const invoice = useAppSelector(selectInvoiceDetail);
   const loading = useAppSelector(selectInvoicesLoading);
 
+  const companies = useAppSelector((state) => state.companies.companies);
+
   const [buyerDraft, setBuyerDraft] = useState({
     buyer_name: "", buyer_gstin: "", buyer_address: "", buyer_state: "",
   });
@@ -68,7 +87,40 @@ export function InvoiceDetail() {
 
   useEffect(() => {
     if (invoiceId) dispatch(fetchInvoice(invoiceId));
+    dispatch(fetchCompanies());
   }, [dispatch, invoiceId]);
+
+  const handlePopulateFromCompany = async (company: Company) => {
+    const buyerName = company.legal_name || company.name;
+    const buyerGstin = company.gst_number || "";
+    const buyerAddress =
+      company.billing_address ||
+      [company.address_line1, company.address_line2, company.city, company.state, company.postal_code]
+        .filter(Boolean)
+        .join(", ") ||
+      "";
+    const buyerState = company.place_of_supply || company.state || "";
+
+    const updated = {
+      buyer_name: buyerName,
+      buyer_gstin: buyerGstin,
+      buyer_address: buyerAddress,
+      buyer_state: buyerState,
+    };
+
+    setBuyerDraft(updated);
+    if (!invoice) return;
+
+    setSaving(true);
+    try {
+      await dispatch(updateInvoice({ id: invoice.id, changes: updated })).unwrap();
+      toast.success(`Populated buyer information from "${company.name}"`);
+    } catch {
+      toast.error("Failed to auto-save populated buyer details");
+    } finally {
+      setSaving(false);
+    }
+  };
 
   useEffect(() => {
     if (invoice) {
@@ -101,29 +153,29 @@ export function InvoiceDetail() {
   const isDraft = invoice.status === "DRAFT";
   const items = invoice.items ?? [];
 
-  async function saveBuyerDetails() {
-    setSaving(true);
-    try {
-      await dispatch(updateInvoice({ id: invoice!.id, changes: buyerDraft })).unwrap();
-      toast.success("Saved");
-    } catch {
-      toast.error("Failed to save");
-    } finally {
-      setSaving(false);
-    }
-  }
+  // async function saveBuyerDetails() {
+  //   setSaving(true);
+  //   try {
+  //     await dispatch(updateInvoice({ id: invoice!.id, changes: buyerDraft })).unwrap();
+  //     toast.success("Saved");
+  //   } catch {
+  //     toast.error("Failed to save");
+  //   } finally {
+  //     setSaving(false);
+  //   }
+  // }
 
-  async function saveSellerDetails() {
-    setSaving(true);
-    try {
-      await dispatch(updateInvoice({ id: invoice!.id, changes: sellerDraft })).unwrap();
-      toast.success("Saved");
-    } catch {
-      toast.error("Failed to save");
-    } finally {
-      setSaving(false);
-    }
-  }
+  // async function saveSellerDetails() {
+  //   setSaving(true);
+  //   try {
+  //     await dispatch(updateInvoice({ id: invoice!.id, changes: sellerDraft })).unwrap();
+  //     toast.success("Saved");
+  //   } catch {
+  //     toast.error("Failed to save");
+  //   } finally {
+  //     setSaving(false);
+  //   }
+  // }
 
   async function saveMeta() {
     setSaving(true);
@@ -281,7 +333,7 @@ export function InvoiceDetail() {
                   value={sellerDraft.seller_name}
                   disabled={!isDraft || saving}
                   onChange={(e) => setSellerDraft((d) => ({ ...d, seller_name: e.target.value }))}
-                  onBlur={saveSellerDetails}
+                  // onBlur={saveSellerDetails}
                 />
               </Field>
               <Field label="Seller GSTIN">
@@ -289,7 +341,7 @@ export function InvoiceDetail() {
                   value={sellerDraft.seller_gstin}
                   disabled={!isDraft || saving}
                   onChange={(e) => setSellerDraft((d) => ({ ...d, seller_gstin: e.target.value }))}
-                  onBlur={saveSellerDetails}
+                  // onBlur={saveSellerDetails}
                   placeholder="—"
                 />
               </Field>
@@ -298,7 +350,7 @@ export function InvoiceDetail() {
                   value={sellerDraft.seller_address}
                   disabled={!isDraft || saving}
                   onChange={(e) => setSellerDraft((d) => ({ ...d, seller_address: e.target.value }))}
-                  onBlur={saveSellerDetails}
+                  // onBlur={saveSellerDetails}
                   placeholder="—"
                 />
               </Field>
@@ -307,53 +359,138 @@ export function InvoiceDetail() {
                   value={sellerDraft.seller_state}
                   disabled={!isDraft || saving}
                   onChange={(e) => setSellerDraft((d) => ({ ...d, seller_state: e.target.value }))}
-                  onBlur={saveSellerDetails}
+                  // onBlur={saveSellerDetails}
                   placeholder="—"
                 />
               </Field>
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader><CardTitle className="text-sm font-medium">Buyer details</CardTitle></CardHeader>
-            <CardContent className="space-y-3 py-2">
-              <Field label="Buyer name">
-                <Input
-                  value={buyerDraft.buyer_name}
-                  disabled={!isDraft || saving}
-                  onChange={(e) => setBuyerDraft((d) => ({ ...d, buyer_name: e.target.value }))}
-                  onBlur={saveBuyerDetails}
-                />
-              </Field>
-              <Field label="Buyer GSTIN">
-                <Input
-                  value={buyerDraft.buyer_gstin}
-                  disabled={!isDraft || saving}
-                  onChange={(e) => setBuyerDraft((d) => ({ ...d, buyer_gstin: e.target.value }))}
-                  onBlur={saveBuyerDetails}
-                  placeholder="—"
-                />
-              </Field>
-              <Field label="Buyer address">
-                <Input
-                  value={buyerDraft.buyer_address}
-                  disabled={!isDraft || saving}
-                  onChange={(e) => setBuyerDraft((d) => ({ ...d, buyer_address: e.target.value }))}
-                  onBlur={saveBuyerDetails}
-                  placeholder="—"
-                />
-              </Field>
-              <Field label="Buyer state">
-                <Input
-                  value={buyerDraft.buyer_state}
-                  disabled={!isDraft || saving}
-                  onChange={(e) => setBuyerDraft((d) => ({ ...d, buyer_state: e.target.value }))}
-                  onBlur={saveBuyerDetails}
-                  placeholder="—"
-                />
-              </Field>
-            </CardContent>
-          </Card>
+          {/* Buyer Details */}
+          {(() => {
+            const matchedCompany = companies.find(
+              (c) =>
+                (c.name && buyerDraft.buyer_name && c.name.toLowerCase() === buyerDraft.buyer_name.toLowerCase()) ||
+                (c.legal_name && buyerDraft.buyer_name && c.legal_name.toLowerCase() === buyerDraft.buyer_name.toLowerCase()) ||
+                (c.gst_number && buyerDraft.buyer_gstin && c.gst_number === buyerDraft.buyer_gstin)
+            );
+
+            return (
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between pb-3 space-y-0">
+                  <div className="flex items-center gap-2">
+                    <Building2 className="h-4 w-4 text-primary" />
+                    <CardTitle className="text-sm font-medium">Buyer details</CardTitle>
+                  </div>
+
+                  {isDraft && (
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="h-7.5 px-2.5 text-xs gap-1.5 border-primary/30 text-primary hover:bg-primary/10 font-medium"
+                        >
+                          <Sparkles className="h-3 w-3 text-primary" />
+                          <span>Populate from Company</span>
+                          <ChevronDown className="h-3 w-3 text-primary/70 ml-0.5" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-80 p-1.5 max-h-72 overflow-y-auto">
+                        <DropdownMenuLabel className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider px-2 py-1">
+                          Select Registered Company
+                        </DropdownMenuLabel>
+                        <DropdownMenuSeparator />
+                        {companies.length === 0 ? (
+                          <div className="py-4 text-xs text-muted-foreground text-center">
+                            No registered companies found
+                          </div>
+                        ) : (
+                          companies.map((c) => (
+                            <DropdownMenuItem
+                              key={c.id}
+                              onClick={() => handlePopulateFromCompany(c)}
+                              className="flex flex-col items-start gap-1 p-2 rounded-lg cursor-pointer hover:bg-muted"
+                            >
+                              <div className="flex items-center justify-between w-full">
+                                <span className="text-xs font-semibold text-foreground">{c.name}</span>
+                                {c.gst_number && (
+                                  <span className="text-[10px] bg-primary/10 text-primary px-1.5 py-0.2 rounded font-mono">
+                                    GSTIN
+                                  </span>
+                                )}
+                              </div>
+                              <span className="text-[11px] text-muted-foreground font-mono truncate max-w-[260px]">
+                                {c.gst_number
+                                  ? `GST: ${c.gst_number}`
+                                  : c.city
+                                  ? `${c.city}, ${c.state || ""}`
+                                  : "No GST/Address"}
+                              </span>
+                            </DropdownMenuItem>
+                          ))
+                        )}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  )}
+                </CardHeader>
+                <CardContent className="space-y-3 py-2">
+                  {matchedCompany && (
+                    <div className="flex items-center justify-between rounded-lg border border-primary/20 bg-primary/5 px-3 py-1.5 text-xs">
+                      <div className="flex items-center gap-1.5 text-primary">
+                        <Building2 className="h-3.5 w-3.5" />
+                        <span className="font-semibold">{matchedCompany.name}</span>
+                      </div>
+                      <Link
+                        to={`/${tenantSlug}/company/${matchedCompany.id}`}
+                        className="inline-flex items-center gap-1 text-[11px] text-primary hover:underline font-medium"
+                      >
+                        <span>View Profile</span>
+                        <ExternalLink className="h-2.5 w-2.5" />
+                      </Link>
+                    </div>
+                  )}
+                  <Field label="Buyer name">
+                    <Input
+                      value={buyerDraft.buyer_name}
+                      disabled={!isDraft || saving}
+                      onChange={(e) => setBuyerDraft((d) => ({ ...d, buyer_name: e.target.value }))}
+                      // onBlur={saveBuyerDetails}
+                      placeholder="Client / Company Name"
+                    />
+                  </Field>
+                  <Field label="Buyer GSTIN">
+                    <Input
+                      value={buyerDraft.buyer_gstin}
+                      disabled={!isDraft || saving}
+                      onChange={(e) => setBuyerDraft((d) => ({ ...d, buyer_gstin: e.target.value.toUpperCase() }))}
+                      // onBlur={saveBuyerDetails}
+                      placeholder="e.g. 27AAPFU0939F1ZV"
+                      className="font-mono uppercase"
+                    />
+                  </Field>
+                  <Field label="Buyer address">
+                    <Input
+                      value={buyerDraft.buyer_address}
+                      disabled={!isDraft || saving}
+                      onChange={(e) => setBuyerDraft((d) => ({ ...d, buyer_address: e.target.value }))}
+                      // onBlur={saveBuyerDetails}
+                      placeholder="Registered office or billing address"
+                    />
+                  </Field>
+                  <Field label="Buyer state / Place of Supply">
+                    <Input
+                      value={buyerDraft.buyer_state}
+                      disabled={!isDraft || saving}
+                      onChange={(e) => setBuyerDraft((d) => ({ ...d, buyer_state: e.target.value }))}
+                      // onBlur={saveBuyerDetails}
+                      placeholder="e.g. Maharashtra or 27"
+                    />
+                  </Field>
+                </CardContent>
+              </Card>
+            );
+          })()}
         </div>
 
         {/* Invoice meta */}
@@ -385,7 +522,11 @@ export function InvoiceDetail() {
             <div className="mb-3 flex items-center justify-between">
               <h3 className="text-sm font-medium">Line items</h3>
               {isDraft && !addingLine && (
-                <Button size="sm" variant="outline" onClick={() => { setAddingLine(true); setItemDraft(EMPTY_LINE); }}>
+                <Button size="sm" variant="outline" onClick={() => {
+                  const defaultDesc = invoice.project?.project_name ?? "";
+                  setItemDraft({ ...EMPTY_LINE, description: defaultDesc });
+                  setAddingLine(true);
+                }}>
                   <Plus className="mr-2 h-4 w-4" /> Add line
                 </Button>
               )}

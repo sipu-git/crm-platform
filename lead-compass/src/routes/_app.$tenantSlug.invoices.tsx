@@ -16,13 +16,9 @@ const STATUS: Record<InvoiceStatus, string> = {
   CANCELLED: "bg-muted text-muted-foreground line-through",
 };
 
-function fmt(n: number, currency: string) {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency,
-    maximumFractionDigits: 2,
-  }).format(n);
-}
+import { formatCurrency } from "@/lib/currency";
+
+const fmt = (n: number, _currency?: string) => formatCurrency(n);
 
 export function InvoicesPage() {
   const navigate = useNavigate();

@@ -1,7 +1,7 @@
 import { api } from "@/api/client";
 import type { Invoice, CreateInvoiceInput, UpdateInvoiceInput, ListInvoicesQuery } from "./types";
 
-const sub_url = "/invoices/main";
+const sub_url = "/module-invoices/invoice";
 
 export const invoiceApis = {
   list: (query: ListInvoicesQuery = {}) =>

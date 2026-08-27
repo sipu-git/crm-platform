@@ -40,7 +40,9 @@ export interface Invoice {
   terms: string | null;
   created_at: string;
   updated_at: string;
-  items?: InvoiceItem[]; 
+  items?: InvoiceItem[];
+  project_id?: string | null;
+  project?: { id: string; project_name: string } | null;
 }
 
 export interface CreateInvoiceLineItemInput {

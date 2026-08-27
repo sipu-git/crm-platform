@@ -10,16 +10,11 @@ import type { Deal, DealBoardColumn } from "@/features/deals/deal.types";
 import { PageHeader, TableSkeleton, EmptyState } from "@/components/ui-kit";
 import { Button } from "@/components/ui/button";
 import { formatFullName } from "@/hooks/use-format";
+import { formatCurrency } from "@/lib/currency";
 
 type ViewMode = "kanban" | "table";
 
-function fmtMoney(n: number) {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "INR",
-    maximumFractionDigits: 0,
-  }).format(n);
-}
+const fmtMoney = formatCurrency;
 
 function fmtDate(dateStr: string) {
   return new Date(dateStr).toLocaleDateString(undefined, { month: "short", day: "numeric" });

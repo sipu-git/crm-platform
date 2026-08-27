@@ -2,7 +2,7 @@
 import { api } from "@/api/client";
 import type { InvoiceItem, CreateInvoiceItemInput, UpdateInvoiceItemInput } from "./types";
 
-const base = (invoiceId: string) => `/invoices/${invoiceId}/items`;
+const base = (invoiceId: string) => `/module-invoices/${invoiceId}/items`;
 
 export const invoiceItemApis = {
   list: (invoiceId: string) =>

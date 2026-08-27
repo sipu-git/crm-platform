@@ -20,6 +20,12 @@ export interface Company {
   state?: string | null;
   country?: string | null;
   postal_code?: string | null;
+  gst_number?: string | null;
+  pan_number?: string | null;
+  billing_email?: string | null;
+  billing_phone?: string | null;
+  billing_address?: string | null;
+  place_of_supply?: string | null;
   source?: string | null;
   tags?: string[];
   custom_fields?: Record<string, unknown> | null;
@@ -44,6 +50,12 @@ export interface CreateCompany {
   state?: string;
   country?: string;
   postal_code?: string;
+  gst_number?: string;
+  pan_number?: string;
+  billing_email?: string;
+  billing_phone?: string;
+  billing_address?: string;
+  place_of_supply?: string;
   source?: string;
   tags?: string[];
   custom_fields?: Record<string, unknown>;

@@ -13,9 +13,15 @@ import audit from "@/features/audit/slice";
 import companies from "@/features/companies/slice";
 import communications from '@/features/communications/communication.slice';
 import assignees from "@/features/leads/service2/slice";
+import projects from "@/features/projects/slice";
+import profile from "@/features/profiles/slice";
+import users from '@/features/users/slice';
+import recovery from "@/features/auth/recovery.slice";
 
 const appReducer = combineReducers({
   auth,
+  recovery,
+  users,
   tenant,
   leads,
   deals,
@@ -27,8 +33,10 @@ const appReducer = combineReducers({
   assignees,
   contacts,
   activities,
+  profile,
   audit,
   companies,
+  projects
 });
 
 // Root reducer resets tenant-scoped slices on TENANT_RESET.
@@ -38,15 +46,18 @@ export const rootReducer: typeof appReducer = (state, action) => {
       {
         ...state,
         leads: undefined as never,
+        users: undefined as never,
         deals: undefined as never,
         invoiceItems: undefined as never,
         invoices: undefined as never,
         notifications: undefined as never,
         communications: undefined as never,
         contacts: undefined as never,
+        profile: undefined as never,
         activities: undefined as never,
         audit: undefined as never,
         companies: undefined as never,
+        projects: undefined as never
       },
       action,
     );

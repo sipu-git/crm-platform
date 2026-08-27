@@ -50,8 +50,7 @@
 :root {
   --radius: 0.5rem;
   /* Slate 50 */
-  --background: oklch(0.984 0.003 247);
-  /* Slate 900 */
+  --background: radial-gradient(circle at 35% 76%, #fbecf9,#ece7fb);  /* Slate 900 */
   --foreground: oklch(0.208 0.042 265);
   --card: oklch(1 0 0);
   --card-foreground: oklch(0.208 0.042 265);

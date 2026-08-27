@@ -16,6 +16,8 @@ const INITIAL_STATE: CommunicationState = {
   loading: false,
   error: null,
   filters: {},
+  gmailStatus: null,
+  gmailLoading: false,
 };
 
 export const sendMessage = createAsyncThunk<Communication,
@@ -39,6 +41,32 @@ export const viewCommunications = createAsyncThunk<CommunicationsResponse, strin
     return rejectWithValue(handleApiError(error));
   }
 });
+
+export const fetchGmailStatus = createAsyncThunk(
+  "communications/gmailStatus",
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await communicationApis.getGmailStatus();
+      return response.data.data;
+    } catch (error) {
+      return rejectWithValue(handleApiError(error));
+    }
+  }
+);
+
+export const disconnectGmail = createAsyncThunk(
+  "communications/disconnectGmail",
+  async (accountId: string, { rejectWithValue, dispatch }) => {
+    try {
+      const response = await communicationApis.disconnectGmailAccount(accountId);
+      dispatch(fetchGmailStatus());
+      return response.data.data;
+    } catch (error) {
+      return rejectWithValue(handleApiError(error));
+    }
+  }
+);
+
 // export const viewCommunications = createAsyncThunk<Communication[],
 //   { leadId: string; filters?: CommunicationFilters },
 //   { rejectValue: string }
@@ -106,6 +134,18 @@ const communicationSlice = createSlice({
       .addCase(viewCommunications.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload ?? "Failed to load communications";
+      })
+      // Gmail status
+      .addCase(fetchGmailStatus.pending, (state) => {
+        state.gmailLoading = true;
+      })
+      .addCase(fetchGmailStatus.fulfilled, (state, action) => {
+        state.gmailLoading = false;
+        state.gmailStatus = action.payload;
+      })
+      .addCase(fetchGmailStatus.rejected, (state) => {
+        state.gmailLoading = false;
+        state.gmailStatus = { connected: false };
       });
     // view / list
     //   .addCase(viewCommunications.pending, (state) => {

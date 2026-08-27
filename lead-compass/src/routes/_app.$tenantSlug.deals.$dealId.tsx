@@ -8,20 +8,27 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { ArrowLeft, Pencil, Check, X, Trash2 } from "lucide-react";
+import {
+  ArrowLeft,
+  Pencil,
+  Check,
+  X,
+  Trash2,
+  LayoutGrid,
+  Activity as ActivityIcon,
+  User as UserIcon,
+  Target,
+  Receipt,
+  Info,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { formatFullName } from "@/hooks/use-format";
 import { toast } from "sonner";
 import { ActivityTab } from "@/components/activities/ActivityTabs";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { formatCurrency } from "@/lib/currency";
 
-function fmt(n: number) {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-    maximumFractionDigits: 0,
-  }).format(n);
-}
+const fmt = formatCurrency;
 
 export function DealDetail() {
   const { tenantSlug = "", dealId = "" } = useParams();
@@ -39,7 +46,7 @@ export function DealDetail() {
   const [savingAmount, setSavingAmount] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const navigate = useNavigate()
+  const navigate = useNavigate();
 
   useEffect(() => {
     if (dealId) dispatch(fetchDeal(dealId));
@@ -109,6 +116,7 @@ export function DealDetail() {
       setSavingAmount(true);
       await dispatch(updateDeal({ id: deal!.id, changes: { amount: parsed } })).unwrap();
       setIsEditingAmount(false);
+      toast.success("Amount updated");
     } catch (err) {
       toast.error("Failed to update amount");
     } finally {
@@ -130,8 +138,21 @@ export function DealDetail() {
     }
   }
 
+  const NAV_ITEMS = [
+    { value: "overview", label: "Overview", icon: LayoutGrid, hint: "Amount, stage & notes" },
+    { value: "activity", label: "Activity", icon: ActivityIcon, hint: "Calls, emails & tasks" },
+    { value: "contacts", label: "Contact", icon: UserIcon, hint: "Primary point of contact" },
+    { value: "leads", label: "Lead", icon: Target, hint: "Where this deal came from" },
+    {
+      value: "invoices",
+      label: "Invoices",
+      icon: Receipt,
+      hint: invoicesLoading ? "Loading…" : `${invoices?.length ?? 0} invoice${invoices?.length === 1 ? "" : "s"}`,
+    },
+  ] as const;
+
   return (
-    <div>
+    <div className="flex h-full flex-col">
       <PageHeader
         title={deal.title}
         description={`${companyName ?? "No company"} • ${fmt(deal.amount)} • Closes ${new Date(deal.expected_close_date).toLocaleDateString()}`}
@@ -139,7 +160,7 @@ export function DealDetail() {
           <div className="flex items-center gap-2">
             <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
               <AlertDialogTrigger asChild>
-                <Button variant="destructive" size="sm">
+                <Button variant="destructive" size="sm" title="Permanently delete this deal">
                   <Trash2 className="mr-2 h-4 w-4" /> Delete
                 </Button>
               </AlertDialogTrigger>
@@ -170,17 +191,43 @@ export function DealDetail() {
           </div>
         }
       />
-      <div className="p-6">
-        <Tabs defaultValue="overview">
-          <TabsList>
-            <TabsTrigger value="overview">Overview</TabsTrigger>
-            <TabsTrigger value="activity">Activity</TabsTrigger>
-            <TabsTrigger value="contacts">Contact</TabsTrigger>
-            <TabsTrigger value="leads">Lead</TabsTrigger>
-            <TabsTrigger value="invoices">Invoices</TabsTrigger>
+
+      <Tabs defaultValue="overview" className="flex min-h-0 flex-1 flex-col md:flex-row">
+        {/* Sub-sidebar */}
+        <aside className="flex shrink-0 flex-col border-b bg-white md:h-full md:w-64 md:border-b-0 md:border-r dark:bg-background">
+          <TabsList className="h-auto items-stretch justify-start gap-1 overflow-x-auto rounded-none bg-white p-3 md:flex-col md:overflow-visible dark:bg-background">
+            {NAV_ITEMS.map(({ value, label, icon: Icon, hint }) => (
+              <TabsTrigger
+                key={value}
+                value={value}
+                className="w-full shrink-0 justify-start gap-2.5 rounded-md px-3 py-2.5 text-sm font-medium text-muted-foreground shadow-none data-[state=active]:bg-primary/10 data-[state=active]:text-primary data-[state=active]:shadow-none"
+              >
+                <Icon className="h-4 w-4 shrink-0" />
+                <span className="flex flex-col items-start leading-tight">
+                  <span>{label}</span>
+                  <span className="hidden text-[11px] font-normal text-muted-foreground/70 md:block">
+                    {hint}
+                  </span>
+                </span>
+              </TabsTrigger>
+            ))}
           </TabsList>
 
-          <TabsContent value="overview" className="mt-4 grid gap-4 md:grid-cols-3">
+          {/* Help note — explains how the page works, tucked out of the way */}
+          <div className="hidden p-3 md:mt-auto md:block">
+            <div className="rounded-md border bg-muted/40 p-3 text-xs leading-relaxed text-muted-foreground">
+              <div className="mb-1 flex items-center gap-1.5 font-medium text-foreground">
+                <Info className="h-3.5 w-3.5" /> How this page works
+              </div>
+              Use the tabs above to move between the deal's overview, activity log, contact, lead, and
+              invoices. Hover any field with a pencil icon (like Amount) to edit it inline.
+            </div>
+          </div>
+        </aside>
+
+        {/* Tab content */}
+        <div className="min-w-0 flex-1 overflow-y-auto p-6">
+          <TabsContent value="overview" className="mt-0 grid gap-4 md:grid-cols-3">
             <Card className="md:col-span-2">
               <CardHeader><CardTitle className="text-sm font-medium">Details</CardTitle></CardHeader>
               <CardContent className="space-y-3 text-sm">
@@ -204,22 +251,10 @@ export function DealDetail() {
                           disabled={savingAmount}
                           className="h-7 w-28 text-right"
                         />
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          className="h-6 w-6"
-                          onClick={saveAmount}
-                          disabled={savingAmount}
-                        >
+                        <Button size="icon" variant="ghost" className="h-6 w-6" onClick={saveAmount} disabled={savingAmount} title="Save">
                           <Check className="h-3.5 w-3.5 text-emerald-600" />
                         </Button>
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          className="h-6 w-6"
-                          onClick={cancelEditAmount}
-                          disabled={savingAmount}
-                        >
+                        <Button size="icon" variant="ghost" className="h-6 w-6" onClick={cancelEditAmount} disabled={savingAmount} title="Cancel (Esc)">
                           <X className="h-3.5 w-3.5 text-muted-foreground" />
                         </Button>
                       </div>
@@ -231,6 +266,7 @@ export function DealDetail() {
                           onClick={startEditAmount}
                           className="opacity-0 transition-opacity group-hover:opacity-100"
                           aria-label="Edit amount"
+                          title="Click to edit amount"
                         >
                           <Pencil className="h-3.5 w-3.5 text-muted-foreground hover:text-foreground" />
                         </button>
@@ -245,6 +281,7 @@ export function DealDetail() {
                     <Badge
                       variant="secondary"
                       className="capitalize"
+                      title={deal.pipeline?.is_won ? "Deal won" : deal.pipeline?.is_lost ? "Deal lost" : "In progress"}
                       style={{
                         backgroundColor: deal.pipeline?.is_won
                           ? "#22c55e1a"
@@ -267,17 +304,22 @@ export function DealDetail() {
                 <Row label="Created" value={deal.created_at ? new Date(deal.created_at).toLocaleDateString() : "—"} />
               </CardContent>
             </Card>
+
             <Card>
               <CardHeader><CardTitle className="text-sm font-medium">Notes</CardTitle></CardHeader>
-              <CardContent>
+              <CardContent className="space-y-3">
                 <p className="text-sm text-muted-foreground">
                   Add a note to record next steps, decision-makers, or blockers.
+                </p>
+                <p className="rounded-md bg-muted/40 p-2 text-xs text-muted-foreground">
+                  💡 Notes stay with the deal so anyone on the team can catch up without digging through
+                  the Activity tab.
                 </p>
               </CardContent>
             </Card>
           </TabsContent>
 
-          <TabsContent value="activity" className="mt-4">
+          <TabsContent value="activity" className="mt-0">
             <ActivityTab
               dealId={deal.id}
               contactId={deal.contact?.id ?? ""}
@@ -286,9 +328,10 @@ export function DealDetail() {
             />
           </TabsContent>
 
-          <TabsContent value="contacts" className="mt-4 space-y-6">
+          <TabsContent value="contacts" className="mt-0 space-y-6">
             <Card>
-              <CardContent className="space-y-6 py-4 text-sm">
+              <CardHeader><CardTitle className="text-sm font-medium">Primary contact</CardTitle></CardHeader>
+              <CardContent className="space-y-3 text-sm">
                 <Row label="Full Name" value={contactName ?? "—"} />
                 <Row label="Designation" value={deal.contact?.designation ?? "—"} />
                 <Row label="Email" value={deal.contact?.email ?? "—"} />
@@ -297,7 +340,7 @@ export function DealDetail() {
             </Card>
           </TabsContent>
 
-          <TabsContent value="leads" className="mt-4 space-y-6">
+          <TabsContent value="leads" className="mt-0 space-y-6">
             <Card>
               <CardHeader><CardTitle className="text-sm font-medium">Lead details</CardTitle></CardHeader>
               <CardContent className="space-y-3 text-sm">
@@ -325,7 +368,7 @@ export function DealDetail() {
             </Card>
           </TabsContent>
 
-          <TabsContent value="invoices" className="mt-4">
+          <TabsContent value="invoices" className="mt-0">
             <Card>
               <CardContent className="py-2 text-sm">
                 {invoicesLoading && !invoices?.length ? (
@@ -339,7 +382,8 @@ export function DealDetail() {
                 ) : (
                   <ul className="divide-y">
                     {invoices.map((inv) => (
-                      <li key={inv.id} className="flex items-center justify-between py-2">
+                      <li key={inv.id} onClick={()=>navigate(`/${tenantSlug}/invoices/${inv.id}`)} 
+                      className="flex items-center justify-between py-2 cursor-pointer">
                         <div>
                           <span className="font-medium">{inv.invoice_number}</span>
                           <span className="ml-2 text-muted-foreground">
@@ -356,15 +400,15 @@ export function DealDetail() {
               </CardContent>
             </Card>
           </TabsContent>
-        </Tabs>
-      </div>
+        </div>
+      </Tabs>
     </div>
   );
 }
 
 function Row({ label, value }: { label: string; value: React.ReactNode }) {
   return (
-    <div className="flex items-center justify-between border-b border-slate-100 dark:border-border pb-2 last:border-b-0 last:pb-0">
+    <div className="flex items-center justify-between border-b border-slate-100 pb-2 last:border-b-0 last:pb-0 dark:border-border">
       <span className="text-muted-foreground">{label}</span>
       <span className="font-medium">{value}</span>
     </div>

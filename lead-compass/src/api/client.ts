@@ -12,13 +12,13 @@ export const api = axios.create({
 let getAuthToken: () => string | null = () => null;
 let getTenantId: () => string | null = () => null;
 let onUnauthorized: () => void = () => { };
-let onTokenRefreshed: (token: string) => void = () => { };
+let onTokenRefreshed: (token: string, user?: any, permissions?: string[]) => void = () => { };
 
 export function configureApi(opts: {
   getAuthToken?: () => string | null;
   getTenantId?: () => string | null;
   onUnauthorized?: () => void;
-  onTokenRefreshed?: (token: string) => void;
+  onTokenRefreshed?: (token: string, user?: any, permissions?: string[]) => void;
 }) {
   if (opts.getAuthToken) getAuthToken = opts.getAuthToken;
   if (opts.getTenantId) getTenantId = opts.getTenantId;
@@ -51,7 +51,7 @@ api.interceptors.response.use(
     const originalRequest = error.config as any;
 
     if (status === 401 && !originalRequest._retry) {
-      if (originalRequest.url?.includes("/auth/refresh")) {
+      if (originalRequest.url?.includes("/module-auth/auth/refresh")) {
         // The refresh call itself failed — refresh token is invalid/expired
         onUnauthorized();
         return Promise.reject(error);
@@ -75,9 +75,13 @@ api.interceptors.response.use(
 
       isRefreshing = true;
       try {
-        const { data } = await api.post("/auth/refresh");
+        const storedRefreshToken = typeof window !== "undefined" ? localStorage.getItem("crm.auth.refresh_token") : null;
+        const { data } = await api.post("/module-auth/auth/refresh", { refreshToken: storedRefreshToken });
         const newToken = data.accessToken;
-        onTokenRefreshed(newToken);
+        onTokenRefreshed(newToken, data.user, data.permissions);
+        if (data.refreshToken && typeof window !== "undefined") {
+          localStorage.setItem("crm.auth.refresh_token", data.refreshToken);
+        }
         refreshQueue.forEach((cb) => cb(newToken));
         refreshQueue = [];
         originalRequest.headers["Authorization"] = `Bearer ${newToken}`;

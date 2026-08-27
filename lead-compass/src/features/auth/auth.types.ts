@@ -26,15 +26,19 @@ export type RegisterResult = {
 
 export type AuthResult = {
   accessToken: string;
+  refreshToken?: string;
   user: ApiUser;
+  permissions: string[];
 };
 
 export interface AuthState {
   token: string | null;
   user: ApiUser | null;
+  permissions: string[];
   tenants: { id: string; slug: string; name: string; primaryColor: string }[];
   status: "idle" | "loading" | "succeeded" | "failed";
   registerStatus: "idle" | "loading" | "succeeded" | "failed";
   error: string | null;
   registerError: string | null;
+
 }

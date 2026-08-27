@@ -70,7 +70,7 @@ export function ContactsPage() {
                 </thead>
                 <tbody className="divide-y">
                   {contacts.map((contact) => (
-                    <tr onClick={() => navigate(`/${tenantSlug}/communications/${contact.lead?.id}`)} key={contact.id} className="hover:bg-muted/40 cursor-pointer">
+                    <tr key={contact.id} className="hover:bg-muted/40">
                       <td className="px-3 py-3 font-medium">
                         {formatFullName(contact.first_name, contact.last_name)}
                       </td>

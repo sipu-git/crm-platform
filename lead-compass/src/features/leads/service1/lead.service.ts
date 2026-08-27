@@ -3,7 +3,7 @@
 import { api } from "@/api/client";
 import { Lead } from "./lead.types";
 
-const subUrl = "/leads";
+const subUrl = "/module-leads/lead";
 
 export const leadApis = {
     addLead: (data: any) => api.post(`${subUrl}`, data),

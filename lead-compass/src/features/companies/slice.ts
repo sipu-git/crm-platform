@@ -29,7 +29,7 @@ export const companySlice = createSlice({
     .addCase(createCompany.fulfilled, (state, action) => { state.loading = false; state.companies.unshift(action.payload); state.success = true; })
     .addCase(createCompany.rejected, rejected)
     .addCase(updateCompany.pending, (state) => { state.loading = true; state.error = null; state.success = false; })
-    .addCase(updateCompany.fulfilled, (state, action) => { state.loading = false; replace(state, action.payload); state.companyDetail = action.payload; state.success = true; })
+    .addCase(updateCompany.fulfilled, (state, action) => { state.loading = false; const merged = { ...state.companyDetail, ...action.payload, _count: action.payload._count ?? state.companyDetail?._count, leads: action.payload.leads ?? state.companyDetail?.leads } as Company; replace(state, merged); state.companyDetail = merged; state.success = true; })
     .addCase(updateCompany.rejected, rejected)
     .addCase(deleteCompany.pending, (state) => { state.loading = true; state.error = null; state.success = false; })
     .addCase(deleteCompany.fulfilled, (state, action) => { state.loading = false; state.companies = state.companies.filter((company) => company.id !== action.payload); if (state.companyDetail?.id === action.payload) state.companyDetail = null; state.success = true; })

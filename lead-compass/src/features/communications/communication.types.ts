@@ -84,10 +84,32 @@ export interface CommunicationsResponse {
   communications: Communication[];
 }
 
+export interface GmailAccountStatus {
+  connected: boolean;
+  email?: string;
+  id?: string;
+}
+
+export interface GmailAccount {
+  id: string;
+  email: string;
+  is_active: boolean;
+  created_at: string;
+}
+
+export interface SendGmailPayload {
+  to: string;
+  subject: string;
+  body: string;
+  threadId?: string;
+}
+
 export interface CommunicationState {
   data:  CommunicationsResponse | null;
   communication: Communication | null;
   loading: boolean;
   error: string | null;
   filters: CommunicationFilters;
+  gmailStatus: GmailAccountStatus | null;
+  gmailLoading: boolean;
 }

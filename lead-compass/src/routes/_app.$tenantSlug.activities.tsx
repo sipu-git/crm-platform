@@ -52,8 +52,8 @@ export function ActivitiesPage() {
     const loading = useAppSelector(selectActivitiesLoading);
     const [filter, setFilter] = useState<Filter>("open");
 
-      const { tenantSlug = "" } = useParams();
-    
+    const { tenantSlug = "" } = useParams();
+
     useEffect(() => {
         dispatch(fetchActivities({}));
     }, [dispatch]);
@@ -92,8 +92,8 @@ export function ActivitiesPage() {
                             key={tab.key}
                             onClick={() => setFilter(tab.key)}
                             className={`rounded-md px-3 py-1.5 font-medium transition-colors ${filter === tab.key
-                                    ? "bg-background shadow-sm"
-                                    : "text-muted-foreground hover:text-foreground"
+                                ? "bg-background shadow-sm"
+                                : "text-muted-foreground hover:text-foreground"
                                 }`}
                         >
                             {tab.label}

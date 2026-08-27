@@ -11,12 +11,13 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
-  ArrowLeft, MessageCircle, Mail, Phone, MessageSquare, StickyNote, Paperclip,
+  ArrowLeft, Mail, Phone, StickyNote, Paperclip,
   X, Send, Check, CheckCheck, Clock, AlertCircle, Inbox, RotateCcw, Sparkle,
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import { sendMessage, viewCommunications } from "@/features/communications/communication.slice";
+import { sendMessage, viewCommunications, fetchGmailStatus } from "@/features/communications/communication.slice";
+import { communicationApis } from "@/features/communications/communication.service";
 import {
   Communication,
   CommunicationChannel,
@@ -57,6 +58,12 @@ const QUICK_REPLIES = [
 
 const MAX_CHARS = 1000;
 
+// Hoisted outside the component so it's a stable reference across renders.
+// Using `?? []` inline inside a selector creates a NEW array every render,
+// which breaks useSelector's reference-equality check and causes the
+// "selector returned a different result" warning + wasted re-renders.
+const EMPTY_HISTORY: Communication[] = [];
+
 function dayLabel(dateStr: string) {
   const d = new Date(dateStr);
   if (isToday(d)) return "Today";
@@ -91,10 +98,10 @@ export default function Communications() {
 
   const lead = useAppSelector((s) => s.leads?.leads?.find((l: any) => l.id === leadId));
   const history: Communication[] = useAppSelector(
-    (s) => s.communications?.data?.communications ?? []
+    (s) => s.communications?.data?.communications ?? EMPTY_HISTORY
   );
   const historyLoading = useAppSelector((s) => s.communications?.loading ?? false);
-  const knowIdRef = useRef<Set<string>>(new Set())
+  const knowIdRef = useRef<Set<string>>(new Set());
   const [channel, setChannel] = useState<CommunicationChannel>("WHATSAPP");
   const [messageType, setMessageType] = useState<MessageType>("TEXT");
   const [subject, setSubject] = useState("");
@@ -102,16 +109,22 @@ export default function Communications() {
   const [attachment, setAttachment] = useState<File | null>(null);
   const [sending, setSending] = useState(false);
   const [filter, setFilter] = useState<CommunicationChannel | "ALL">("ALL");
+  const [connectingGmail, setConnectingGmail] = useState(false);
 
   const scrollRef = useRef<HTMLDivElement | null>(null);
-  const { data } = useAppSelector((s) => s.communications)
+  const { data, gmailStatus, gmailLoading } = useAppSelector((s) => s.communications);
 
+  // Poll for new messages every 5s. Guarded so an unresolved/undefined
+  // leadId (e.g. a stray route match) never fires requests against
+  // "/communications/undefined/view-chats".
   useEffect(() => {
-    if (leadId)
-      dispatch(viewCommunications(leadId));
+    dispatch(fetchGmailStatus());
+    if (!leadId) return;
+
+    dispatch(viewCommunications(leadId));
     const interval = setInterval(() => {
       dispatch(viewCommunications(leadId));
-    }, 5000)
+    }, 5000);
     return () => clearInterval(interval);
   }, [dispatch, leadId]);
 
@@ -180,6 +193,23 @@ export default function Communications() {
     setAttachment(null);
   };
 
+  // Kicks off Gmail OAuth: calls the backend (authenticated, via `api`) to get
+  // Google's consent URL, then does a full browser navigation to it. Guarded
+  // against double-fire (fast double-click / async gap before redirect).
+  const handleConnectGmail = async () => {
+    if (connectingGmail) return;
+    setConnectingGmail(true);
+    try {
+    const response = await communicationApis.getGmailConnectUrl();
+    const url = response.data?.data?.url ?? response.data?.url;
+    if (!url) throw new Error("No auth URL returned from server");
+    window.location.href = url;
+  } catch (err) {
+    console.error("Failed to get Gmail auth URL", err);
+    setConnectingGmail(false);
+  }
+  };
+
   const handleSend = async () => {
     if (!canSend || sending) return;
     setSending(true);
@@ -206,7 +236,8 @@ export default function Communications() {
     .map((part) => part?.trim()?.[0])
     .filter(Boolean)
     .join("")
-    .toUpperCase(); const overLimit = body.length > MAX_CHARS;
+    .toUpperCase();
+  const overLimit = body.length > MAX_CHARS;
 
   return (
     <TooltipProvider delayDuration={200}>
@@ -242,11 +273,6 @@ export default function Communications() {
             </div>
 
             <div className="hidden items-center gap-2 sm:flex">
-              {/* {lead?.stage && (
-                <span className="rounded-full bg-muted px-2.5 py-1 text-[11px] font-medium text-muted-foreground">
-                  {lead.stage}
-                </span>
-              )} */}
               <span className="rounded-full bg-muted px-2.5 py-1 text-[11px] font-medium text-muted-foreground">
                 {history.length} messages
               </span>
@@ -298,17 +324,52 @@ export default function Communications() {
                   </div>
 
                   {value === "EMAIL" && (
-                    <div className="space-y-1.5">
-                      <Label htmlFor="subject" className="text-xs">
-                        Subject
-                      </Label>
-                      <Input
-                        id="subject"
-                        value={subject}
-                        onChange={(e) => setSubject(e.target.value)}
-                        placeholder="Subject…"
-                      />
-                    </div>
+                    <>
+                      {gmailStatus?.connected ? (
+                        <div className="flex items-center justify-between rounded-lg border border-primary/20 bg-primary/5 px-3 py-2 text-xs">
+                          <div className="flex items-center gap-2">
+                            <span className="h-2 w-2 rounded-full bg-emerald-500 shrink-0" />
+                            <span className="font-medium text-foreground">Sending via Gmail:</span>
+                            <span className="text-muted-foreground font-mono truncate max-w-[180px] sm:max-w-none">
+                              {gmailStatus.email}
+                            </span>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 text-xs space-y-2">
+                          <div className="flex items-center gap-2 text-amber-600 dark:text-amber-400 font-medium">
+                            <AlertCircle className="h-4 w-4 shrink-0" />
+                            <span>Gmail Account Not Connected</span>
+                          </div>
+                          <p className="text-muted-foreground text-[11px] leading-relaxed">
+                            Connect your Google Gmail account to send emails directly to leads through the Gmail API.
+                          </p>
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            disabled={connectingGmail}
+                            className="w-full text-xs gap-1.5 border-amber-500/40 text-amber-700 dark:text-amber-300 hover:bg-amber-500/15"
+                            onClick={handleConnectGmail}
+                          >
+                            <Mail className="h-3.5 w-3.5" />
+                            {connectingGmail ? "Redirecting…" : "Connect Gmail Account"}
+                          </Button>
+                        </div>
+                      )}
+
+                      <div className="space-y-1.5">
+                        <Label htmlFor="subject" className="text-xs">
+                          Subject
+                        </Label>
+                        <Input
+                          id="subject"
+                          value={subject}
+                          onChange={(e) => setSubject(e.target.value)}
+                          placeholder="Subject…"
+                        />
+                      </div>
+                    </>
                   )}
 
                   {value !== "INTERNAL_NOTE" && value !== "CALL" && (

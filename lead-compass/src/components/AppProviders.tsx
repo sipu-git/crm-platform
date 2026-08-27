@@ -3,7 +3,7 @@ import { Provider, useDispatch } from "react-redux";
 import { store, tenantReset } from "@/store";
 import { useAppSelector } from "@/store/hooks";
 import { configureApi } from "@/api/client";
-import { logout } from "@/features/auth/slice";
+import { logout, setSession, setToken } from "@/features/auth/slice";
 import { setCurrentTenant } from "@/features/tenant/slice";
 import { Toaster } from "@/components/ui/sonner";
 import { useNavigate } from "react-router-dom";
@@ -36,11 +36,18 @@ function ApiConfigurator() {
 
   useEffect(() => {
     configureApi({
-      getAuthToken: () => token,
+      getAuthToken: () => store.getState().auth.token,
       getTenantId: () => null,
       onUnauthorized: () => {
         dispatch(logout());
         navigate("/login");
+      },
+      onTokenRefreshed: (newToken, user, permissions) => {
+        if (user && permissions) {
+          dispatch(setSession({ accessToken: newToken, user, permissions }));
+        } else {
+          dispatch(setToken(newToken));
+        }
       },
     });
   }, [token, dispatch, navigate]);

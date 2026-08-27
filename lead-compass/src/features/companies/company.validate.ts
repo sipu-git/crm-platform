@@ -62,6 +62,16 @@ export const createCompanySchema = z.object({
 
   ...addressFields,
 
+  // Statutory & GST/PAN Tax Compliance
+  gst_number: z.string().trim().max(20, "GST number must be at most 20 characters").optional().or(z.literal("")),
+  pan_number: z.string().trim().max(15, "PAN number must be at most 15 characters").optional().or(z.literal("")),
+  place_of_supply: z.string().trim().max(80, "Place of supply must be at most 80 characters").optional().or(z.literal("")),
+
+  // Dedicated Invoicing & Billing Details
+  billing_email: z.string().trim().email(msg.email.invalid).optional().or(z.literal("")),
+  billing_phone: z.string().trim().regex(PHONE_REGEX, msg.phone.invalid).optional().or(z.literal("")),
+  billing_address: z.string().trim().max(250, "Billing address must be at most 250 characters").optional().or(z.literal("")),
+
   source: z.string().trim().max(80, msg.source.max).optional(),
   tags: z
     .array(z.string().trim().max(30, msg.tags.itemMax))
