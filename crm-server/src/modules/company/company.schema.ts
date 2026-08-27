@@ -10,6 +10,15 @@ const addressFields = {
   postal_code: z.string().trim().optional(),
 };
 
+const billingFields = {
+  gst_number: z.string().trim().optional(),
+  pan_number: z.string().trim().optional(),
+  billing_email: z.string().trim().email("Invalid billing email").optional().or(z.literal("")),
+  billing_phone: z.string().trim().optional(),
+  billing_address: z.string().trim().optional(),
+  place_of_supply: z.string().trim().optional(),
+};
+
 const websiteSchema = z
   .object({
     url: z.string().url().optional(),
@@ -29,6 +38,7 @@ export const createCompanySchema = z.object({
   email: z.string().trim().email("Invalid email").optional(),
   phone: z.string().trim().optional(),
   ...addressFields,
+  ...billingFields,
   source: z.string().trim().optional(),
   tags: z.array(z.string().trim()).optional(),
   custom_fields: z.record(z.string(), z.unknown()).optional(),

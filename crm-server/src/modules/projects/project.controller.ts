@@ -30,6 +30,11 @@ export const projectController = {
         const response = await projectService.viewProject(req.tenantId!, getId(req));
         return res.status(200).json(successResponse("Project found successfully", response));
     },
+    findOwnProject: async (req: Request, res: Response) => {
+        if (!req.auth) throw ApiError.unauthorized('Not authenticated');
+        const response = await projectService.viewOwnProject(req.auth.tenantId, req.auth.userId!);
+        return res.status(200).json(successResponse("Project found successfully", response));
+    },
     update: async (req: Request, res: Response) => {
         const parsed = createProjectSchema.parse(req.body);
         const response = await projectService.modifyProject(req.tenantId!, getId(req), parsed);

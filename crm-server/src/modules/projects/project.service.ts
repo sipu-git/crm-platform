@@ -1,21 +1,22 @@
 import { prisma } from "../../../lib/prisma";
-import { companyRepository } from "../company/company.repository";
-import { contactsRepository } from "../contact/contact.repository";
-import { leadsRepository } from "../lead/lead.repository";
 import { projectRepository } from "./projects.repository";
 import { ConvertLeadToProjectInput, CreateProjectInput, UpdateProjectInput } from "./projects.schema";
 import { LeadStatus, ProjectStatus } from "../../../generated/prisma/enums";
 import redisService from '../../shared/redis/caching';
 import { companyContactResolver } from './resolver.util';
+import { eventBus } from "../../shared/event-bus";
+import { leadsRepository } from "../lead/repository/lead.repository";
 
 export const projectService = {
     async createProject(tenantId: string, companyId: string, ownerId: string, lead_id: string,
         creator: string, contactId: string, data: CreateProjectInput) {
+
+        let resolvedLeadId = lead_id;
+        let isNewLead = false;
+
         const project = await prisma.$transaction(async (tx) => {
-            // 1. Company
             const company = await companyContactResolver.resolveCompany(tx, tenantId, creator, companyId, data.company_name, data.source);
-            // 2. Contact
-            const contact = await companyContactResolver.resolveContact(tx, tenantId, creator, company.id,contactId, {
+            const contact = await companyContactResolver.resolveContact(tx, tenantId, creator, company.id, contactId, {
                 first_name: data.first_name,
                 last_name: data.last_name,
                 email: data.contact_email,
@@ -23,7 +24,6 @@ export const projectService = {
                 designation: data.designation,
             });
 
-            let resolvedLeadId = lead_id;
             const lead = lead_id ? await leadsRepository.findById(tx, tenantId, lead_id) : null;
 
             if (!lead) {
@@ -35,21 +35,29 @@ export const projectService = {
                     status: LeadStatus.NEW,
                 });
                 resolvedLeadId = newLead.id;
+                isNewLead = true;
             }
-            // 4. Project
-            await projectRepository.create(tx, tenantId, company.id, ownerId, resolvedLeadId, contact.id, creator, data);
+
+            return projectRepository.create(tx, tenantId, company.id, ownerId, resolvedLeadId, contact.id, creator, data);
         });
+
+        if (isNewLead) {
+            eventBus.emit("lead.created", { tenantId, lead_id: resolvedLeadId });
+        }
+        eventBus.emit("project.created", { tenantId, project_id: project.id, lead_id: resolvedLeadId });
+
         await Promise.all([
             redisService.deleteByPattern(`lead-get-${tenantId}-*`),
             redisService.deleteByPattern(`lead-list-${tenantId}-*`),
             redisService.deleteByPattern(`company-list-${tenantId}-*`),
             redisService.deleteByPattern(`contact-list-${tenantId}-*`),
             redisService.deleteByPattern(`communications-${tenantId}-*`),
-        ])
+            redisService.deleteByPattern(`project-list-${tenantId}-*`),
+        ]);
+
         return project;
     },
-
-    async convertLeadToProject(tenantId: string,creator: string,input: ConvertLeadToProjectInput) {
+    async convertLeadToProject(tenantId: string, creator: string, input: ConvertLeadToProjectInput) {
         return prisma.$transaction(async (tx) => {
             const lead = await leadsRepository.findById(tx, tenantId, input.lead_id);
             if (!lead) throw new Error("Lead not found");
@@ -70,6 +78,13 @@ export const projectService = {
             );
         });
     },
+    
+    async viewOwnProject(tenantId: string, creator: string) {
+        return prisma.$transaction(async (tx) => {
+            return projectRepository.findOwnProject(tx, tenantId, creator);
+        })
+    },
+
     async viewProject(tenantId: string, id: string) {
         return prisma.$transaction(async (tx) => {
             return projectRepository.findProject(tx, tenantId, id);

@@ -4,11 +4,18 @@ model User {
     tenant       Tenant         @relation(fields: [tenantId], references: [id])
     full_name    String
     company_name String
+    mobile       String
     email        String         @unique
     password     String
     role         Role
     createdAt    DateTime       @default(now())
     updatedAt    DateTime       @updatedAt
+
+    company_id   String?
+    company      Company?       @relation("UserCompany", fields: [company_id], references: [id])
+
+    ownedCompanies Company[]    @relation("CompanyOwner")
+
     leads        Leads[]
     contacts     Contacts[]
     activities   Activities[]
@@ -17,8 +24,10 @@ model User {
     notification Notification[]
     audits       AuditLogs[]
     deviceToken  DeviceToken[]
-    company      Company[]
     project      Project[]
+    emailAccount EmailAccount[]
+
     @@unique([tenantId, email])
     @@index([tenantId])
+    @@index([company_id])
 }

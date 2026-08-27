@@ -12,7 +12,8 @@ function getId(req: Request): string {
 
 export const dealController = {
   async list(req: Request, res: Response) {
-    const deals = await dealService.list(req.tenantId!, req.userId!);
+    if (!req.auth) throw ApiError.unauthorized('Not authenticated');
+    const deals = await dealService.list(req.auth.tenantId, req.auth.userId);
     return res.status(200).json(successResponse("Deal records fetched successfully", deals))
   },
 

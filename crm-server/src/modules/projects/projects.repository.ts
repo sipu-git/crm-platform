@@ -26,7 +26,13 @@ export const projectRepository = {
             where: { id, tenant_id: tenantId },
         });
     },
-   
+    findOwnProject(tx: PrismaClientTx, tenantId: string, creator: string) {
+        return tx.project.findMany({
+            where: { tenant_id: tenantId, created_by: creator },
+            include: { owner: true }
+        })
+    },
+
     modifyProject(tx: PrismaClientTx, tenantId: string, id: string, data: any) {
         return tx.project.update({
             where: { id, tenant_id: tenantId },

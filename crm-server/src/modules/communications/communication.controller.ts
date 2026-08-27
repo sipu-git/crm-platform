@@ -17,6 +17,7 @@ export const communicationController = {
         const result = await communicationService.send(req.body, {
             leadId,
             tenantId,
+            createdBy: req.auth?.userId,
         });
 
         return res.status(201).json(successResponse("communication sent successfully", result));

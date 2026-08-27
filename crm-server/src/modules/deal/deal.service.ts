@@ -2,11 +2,11 @@ import { prisma } from "../../../lib/prisma";
 import { eventBus } from "../../shared/event-bus";
 import { cacheQuery } from "../../shared/redis/query";
 import { ApiError } from "../../shared/utils/ApiError";
-import { leadsRepository } from "../lead/lead.repository";
-import { dealRepository } from "./deal.repository";
 import { UpdateStageInput } from "./deal.schema";
-import { pipelineRepository } from "./pipeline.repository";
 import redisService from '../../shared/redis/caching';
+import { leadsRepository } from "../lead/repository/lead.repository";
+import { dealRepository } from "./repositories/deal.repository";
+import { pipelineRepository } from "./repositories/pipeline.repository";
 
 export const dealService = {
   async getById(tenantId: string, id: string) {
@@ -61,7 +61,8 @@ export const dealService = {
       }
 
       await dealRepository.moveStage(tx, tenantId, id, stageId);
-      return { deal, targetStage };
+      const updatedDeal = await dealRepository.findById(tx, tenantId, id);
+      return { deal: updatedDeal || { ...deal, stage_id: stageId }, targetStage };
     });
 
     eventBus.emit("deal.stage_changed", {
@@ -78,8 +79,12 @@ export const dealService = {
 
     await Promise.all([
       redisService.delete(`deal-get-${tenantId}-${id}`),
+      redisService.delete(`deal-board-${tenantId}`),
+      redisService.deleteByPattern(`deal-get-${tenantId}-*`),
       redisService.deleteByPattern(`deal-list-${tenantId}-*`),
-      redisService.delete(`deal-board-${tenantId}`)
+      redisService.deleteByPattern(`deal-board-${tenantId}*`),
+      redisService.deleteByPattern(`invoice-get-${tenantId}-*`),
+      redisService.deleteByPattern(`invoice-list-${tenantId}-*`)
     ]);
 
     return stage;
@@ -87,13 +92,20 @@ export const dealService = {
 
   async update(tenantId: string, id: string, data: UpdateStageInput) {
     const deal = await prisma.$transaction(async (tx) => {
-      return dealRepository.update(tx, tenantId, id, data)
-    })
+      const existing = await dealRepository.findById(tx, tenantId, id);
+      if (!existing) throw ApiError.notFound("Deal not found");
+      return dealRepository.update(tx, tenantId, id, data);
+    });
+
     await Promise.all([
+      redisService.delete(`deal-get-${tenantId}-${id}`),
+      redisService.delete(`deal-board-${tenantId}`),
       redisService.deleteByPattern(`deal-get-${tenantId}-*`),
       redisService.deleteByPattern(`deal-list-${tenantId}-*`),
-      redisService.deleteByPattern(`deal-board-${tenantId}-*`)
-    ])
+      redisService.deleteByPattern(`deal-board-${tenantId}*`),
+      redisService.deleteByPattern(`invoice-get-${tenantId}-*`),
+      redisService.deleteByPattern(`invoice-list-${tenantId}-*`)
+    ]);
 
     return deal;
   },
@@ -112,10 +124,14 @@ export const dealService = {
       return Promise.all([removeDeal, removeLead]);
     });
     await Promise.all([
+      redisService.delete(`deal-get-${tenantId}-${id}`),
+      redisService.delete(`deal-board-${tenantId}`),
       redisService.deleteByPattern(`deal-get-${tenantId}-*`),
       redisService.deleteByPattern(`deal-list-${tenantId}-*`),
-      redisService.deleteByPattern(`deal-board-${tenantId}-*`)
-    ])
+      redisService.deleteByPattern(`deal-board-${tenantId}*`),
+      redisService.deleteByPattern(`invoice-get-${tenantId}-*`),
+      redisService.deleteByPattern(`invoice-list-${tenantId}-*`)
+    ]);
 
     return deal;
   },

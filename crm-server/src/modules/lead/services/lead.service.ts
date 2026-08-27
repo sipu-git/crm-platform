@@ -1,0 +1,145 @@
+import type { CreateLeadInput, LeadFilters, UpdateLeadInput } from '../validations/lead.schema.js';
+import { ApiError } from '../../../shared/utils/ApiError.js';
+import { eventBus } from '../../../shared/event-bus/index.js';
+import { LeadStatus } from '../../../../generated/prisma/enums.js';
+import { prisma } from '../../../../lib/prisma.js';
+import { addDays } from 'date-fns';
+import { LeadStatusOrder } from '../lead.util.js';
+import { cacheQuery } from '../../../shared/redis/query.js';
+import { leadsRepository } from '../repository/lead.repository.js';
+import redisService from '../../../shared/redis/caching.js';
+import { assignRepository } from '../repository/assign.repository.js';
+import { pipelineRepository } from '../../deal/repositories/pipeline.repository.js';
+import { dealRepository } from '../../deal/repositories/deal.repository.js';
+
+export const leadService = {
+  async list(tenantId: string, filters: LeadFilters) {
+    const redisKey = `lead-list-${tenantId}-${JSON.stringify(filters)}`;
+    return cacheQuery(redisKey, 200, async () => {
+      const leads = await prisma.$transaction(async (tx) => {
+        return leadsRepository.findMany(tx, tenantId, filters);
+      });
+      if (!leads || leads.length === 0) throw ApiError.notFound('No leads found');
+      return leads;
+    })
+  },
+
+  async getById(tenantId: string, id: string) {
+    const redisKey = `lead-get-${tenantId}-${id}`;
+    return cacheQuery(redisKey, 300, async () => {
+      const lead = await prisma.$transaction(async (tx) => {
+        return leadsRepository.findById(tx, tenantId, id);
+      })
+      if (!lead) throw ApiError.notFound('Lead not found');
+      return lead;
+    })
+  },
+
+  async updateStatus(tenantId: string, id: string, status: LeadStatus, actingUserId: string) {
+    const result = await prisma.$transaction(async (tx) => {
+      const lead = await leadsRepository.findById(tx, tenantId, id);
+
+      if (!lead) {
+        throw ApiError.notFound("Lead not found");
+      }
+
+      if (lead.status === status) {
+        throw ApiError.badRequest(`Lead is already ${status}`);
+      }
+
+      const currentIndex = LeadStatusOrder.indexOf(lead.status)
+      const targetIndex = LeadStatusOrder.indexOf(status)
+      if (currentIndex === -1 || targetIndex === -1) {
+        throw ApiError.badRequest(`Unrecognized lead status transition: ${lead.status} → ${status}`);
+      }
+
+      if (targetIndex < currentIndex) {
+        throw ApiError.badRequest(`Cannot move lead backward from "${lead.status}" to "${status}"`);
+      }
+
+      const updatedLead = await leadsRepository.updateStatus(tx, tenantId, id, status);
+      let deal = null;
+
+      if (status === "QUALIFIED") {
+        const defaultStage = await pipelineRepository.findDefaultStage(tx, tenantId);
+
+        if (!defaultStage) {
+          throw ApiError.notFound("No pipeline configured for this tenant");
+        }
+
+        deal = await dealRepository.create(tx, tenantId, actingUserId, {
+          title: `${lead.company_name} opportunity`,
+          leadId: lead.id,
+          contactId: lead.contactId,
+          stageId: defaultStage.id,
+          expectedCloseDate: addDays(new Date(), 30),
+          amount: 0,
+        });
+
+      }
+
+      return { lead: updatedLead, deal };
+    });
+    await Promise.all([
+      redisService.deleteByPattern(`lead-get-${tenantId}-*`),
+      redisService.deleteByPattern(`lead-list-${tenantId}-*`),
+      redisService.deleteByPattern(`deal-list-${tenantId}-*`),
+      redisService.deleteByPattern(`deal-board-${tenantId}`),
+    ])
+
+    eventBus.emit("lead.status_changed", {
+      leadId: id,
+      tenantId,
+      status,
+    });
+    if (result.deal) {
+      eventBus.emit("deal.created", { tenantId, dealId: result.deal.id, leadId: id });
+    }
+
+    return result;
+  },
+  async updateLead(tenantId: string, id: string, data: any) {
+    const lead = await prisma.$transaction(async (tx) => {
+      const lead = await leadsRepository.findById(tx, tenantId, id);
+      if (!lead) throw ApiError.notFound('Lead not found');
+      return leadsRepository.updateLead(tx, tenantId, id, data);
+    });
+    await Promise.all([
+      redisService.deleteByPattern(`lead-get-${tenantId}-*`),
+      redisService.deleteByPattern(`lead-list-${tenantId}-*`)
+    ])
+    if (!lead) throw ApiError.notFound('Lead not found');
+    return lead;
+  },
+
+  async assign(tenantId: string, id: string, assignId: string) {
+    const lead = await prisma.$transaction(async (tx) => {
+      const existingLead = await leadsRepository.findById(tx, tenantId, id);
+      if (!existingLead) throw ApiError.notFound("Lead Record doesn't exist!");
+
+      let assignee = await assignRepository.viewAssignee(tx, tenantId, assignId);
+      if (!assignee) {
+        throw ApiError.badRequest("Assignee not found — create them first via POST /assignees");
+      }
+      return leadsRepository.assignLead(tx, tenantId, id, assignee.id);
+    });
+    await Promise.all([
+      redisService.deleteByPattern(`lead-get-${tenantId}-*`),
+      redisService.deleteByPattern(`lead-list-${tenantId}-*`)
+    ])
+    eventBus.emit("lead.assigned", { leadId: id, tenantId, assignedTo: assignId });
+
+    return lead;
+  },
+  async delete(tenantId: string, id: string) {
+    const lead = await prisma.$transaction(async (tx) => {
+      return leadsRepository.deleteLead(tx, tenantId, id);
+    })
+    await Promise.all([
+      redisService.deleteByPattern(`lead-get-${tenantId}-*`),
+      redisService.deleteByPattern(`lead-list-${tenantId}-*`)
+    ])
+    eventBus.emit("lead.deleted", { leadId: id, tenantId });
+    return lead;
+  }
+};

@@ -62,7 +62,8 @@ export const companyService = {
         await Promise.all([
             redisService.delete(`company-get-${tenantId}-${id}`),      // exact key, exact delete
             redisService.delete(`company-list-${tenantId}`),           // exact key, exact delete
-            redisService.deleteByPattern(`company-filter-${tenantId}-*`)
+            redisService.deleteByPattern(`company-filter-${tenantId}-*`),
+            redisService.deleteByPattern(`lead-get-${tenantId}-${id}`),
         ]);
 
         return company;

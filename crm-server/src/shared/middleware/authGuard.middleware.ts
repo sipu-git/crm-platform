@@ -12,7 +12,7 @@ declare global {
 
 export function authGuard(req: Request, _res: Response, next: NextFunction) {
   const header = req.headers.authorization;
-  const bearerToken = header?.startsWith('Bearer ') ? header.replace('Bearer ', '') : undefined;
+  const bearerToken = header?.startsWith('Bearer ') ? header.slice(7) : undefined;
   const cookieToken = req.cookies?.access_token;
 
   const token = cookieToken ?? bearerToken;

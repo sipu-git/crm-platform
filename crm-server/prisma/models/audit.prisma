@@ -4,13 +4,13 @@ model AuditLogs {
     action     String
     entityType AuditEntityType
     entityId   String
-    userId     String
+    userId     String?
     metaData   String?
     created_at DateTime        @default(now())
 
     tenant Tenant @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
-    user   User?  @relation(fields: [userId], references: [id], onDelete: Cascade)
+    user   User?  @relation(fields: [userId], references: [id], onDelete: SetNull)
 
-    @@index([tenant_id])
+    @@index([tenant_id,entityType,entityId])
     @@map("audits")
 }

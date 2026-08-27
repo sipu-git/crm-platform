@@ -1,9 +1,9 @@
 import { Router } from 'express';
-import { notificationController } from './notification.controller.js';
 import { authGuard } from '../../shared/middleware/authGuard.middleware.js';
 import { tenantContext } from '../../shared/middleware/tenantContext.middleware.js';
 import { asyncHandler } from '../../shared/middleware/asyncHandler.middleware.js';
-import { deviceTokenController } from './device-token/device.controller.js';
+import { deviceTokenController } from './controllers/device.controller.js';
+import { notificationController } from './controllers/notification.controller.js';
 
 const router = Router();
 router.use(authGuard, tenantContext);

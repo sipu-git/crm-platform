@@ -1,0 +1,20 @@
+model EmailAccount {
+    id             String    @id @default(cuid())
+    tenant_id      String
+    user_id        String
+    email          String
+    access_token   String
+    refresh_token  String
+    token_expiry   DateTime
+    history_id     String?
+    watch_expiry   DateTime?
+    is_active      Boolean   @default(true)
+    created_at     DateTime  @default(now())
+    updated_at     DateTime  @updatedAt
+
+    tenant Tenant @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
+    user   User   @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+    @@unique([user_id, email])
+    @@index([tenant_id])
+}

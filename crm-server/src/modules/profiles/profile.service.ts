@@ -3,6 +3,7 @@ import { ApiError } from "../../shared/utils/ApiError.js";
 import { UpdateProfileInput, splitProfileInput } from "./profile.schema.js";
 import { tenantProfileRepository } from "./repository/tenant.repository.js";
 import { userRepository } from "./repository/users.repository.js";
+import redisService from "../../shared/redis/caching.js";
 
 export const profileService = {
     async getProfile(tenantId: string, userId: string) {
@@ -20,11 +21,11 @@ export const profileService = {
         const { userFields, tenantFields } = splitProfileInput(data);
         const tenantFieldKeys = Object.keys(tenantFields);
 
-        if (tenantFieldKeys.length > 0) {
-            throw ApiError.forbidden(
-                `Only workspace owners and admins can update: ${tenantFieldKeys.join(", ")}`,
-            );
-        }
+        // if (tenantFieldKeys.length > 0) {
+        //     throw ApiError.forbidden(
+        //         `Only workspace owners and admins can update: ${tenantFieldKeys.join(", ")}`,
+        //     );
+        // }
         if (userFields.email && userFields.email !== existing.email) {
             const emailTaken = await userRepository.findByEmail(prisma, tenantId, userFields.email);
             if (emailTaken) throw ApiError.conflict("This email is already in use");
@@ -38,6 +39,13 @@ export const profileService = {
                 ? tenantProfileRepository.update(prisma, tenantId, tenantFields)
                 : tenantProfileRepository.findById(prisma, tenantId),
         ]);
+
+        if (tenantFieldKeys.length > 0) {
+            await Promise.all([
+                redisService.deleteByPattern(`invoice-get-${tenantId}-*`),
+                redisService.deleteByPattern(`invoice-list-${tenantId}-*`),
+            ]);
+        }
 
         return { ...updatedUser, ...updatedTenant };
     },

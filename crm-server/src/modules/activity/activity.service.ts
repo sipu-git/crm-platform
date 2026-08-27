@@ -2,8 +2,8 @@ import { prisma } from "../../../lib/prisma.js";
 import { ApiError } from "../../shared/utils/ApiError.js";
 import { companyRepository } from "../company/company.repository.js";
 import { contactsRepository } from "../contact/contact.repository.js";
-import { dealRepository } from "../deal/deal.repository.js";
-import { assignRepository } from "../lead/lead-assignment/assign.repository.js";
+import { dealRepository } from "../deal/repositories/deal.repository.js";
+import { assignRepository } from "../lead/repository/assign.repository.js";
 import { activityRepository } from "./activity.repository.js";
 import type { CreateActivityInput, UpdateActivityInput, ListActivitiesQuery } from "./activity.schema.js";
 

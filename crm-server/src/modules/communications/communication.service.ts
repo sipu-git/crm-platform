@@ -11,9 +11,9 @@ import { toWhatsAppNumber } from "../../shared/utils/phoneZone.js";
 import { SendCommunicationDto } from "./dto/communication.dto.js";
 import { SendCommunicationContext } from "./dto/send-communication.dto.js";
 import { whatsAppService } from "./integrations/whatsapp/services/whatsapp.service.js";
+import { gmailService } from "./integrations/gmail/gmail.service.js";
 
 const NOT_YET_IMPLEMENTED = new Set<CommunicationChannel>([
-  CommunicationChannel.EMAIL,
   CommunicationChannel.CALL,
   CommunicationChannel.SMS,
   CommunicationChannel.INTERNAL_NOTE,
@@ -32,17 +32,17 @@ export const communicationService = {
     }
 
     const lead = await prisma.leads.findFirst({
-      where: { id: leadId },
+      where: { id: leadId, tenant_id: tenantId },
       select: {
         id: true,
         tenant_id: true,
         companyId: true,
         contact: {
-          select: { phone: true },
+          select: { phone: true, email: true },
         },
       },
     });
-    if (!lead?.contact?.phone) {
+    if (!lead) {
       throw new ApiError(404, "Lead not found");
     }
 
@@ -51,12 +51,79 @@ export const communicationService = {
         return this.sendWhatsApp(data, {
           leadId,
           tenantId,
-          companyId,
+          companyId: companyId ?? lead.companyId,
           createdBy,
-          leadPhone: lead.contact.phone,
+          leadPhone: lead.contact?.phone ?? null,
+        });
+      case CommunicationChannel.EMAIL:
+        return this.sendEmail(data, {
+          leadId,
+          tenantId,
+          companyId: companyId ?? lead.companyId,
+          createdBy,
+          leadEmail: lead.contact?.email ?? null,
         });
       default:
         throw new ApiError(400, `${data.channel} channel is not implemented yet`);
+    }
+  },
+
+  async sendEmail(
+    data: SendCommunicationDto,
+    ctx: SendCommunicationContext & { leadEmail: string | null }
+  ) {
+    const to = data.to ?? ctx.leadEmail;
+    if (!to) {
+      throw new ApiError(400, "No recipient email address available for this lead — add one before sending email");
+    }
+    if (!ctx.createdBy) {
+      throw new ApiError(401, "Authentication required to send emails via Gmail");
+    }
+
+    const communication = await prisma.communications.create({
+      data: {
+        tenant_id: ctx.tenantId,
+        lead_id: ctx.leadId,
+        contact_id: data.contactId ?? null,
+        company_id: ctx.companyId ?? null,
+        deal_id: data.dealId ?? null,
+        channel: CommunicationChannel.EMAIL,
+        message_type: data.messageType,
+        direction: data.direction,
+        subject: data.subject ?? null,
+        body: data.body,
+        status: CommunicationStatus.QUEUED,
+        created_by: ctx.createdBy,
+      },
+    });
+
+    await redisService.delete(`communications-${ctx.tenantId}-${ctx.leadId}`);
+
+    try {
+      const response = await gmailService.sendEmail({
+        userId: ctx.createdBy,
+        to,
+        subject: data.subject || "Message from CRM",
+        body: data.body ?? "",
+      });
+
+      return await prisma.communications.update({
+        where: { id: communication.id },
+        data: {
+          status: CommunicationStatus.SENT,
+          provider_message_id: response.id ?? null,
+          metaData: response as any,
+        },
+      });
+    } catch (err) {
+      await prisma.communications.update({
+        where: { id: communication.id },
+        data: {
+          status: CommunicationStatus.FAILED,
+          metaData: { error: err instanceof Error ? err.message : String(err) },
+        },
+      });
+      throw err;
     }
   },
 
