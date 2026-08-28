@@ -1232,7 +1232,7 @@ export function LeadDetailPage() {
                 {/* Data privacy */}
                 <Card className="border-border/60">
                   <CardHeader className="px-4 pb-2 pt-4">
-                    <CardTitle className="flex items-center gap-2 text-sm font-semibold">
+                    <CardTitle className="flex items-center gap-2 text-md font-semibold">
                       <ShieldCheck className="h-4 w-4 text-green-500" />
                       Data privacy
                     </CardTitle>
