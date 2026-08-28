@@ -40,10 +40,13 @@ export const contactService = {
       if (result.count === 0) throw ApiError.notFound('Contact not found');
       return contactsRepository.findById(tx, tenantId, id);
     });
-    await Promise.all([
-      redisService.deleteByPattern(`contact-get-${tenantId}-*`),
-      redisService.deleteByPattern(`contact-list-${tenantId}-*`)
-    ])
+   await Promise.all([
+    redisService.deleteByPattern(`contact-get-${tenantId}-*`),
+    redisService.deleteByPattern(`contact-list-${tenantId}-*`),
+    redisService.deleteByPattern(`lead-get-${tenantId}-*`),   // add this
+    redisService.deleteByPattern(`lead-list-${tenantId}-*`),  // add this
+  ]);
+
     return contact;
   },
 
@@ -54,9 +57,11 @@ export const contactService = {
       return result;
     });
     await Promise.all([
-      redisService.deleteByPattern(`contact-get-${tenantId}-*`),
-      redisService.deleteByPattern(`contact-list-${tenantId}-*`)
-    ])
+    redisService.deleteByPattern(`contact-get-${tenantId}-*`),
+    redisService.deleteByPattern(`contact-list-${tenantId}-*`),
+    redisService.deleteByPattern(`lead-get-${tenantId}-*`),   // add this
+    redisService.deleteByPattern(`lead-list-${tenantId}-*`),  // add this
+  ]);
 
     return contact;
   },

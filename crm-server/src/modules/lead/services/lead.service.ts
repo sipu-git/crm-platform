@@ -106,7 +106,8 @@ export const leadService = {
     });
     await Promise.all([
       redisService.deleteByPattern(`lead-get-${tenantId}-*`),
-      redisService.deleteByPattern(`lead-list-${tenantId}-*`)
+      redisService.deleteByPattern(`lead-list-${tenantId}-*`),
+      // redisService.deleteByPattern(`contact-list-${tenantId}`),
     ])
     if (!lead) throw ApiError.notFound('Lead not found');
     return lead;
