@@ -35,16 +35,17 @@ router.get('/connect', authGuard, (req: Request, res: Response) => {
 
 router.get('/oauth/callback', async (req: Request, res: Response) => {
     const { code, state } = req.query as { code?: string; state?: string };
+     const frontendUrl = process.env.PRODUCTION_URL ?? 'https://crm-platform-weld.vercel.app';
 
     if (!code || !state) {
-        return res.redirect('/settings/email?error=missing_params');
+        return res.redirect(`${frontendUrl}/settings/email?error=missing_params`);
     }
 
     let userId: string, tenantId: string;
     try {
         ({ userId, tenantId } = JSON.parse(state));
     } catch {
-        return res.redirect('/settings/email?error=invalid_state');
+        return res.redirect(`${frontendUrl}/settings/email?error=invalid_state`);
     }
 
     try {
@@ -56,7 +57,7 @@ router.get('/oauth/callback', async (req: Request, res: Response) => {
         const { data: profile } = await oauth2.userinfo.get();
 
         if (!profile.email) {
-            return res.redirect('/settings/email?error=no_email_returned');
+            return res.redirect(`${frontendUrl}/settings/email?error=no_email_returned`);
         }
 
         const existing = await prisma.emailAccount.findUnique({
@@ -80,14 +81,15 @@ router.get('/oauth/callback', async (req: Request, res: Response) => {
                 access_token: encrypt(tokens.access_token!),
                 refresh_token: encrypt(tokens.refresh_token!),
                 token_expiry: new Date(tokens.expiry_date!),
+                is_active: true,
             },
         });
 
         // Adjust to your actual frontend origin (use an env var in production).
-        res.redirect('http://localhost:5173/settings/email?connected=true');
+        res.redirect(`${frontendUrl}/http://localhost:5173/settings/email?connected=true`);
     } catch (err) {
         console.error('Gmail OAuth callback failed:', err);
-        res.redirect('http://localhost:5173/settings/email?error=oauth_failed');
+        res.redirect(`${frontendUrl}http://localhost:5173/settings/email?error=oauth_failed`);
     }
 });
 
