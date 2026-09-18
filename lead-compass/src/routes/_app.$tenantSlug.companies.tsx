@@ -1,7 +1,6 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { Building2, Globe, Plus, Search } from "lucide-react";
-import { useAppDispatch, useAppSelector } from "@/store/hooks";
-import { fetchCompanies } from "@/features/companies/slice";
+import { useCompanies } from "@/features/companies/hooks/useCompanies";
 import { PageHeader, EmptyState, TableSkeleton } from "@/components/ui-kit";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,19 +15,13 @@ const statusVariant: Record<string, string> = {
 };
 
 export function CompaniesPage() {
-  const dispatch = useAppDispatch();
-  const companies = useAppSelector((state) => state.companies.companies);
-  const loading = useAppSelector((state) => state.companies.loading);
+  const { data: companies = [], isLoading: loading, isError } = useCompanies();
   const [query, setQuery] = useState("");
   const [industry, setIndustry] = useState("all");
   const [createOpen, setCreateOpen] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const navigate = useNavigate();
   const { tenantSlug = "" } = useParams();
-
-  useEffect(() => {
-    dispatch(fetchCompanies());
-  }, [dispatch]);
 
   const industries = useMemo(
     () =>
@@ -60,6 +53,7 @@ export function CompaniesPage() {
         description="Organizations associated with your leads and customer relationships."
       />
       <div className="space-y-4 p-6">
+        {isError && <p role="alert" className="text-sm text-destructive">Could not load companies. Please try again.</p>}
         <div className="flex flex-wrap items-center gap-2">
           <div className="relative min-w-55 flex-1">
             <Search className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -67,11 +61,11 @@ export function CompaniesPage() {
               value={query}
               onChange={(event) => setQuery(event.target.value)}
               placeholder="Search company, industry, or location"
-              className="h-9 pl-9 bg-background"
+              className="h-9 pl-9 bg-card"
             />
           </div>
           <Select value={industry} onValueChange={setIndustry}>
-            <SelectTrigger className="h-9 bg-background w-44">
+            <SelectTrigger className="h-9 bg-card w-44">
               <SelectValue placeholder="All industries" />
             </SelectTrigger>
             <SelectContent>

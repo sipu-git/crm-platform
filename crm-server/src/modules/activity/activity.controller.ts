@@ -6,7 +6,7 @@ import { successResponse } from "../../shared/utils/ApiResponse.js";
 export const activityController = {
   async list(req: Request, res: Response) {
     const query = listActivitiesQuerySchema.parse(req.query);
-    const activities = await activityService.list(req.tenantId!, query);
+    const activities = await activityService.list(req.tenantId!, query, req.auth!);
     return res.status(200).json(successResponse("Activities fetched successfully!", activities));
   },
 
@@ -15,7 +15,7 @@ export const activityController = {
     if (!id) {
       return res.status(400).json({ message: "Activity id is required" });
     }
-    const activity = await activityService.getById(req.tenantId!, id);
+    const activity = await activityService.getById(req.tenantId!, id, req.auth!);
     return res.status(200).json(successResponse("Activity fetched successfully!", activity));
   },
 
@@ -31,7 +31,7 @@ export const activityController = {
       return res.status(400).json({ message: "Activity id is required" });
     }
     const data = updateActivitySchema.parse(req.body);
-    const activity = await activityService.update(req.tenantId!, id, data);
+    const activity = await activityService.update(req.tenantId!, id, data, req.auth!);
     return res.status(200).json(successResponse("Activity updated successfully!", activity));
   },
 
@@ -40,8 +40,13 @@ export const activityController = {
     if (!id) {
       return res.status(400).json({ message: "Activity id is required" });
     }
-    const activity = await activityService.complete(req.tenantId!, id);
+    const activity = await activityService.complete(req.auth?.tenantId!, id, req.auth!);
     return res.status(200).json(successResponse("Activity marked as completed!", activity));
+  },
+
+  async getOwnActivities(req: Request, res: Response) {
+  const response = await activityService.viewOwnActivities(req.auth?.tenantId!, req.auth?.userId!);
+  return res.status(200).json(successResponse("Own activities fetched successfully!", response));
   },
 
   async remove(req: Request, res: Response) {
@@ -49,7 +54,7 @@ export const activityController = {
     if (!id) {
       return res.status(400).json({ message: "Activity id is required" });
     }
-    await activityService.delete(req.tenantId!, id);
+    await activityService.delete(req.auth?.tenantId!, id, req.auth!);
     return res.status(200).json(successResponse("Activity deleted successfully!", null));
   },
 };

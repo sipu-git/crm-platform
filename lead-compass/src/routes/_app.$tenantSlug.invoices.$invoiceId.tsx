@@ -1,15 +1,7 @@
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useEffect, useState } from "react";
-import { useAppDispatch, useAppSelector } from "@/store/hooks";
-import { fetchInvoice, updateInvoice, deleteInvoice, markInvoicePaid, selectInvoiceDetail, selectInvoicesLoading } from "@/features/invoices/service2/slice";
-import {
-  createInvoiceItem,
-  updateInvoiceItem,
-  deleteInvoiceItem,
-} from "@/features/invoices/service1/slice";
-import { fetchCompanies } from "@/features/companies/slice";
-import type { Company } from "@/features/companies/company.types";
-import type { CreateInvoiceLineItemInput } from "@/features/invoices/service2/types";
+import { useInvoiceById, useInvoiceMutation } from "@/features/invoices/hooks/useInvoices";
+import { useCompanies } from "@/features/companies/hooks/useCompanies";
 import { PageHeader } from "@/components/ui-kit";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -37,8 +29,12 @@ import {
   ChevronDown,
 } from "lucide-react";
 import { toast } from "sonner";
+import { useAppSelector } from "@/store/hooks";
 
 import { formatCurrency } from "@/lib/currency";
+import { CreateInvoiceLineItemInput } from "@/features/invoices/types/invoices.type";
+import { useAuthPayload } from "@/features/auth/hooks/useAuthPayload";
+import { Company } from "@/features/companies/types/companies.types";
 
 const fmt = (n: number, _currency?: string) => formatCurrency(n, { maximumFractionDigits: 2 });
 
@@ -66,11 +62,12 @@ const EMPTY_LINE: CreateInvoiceLineItemInput = {
 export function InvoiceDetail() {
   const { tenantSlug = "", invoiceId = "" } = useParams();
   const navigate = useNavigate();
-  const dispatch = useAppDispatch();
-  const invoice = useAppSelector(selectInvoiceDetail);
-  const loading = useAppSelector(selectInvoicesLoading);
+  const { data: invoice, isLoading: loading, isError } = useInvoiceById(invoiceId);
+  const { update: updateInvoice, delete: deleteInvoice, markPaid: markInvoicePaid, createItem: createInvoiceItem, updateItem: updateInvoiceItem, deleteItem: deleteInvoiceItem } = useInvoiceMutation();
 
-  const companies = useAppSelector((state) => state.companies.companies);
+  const { data: companies = [] } = useCompanies();
+  const auth = useAuthPayload()
+  const isClient = auth?.user.role === "CLIENT";
 
   const [buyerDraft, setBuyerDraft] = useState({
     buyer_name: "", buyer_gstin: "", buyer_address: "", buyer_state: "",
@@ -85,16 +82,10 @@ export function InvoiceDetail() {
   const [addingLine, setAddingLine] = useState(false);
   const [saving, setSaving] = useState(false);
 
-  useEffect(() => {
-    if (invoiceId) dispatch(fetchInvoice(invoiceId));
-    dispatch(fetchCompanies());
-  }, [dispatch, invoiceId]);
-
   const handlePopulateFromCompany = async (company: Company) => {
     const buyerName = company.legal_name || company.name;
     const buyerGstin = company.gst_number || "";
-    const buyerAddress =
-      company.billing_address ||
+    const buyerAddress = company.billing_address ||
       [company.address_line1, company.address_line2, company.city, company.state, company.postal_code]
         .filter(Boolean)
         .join(", ") ||
@@ -113,7 +104,7 @@ export function InvoiceDetail() {
 
     setSaving(true);
     try {
-      await dispatch(updateInvoice({ id: invoice.id, changes: updated })).unwrap();
+      await updateInvoice.mutateAsync({ id: invoice.id, value: updated });
       toast.success(`Populated buyer information from "${company.name}"`);
     } catch {
       toast.error("Failed to auto-save populated buyer details");
@@ -150,7 +141,7 @@ export function InvoiceDetail() {
     return <div className="p-6 text-sm text-muted-foreground">Invoice not found.</div>;
   }
 
-  const isDraft = invoice.status === "DRAFT";
+  const isDraft = invoice.status === "DRAFT" && !isClient;
   const items = invoice.items ?? [];
 
   // async function saveBuyerDetails() {
@@ -180,7 +171,7 @@ export function InvoiceDetail() {
   async function saveMeta() {
     setSaving(true);
     try {
-      await dispatch(updateInvoice({ id: invoice!.id, changes: metaDraft })).unwrap();
+      await updateInvoice.mutateAsync({ id: invoice!.id, value: metaDraft });
       toast.success("Saved");
     } catch {
       toast.error("Failed to save");
@@ -191,7 +182,7 @@ export function InvoiceDetail() {
 
   async function handleSend() {
     try {
-      await dispatch(updateInvoice({ id: invoice!.id, changes: { status: "SENT" } })).unwrap();
+      await updateInvoice.mutateAsync({ id: invoice!.id, value: { status: "SENT" } });
       toast.success("Invoice sent");
     } catch {
       toast.error("Failed to update status");
@@ -200,7 +191,7 @@ export function InvoiceDetail() {
 
   async function handleCancel() {
     try {
-      await dispatch(updateInvoice({ id: invoice!.id, changes: { status: "CANCELLED" } })).unwrap();
+      await updateInvoice.mutateAsync({ id: invoice!.id, value: { status: "CANCELLED" } });
       toast.success("Invoice cancelled");
     } catch {
       toast.error("Failed to cancel");
@@ -209,7 +200,7 @@ export function InvoiceDetail() {
 
   async function handleMarkPaid() {
     try {
-      await dispatch(markInvoicePaid(invoice!.id)).unwrap();
+      await markInvoicePaid.mutateAsync(invoice!.id);
       toast.success("Marked as paid");
     } catch {
       toast.error("Failed to mark as paid");
@@ -218,7 +209,7 @@ export function InvoiceDetail() {
 
   async function handleDelete() {
     try {
-      await dispatch(deleteInvoice(invoice!.id)).unwrap();
+      await deleteInvoice.mutateAsync(invoice!.id);
       toast.success("Invoice deleted");
       navigate(`/${tenantSlug}/invoices`);
     } catch {
@@ -232,8 +223,7 @@ export function InvoiceDetail() {
       return;
     }
     try {
-      await dispatch(createInvoiceItem({ invoiceId: invoice!.id, data: itemDraft })).unwrap();
-      await dispatch(fetchInvoice(invoice!.id)); // refresh header totals
+      await createInvoiceItem.mutateAsync({ invoiceId: invoice!.id, value: itemDraft });
       setAddingLine(false);
       setItemDraft(EMPTY_LINE);
       toast.success("Line item added");
@@ -244,8 +234,7 @@ export function InvoiceDetail() {
 
   async function saveEditedLine(itemId: string) {
     try {
-      await dispatch(updateInvoiceItem({ invoiceId: invoice!.id, itemId, data: itemDraft })).unwrap();
-      await dispatch(fetchInvoice(invoice!.id));
+      await updateInvoiceItem.mutateAsync({ invoiceId: invoice!.id, itemId, value: itemDraft });
       setEditingItemId(null);
       toast.success("Line item updated");
     } catch {
@@ -255,8 +244,7 @@ export function InvoiceDetail() {
 
   async function removeLine(itemId: string) {
     try {
-      await dispatch(deleteInvoiceItem({ invoiceId: invoice!.id, itemId })).unwrap();
-      await dispatch(fetchInvoice(invoice!.id));
+      await deleteInvoiceItem.mutateAsync({ invoiceId: invoice!.id, itemId });
       toast.success("Line item removed");
     } catch {
       toast.error("Failed to remove line item");
@@ -333,7 +321,7 @@ export function InvoiceDetail() {
                   value={sellerDraft.seller_name}
                   disabled={!isDraft || saving}
                   onChange={(e) => setSellerDraft((d) => ({ ...d, seller_name: e.target.value }))}
-                  // onBlur={saveSellerDetails}
+                // onBlur={saveSellerDetails}
                 />
               </Field>
               <Field label="Seller GSTIN">
@@ -424,8 +412,8 @@ export function InvoiceDetail() {
                                 {c.gst_number
                                   ? `GST: ${c.gst_number}`
                                   : c.city
-                                  ? `${c.city}, ${c.state || ""}`
-                                  : "No GST/Address"}
+                                    ? `${c.city}, ${c.state || ""}`
+                                    : "No GST/Address"}
                               </span>
                             </DropdownMenuItem>
                           ))
@@ -533,336 +521,336 @@ export function InvoiceDetail() {
             </div>
             <div className="overflow-hidden rounded-md border bg-card">
               <div className="overflow-x-auto scroller-hide rounded-md border">
-              <table className="w-full border-collapse text-sm">
-                <colgroup>
-                  <col className="w-55" /> {/* description */}
-                  <col className="w-16" />  {/* qty */}
-                  <col className="w-27.5" /> {/* unit price */}
-                  <col className="w-25" /> {/* discount */}
-                  <col className="w-19" />  {/* cgst % */}
-                  <col className="w-19" />  {/* cgst % */}
-                  <col className="w-19" />  {/* cgst % */}
-                  <col className="w-24" />  {/* hsn */}
-                  <col className="w-24" />  {/* hsn */}
-                  <col className="w-32.5" /> {/* amount */}
-                  {isDraft && <col className="w-22" />} {/* actions */}
-                </colgroup>
-                <thead className="bg-muted/40 text-left text-xs uppercase tracking-wide text-muted-foreground">
-                  <tr className="border-b">
-                    <th className="truncate px-3 py-2.5 font-medium">Description</th>
-                    <th className="truncate px-3 py-2.5 text-right font-medium">Qty</th>
-                    <th className="truncate px-3 py-2.5 text-right font-medium">Unit price</th>
-                    <th className="truncate px-3 py-2.5 text-right font-medium">Discount</th>
-                    <th className="truncate px-3 py-2.5 text-right font-medium">CGST %</th>
-                    <th className="truncate px-3 py-2.5 text-right font-medium">SGST %</th>
-                    <th className="truncate px-3 py-2.5 text-right font-medium">IGST %</th>
-                    <th className="truncate px-3 py-2.5 font-medium">HSN</th>
-                    <th className="truncate px-3 py-2.5 font-medium">SAC</th>
-                    <th className="truncate px-3 py-2.5 text-right font-medium">Amount</th>
-                    {isDraft && <th className="px-3 py-2.5" />}
-                  </tr>
-                </thead>
-                <tbody className="divide-y">
-                  {items.length === 0 && !addingLine && (
-                    <tr>
-                      <td
-                        colSpan={isDraft ? 11 : 10}
-                        className="px-3 py-6 text-center text-muted-foreground"
-                      >
-                        No line items yet.
-                      </td>
+                <table className="w-full border-collapse text-sm">
+                  <colgroup>
+                    <col className="w-55" /> {/* description */}
+                    <col className="w-16" />  {/* qty */}
+                    <col className="w-27.5" /> {/* unit price */}
+                    <col className="w-25" /> {/* discount */}
+                    <col className="w-19" />  {/* cgst % */}
+                    <col className="w-19" />  {/* cgst % */}
+                    <col className="w-19" />  {/* cgst % */}
+                    <col className="w-24" />  {/* hsn */}
+                    <col className="w-24" />  {/* hsn */}
+                    <col className="w-32.5" /> {/* amount */}
+                    {isDraft && <col className="w-22" />} {/* actions */}
+                  </colgroup>
+                  <thead className="bg-muted/40 text-left text-xs uppercase tracking-wide text-muted-foreground">
+                    <tr className="border-b">
+                      <th className="truncate px-3 py-2.5 font-medium">Description</th>
+                      <th className="truncate px-3 py-2.5 text-right font-medium">Qty</th>
+                      <th className="truncate px-3 py-2.5 text-right font-medium">Unit price</th>
+                      <th className="truncate px-3 py-2.5 text-right font-medium">Discount</th>
+                      <th className="truncate px-3 py-2.5 text-right font-medium">CGST %</th>
+                      <th className="truncate px-3 py-2.5 text-right font-medium">SGST %</th>
+                      <th className="truncate px-3 py-2.5 text-right font-medium">IGST %</th>
+                      <th className="truncate px-3 py-2.5 font-medium">HSN</th>
+                      <th className="truncate px-3 py-2.5 font-medium">SAC</th>
+                      <th className="truncate px-3 py-2.5 text-right font-medium">Amount</th>
+                      {isDraft && <th className="px-3 py-2.5" />}
                     </tr>
-                  )}
-                  {items.map((item) => {
-                    const isEditing = editingItemId === item.id;
-                    return (
-                      <tr key={item.id} className={isEditing ? "bg-muted/20" : undefined}>
-                        {isEditing ? (
-                          <>
-                            <td className="p-1.5 align-middle">
-                              <Input
-                                className="h-8"
-                                value={itemDraft.description}
-                                onChange={(e) => setItemDraft((d) => ({ ...d, description: e.target.value }))}
-                              />
-                            </td>
-                            <td className="p-1.5 align-middle">
-                              <Input
-                                className="h-8 text-right"
-                                type="number"
-                                value={itemDraft.quantity}
-                                onChange={(e) => setItemDraft((d) => ({ ...d, quantity: Number(e.target.value) }))}
-                              />
-                            </td>
-                            <td className="p-1.5 align-middle">
-                              <Input
-                                className="h-8 text-right"
-                                type="number"
-                                value={itemDraft.unit_price}
-                                onChange={(e) => setItemDraft((d) => ({ ...d, unit_price: Number(e.target.value) }))}
-                              />
-                            </td>
-                            <td className="p-1.5 align-middle">
-                              <Input
-                                className="h-8 text-right"
-                                type="number"
-                                value={itemDraft.discount_amount}
-                                onChange={(e) => setItemDraft((d) => ({ ...d, discount_amount: Number(e.target.value) }))}
-                              />
-                            </td>
-                            <td className="p-1.5 align-middle">
-                              <Input
-                                className="h-8 text-right"
-                                type="number"
-                                value={itemDraft.cgst_rate}
-                                onChange={(e) => setItemDraft((d) => ({ ...d, cgst_rate: Number(e.target.value) }))}
-                              />
-                            </td>
-                            <td className="p-1.5 align-middle">
-                              <Input
-                                className="h-8 text-right"
-                                type="number"
-                                value={itemDraft.sgst_rate}
-                                onChange={(e) => setItemDraft((d) => ({ ...d, sgst_rate: Number(e.target.value) }))}
-                              />
-                            </td>
-                            <td className="p-1.5 align-middle">
-                              <Input
-                                className="h-8 text-right"
-                                type="number"
-                                value={itemDraft.igst_rate}
-                                onChange={(e) => setItemDraft((d) => ({ ...d, igst_rate: Number(e.target.value) }))}
-                              />
-                            </td>
-                            <td className="p-1.5 align-middle">
-                              <Input
-                                className="h-8"
-                                value={itemDraft.hsn_code ?? ""}
-                                onChange={(e) => setItemDraft((d) => ({ ...d, hsn_code: e.target.value }))}
-                                placeholder="HSN"
-                              />
-                            </td>
-                            <td className="p-1.5 align-middle">
-                              <Input
-                                className="h-8"
-                                value={itemDraft.sac_code ?? ""}
-                                onChange={(e) => setItemDraft((d) => ({ ...d, sac_code: e.target.value }))}
-                                placeholder="SAC"
-                              />
-                            </td>
-                            <td className="px-3 py-2 text-right align-middle font-medium tabular-nums">
-                              {fmt(Number(item.total_amount), invoice.currency)}
-                            </td>
-                            <td className="px-2 py-2 align-middle">
-                              <div className="flex items-center justify-center gap-1">
-                                <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => saveEditedLine(item.id)}>
-                                  <Check className="h-4 w-4 text-emerald-600" />
-                                </Button>
-                                <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => setEditingItemId(null)}>
-                                  <X className="h-4 w-4" />
-                                </Button>
-                              </div>
-                            </td>
-                          </>
-                        ) : (
-                          <>
-                            <td className="truncate px-3 py-2.5 align-middle" title={item.description}>
-                              {item.description}
-                            </td>
-                            <td className="px-3 py-2.5 text-right align-middle tabular-nums">{Number(item.quantity)}</td>
-                            <td className="px-3 py-2.5 text-right align-middle tabular-nums">
-                              {fmt(Number(item.unit_price), invoice.currency)}
-                            </td>
-                            <td className="px-3 py-2.5 text-right align-middle tabular-nums">
-                              {fmt(Number(item.discount_amount), invoice.currency)}
-                            </td>
-                            <td className="px-3 py-2.5 text-right align-middle tabular-nums">{Number(item.cgst_rate)}%</td>
-                            <td className="px-3 py-2.5 text-right align-middle tabular-nums">{Number(item.sgst_rate)}%</td>
-                            <td className="px-3 py-2.5 text-right align-middle tabular-nums">{Number(item.igst_rate)}%</td>
-                            <td className="truncate px-3 py-2.5 align-middle text-muted-foreground">
-                              {item.hsn_code ?? "—"}
-                            </td>
-                            <td className="truncate px-3 py-2.5 align-middle text-muted-foreground">
-                              {item.sac_code ?? "—"}
-                            </td>
-                            <td className="px-3 py-2.5 text-right align-middle font-medium tabular-nums">
-                              {fmt(Number(item.total_amount), invoice.currency)}
-                            </td>
-                            {isDraft && (
-                              <td className="px-2 py-2.5 align-middle">
+                  </thead>
+                  <tbody className="divide-y">
+                    {items.length === 0 && !addingLine && (
+                      <tr>
+                        <td
+                          colSpan={isDraft ? 11 : 10}
+                          className="px-3 py-6 text-center text-muted-foreground"
+                        >
+                          No line items yet.
+                        </td>
+                      </tr>
+                    )}
+                    {items.map((item) => {
+                      const isEditing = editingItemId === item.id;
+                      return (
+                        <tr key={item.id} className={isEditing ? "bg-muted/20" : undefined}>
+                          {isEditing ? (
+                            <>
+                              <td className="p-1.5 align-middle">
+                                <Input
+                                  className="h-8"
+                                  value={itemDraft.description}
+                                  onChange={(e) => setItemDraft((d) => ({ ...d, description: e.target.value }))}
+                                />
+                              </td>
+                              <td className="p-1.5 align-middle">
+                                <Input
+                                  className="h-8 text-right"
+                                  type="number"
+                                  value={itemDraft.quantity}
+                                  onChange={(e) => setItemDraft((d) => ({ ...d, quantity: Number(e.target.value) }))}
+                                />
+                              </td>
+                              <td className="p-1.5 align-middle">
+                                <Input
+                                  className="h-8 text-right"
+                                  type="number"
+                                  value={itemDraft.unit_price}
+                                  onChange={(e) => setItemDraft((d) => ({ ...d, unit_price: Number(e.target.value) }))}
+                                />
+                              </td>
+                              <td className="p-1.5 align-middle">
+                                <Input
+                                  className="h-8 text-right"
+                                  type="number"
+                                  value={itemDraft.discount_amount}
+                                  onChange={(e) => setItemDraft((d) => ({ ...d, discount_amount: Number(e.target.value) }))}
+                                />
+                              </td>
+                              <td className="p-1.5 align-middle">
+                                <Input
+                                  className="h-8 text-right"
+                                  type="number"
+                                  value={itemDraft.cgst_rate}
+                                  onChange={(e) => setItemDraft((d) => ({ ...d, cgst_rate: Number(e.target.value) }))}
+                                />
+                              </td>
+                              <td className="p-1.5 align-middle">
+                                <Input
+                                  className="h-8 text-right"
+                                  type="number"
+                                  value={itemDraft.sgst_rate}
+                                  onChange={(e) => setItemDraft((d) => ({ ...d, sgst_rate: Number(e.target.value) }))}
+                                />
+                              </td>
+                              <td className="p-1.5 align-middle">
+                                <Input
+                                  className="h-8 text-right"
+                                  type="number"
+                                  value={itemDraft.igst_rate}
+                                  onChange={(e) => setItemDraft((d) => ({ ...d, igst_rate: Number(e.target.value) }))}
+                                />
+                              </td>
+                              <td className="p-1.5 align-middle">
+                                <Input
+                                  className="h-8"
+                                  value={itemDraft.hsn_code ?? ""}
+                                  onChange={(e) => setItemDraft((d) => ({ ...d, hsn_code: e.target.value }))}
+                                  placeholder="HSN"
+                                />
+                              </td>
+                              <td className="p-1.5 align-middle">
+                                <Input
+                                  className="h-8"
+                                  value={itemDraft.sac_code ?? ""}
+                                  onChange={(e) => setItemDraft((d) => ({ ...d, sac_code: e.target.value }))}
+                                  placeholder="SAC"
+                                />
+                              </td>
+                              <td className="px-3 py-2 text-right align-middle font-medium tabular-nums">
+                                {fmt(Number(item.total_amount), invoice.currency)}
+                              </td>
+                              <td className="px-2 py-2 align-middle">
                                 <div className="flex items-center justify-center gap-1">
-                                  <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => startEditItem(item)}>
-                                    <Pencil className="h-4 w-4" />
+                                  <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => saveEditedLine(item.id)}>
+                                    <Check className="h-4 w-4 text-emerald-600" />
                                   </Button>
-                                  <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => removeLine(item.id)}>
-                                    <Trash2 className="h-4 w-4" />
+                                  <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => setEditingItemId(null)}>
+                                    <X className="h-4 w-4" />
                                   </Button>
                                 </div>
                               </td>
-                            )}
-                          </>
-                        )}
+                            </>
+                          ) : (
+                            <>
+                              <td className="truncate px-3 py-2.5 align-middle" title={item.description}>
+                                {item.description}
+                              </td>
+                              <td className="px-3 py-2.5 text-right align-middle tabular-nums">{Number(item.quantity)}</td>
+                              <td className="px-3 py-2.5 text-right align-middle tabular-nums">
+                                {fmt(Number(item.unit_price), invoice.currency)}
+                              </td>
+                              <td className="px-3 py-2.5 text-right align-middle tabular-nums">
+                                {fmt(Number(item.discount_amount), invoice.currency)}
+                              </td>
+                              <td className="px-3 py-2.5 text-right align-middle tabular-nums">{Number(item.cgst_rate)}%</td>
+                              <td className="px-3 py-2.5 text-right align-middle tabular-nums">{Number(item.sgst_rate)}%</td>
+                              <td className="px-3 py-2.5 text-right align-middle tabular-nums">{Number(item.igst_rate)}%</td>
+                              <td className="truncate px-3 py-2.5 align-middle text-muted-foreground">
+                                {item.hsn_code ?? "—"}
+                              </td>
+                              <td className="truncate px-3 py-2.5 align-middle text-muted-foreground">
+                                {item.sac_code ?? "—"}
+                              </td>
+                              <td className="px-3 py-2.5 text-right align-middle font-medium tabular-nums">
+                                {fmt(Number(item.total_amount), invoice.currency)}
+                              </td>
+                              {isDraft && (
+                                <td className="px-2 py-2.5 align-middle">
+                                  <div className="flex items-center justify-center gap-1">
+                                    <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => startEditItem(item)}>
+                                      <Pencil className="h-4 w-4" />
+                                    </Button>
+                                    <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => removeLine(item.id)}>
+                                      <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                  </div>
+                                </td>
+                              )}
+                            </>
+                          )}
+                        </tr>
+                      );
+                    })}
+                    {addingLine && (
+                      <tr className="bg-muted/20">
+                        <td className="p-1.5 align-middle">
+                          <Input
+                            autoFocus
+                            className="h-8"
+                            value={itemDraft.description}
+                            onChange={(e) => setItemDraft((d) => ({ ...d, description: e.target.value }))}
+                            placeholder="Description"
+                          />
+                        </td>
+                        <td className="p-1.5 align-middle">
+                          <Input
+                            className="h-8 text-right"
+                            type="number"
+                            value={itemDraft.quantity}
+                            onChange={(e) => setItemDraft((d) => ({ ...d, quantity: Number(e.target.value) }))}
+                          />
+                        </td>
+                        <td className="p-1.5 align-middle">
+                          <Input
+                            className="h-8 text-right"
+                            type="number"
+                            value={itemDraft.unit_price}
+                            onChange={(e) => setItemDraft((d) => ({ ...d, unit_price: Number(e.target.value) }))}
+                          />
+                        </td>
+                        <td className="p-1.5 align-middle">
+                          <Input
+                            className="h-8 text-right"
+                            type="number"
+                            value={itemDraft.discount_amount}
+                            onChange={(e) => setItemDraft((d) => ({ ...d, discount_amount: Number(e.target.value) }))}
+                          />
+                        </td>
+                        <td className="p-1.5 align-middle">
+                          <Input
+                            className="h-8 text-right"
+                            type="number"
+                            value={itemDraft.cgst_rate}
+                            onChange={(e) => setItemDraft((d) => ({ ...d, cgst_rate: Number(e.target.value) }))}
+                          />
+                        </td>
+                        <td className="p-1.5 align-middle">
+                          <Input
+                            className="h-8 text-right"
+                            type="number"
+                            value={itemDraft.sgst_rate}
+                            onChange={(e) => setItemDraft((d) => ({ ...d, sgst_rate: Number(e.target.value) }))}
+                          />
+                        </td>
+                        <td className="p-1.5 align-middle">
+                          <Input
+                            className="h-8 text-right"
+                            type="number"
+                            value={itemDraft.igst_rate}
+                            onChange={(e) => setItemDraft((d) => ({ ...d, igst_rate: Number(e.target.value) }))}
+                          />
+                        </td>
+                        <td className="p-1.5 align-middle">
+                          <Input
+                            className="h-8"
+                            value={itemDraft.hsn_code ?? ""}
+                            onChange={(e) => setItemDraft((d) => ({ ...d, hsn_code: e.target.value }))}
+                            placeholder="HSN"
+                          />
+                        </td>
+                        <td className="p-1.5 align-middle">
+                          <Input
+                            className="h-8"
+                            value={itemDraft.sac_code ?? ""}
+                            onChange={(e) => setItemDraft((d) => ({ ...d, sac_code: e.target.value }))}
+                            placeholder="SAC"
+                          />
+                        </td>
+                        <td className="px-3 py-2 text-right align-middle text-muted-foreground">—</td>
+                        <td className="px-2 py-2 align-middle">
+                          <div className="flex items-center justify-center gap-1">
+                            <Button size="icon" variant="ghost" className="h-8 w-8" onClick={saveNewLine}>
+                              <Check className="h-4 w-4 text-emerald-600" />
+                            </Button>
+                            <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => setAddingLine(false)}>
+                              <X className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </td>
                       </tr>
-                    );
-                  })}
-                  {addingLine && (
-                    <tr className="bg-muted/20">
-                      <td className="p-1.5 align-middle">
-                        <Input
-                          autoFocus
-                          className="h-8"
-                          value={itemDraft.description}
-                          onChange={(e) => setItemDraft((d) => ({ ...d, description: e.target.value }))}
-                          placeholder="Description"
-                        />
-                      </td>
-                      <td className="p-1.5 align-middle">
-                        <Input
-                          className="h-8 text-right"
-                          type="number"
-                          value={itemDraft.quantity}
-                          onChange={(e) => setItemDraft((d) => ({ ...d, quantity: Number(e.target.value) }))}
-                        />
-                      </td>
-                      <td className="p-1.5 align-middle">
-                        <Input
-                          className="h-8 text-right"
-                          type="number"
-                          value={itemDraft.unit_price}
-                          onChange={(e) => setItemDraft((d) => ({ ...d, unit_price: Number(e.target.value) }))}
-                        />
-                      </td>
-                      <td className="p-1.5 align-middle">
-                        <Input
-                          className="h-8 text-right"
-                          type="number"
-                          value={itemDraft.discount_amount}
-                          onChange={(e) => setItemDraft((d) => ({ ...d, discount_amount: Number(e.target.value) }))}
-                        />
-                      </td>
-                      <td className="p-1.5 align-middle">
-                        <Input
-                          className="h-8 text-right"
-                          type="number"
-                          value={itemDraft.cgst_rate}
-                          onChange={(e) => setItemDraft((d) => ({ ...d, cgst_rate: Number(e.target.value) }))}
-                        />
-                      </td>
-                      <td className="p-1.5 align-middle">
-                        <Input
-                          className="h-8 text-right"
-                          type="number"
-                          value={itemDraft.sgst_rate}
-                          onChange={(e) => setItemDraft((d) => ({ ...d, sgst_rate: Number(e.target.value) }))}
-                        />
-                      </td>
-                      <td className="p-1.5 align-middle">
-                        <Input
-                          className="h-8 text-right"
-                          type="number"
-                          value={itemDraft.igst_rate}
-                          onChange={(e) => setItemDraft((d) => ({ ...d, igst_rate: Number(e.target.value) }))}
-                        />
-                      </td>
-                      <td className="p-1.5 align-middle">
-                        <Input
-                          className="h-8"
-                          value={itemDraft.hsn_code ?? ""}
-                          onChange={(e) => setItemDraft((d) => ({ ...d, hsn_code: e.target.value }))}
-                          placeholder="HSN"
-                        />
-                      </td>
-                      <td className="p-1.5 align-middle">
-                        <Input
-                          className="h-8"
-                          value={itemDraft.sac_code ?? ""}
-                          onChange={(e) => setItemDraft((d) => ({ ...d, sac_code: e.target.value }))}
-                          placeholder="SAC"
-                        />
-                      </td>
-                      <td className="px-3 py-2 text-right align-middle text-muted-foreground">—</td>
-                      <td className="px-2 py-2 align-middle">
-                        <div className="flex items-center justify-center gap-1">
-                          <Button size="icon" variant="ghost" className="h-8 w-8" onClick={saveNewLine}>
-                            <Check className="h-4 w-4 text-emerald-600" />
-                          </Button>
-                          <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => setAddingLine(false)}>
-                            <X className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-                <tfoot className="border-t bg-muted/40">
-                  <tr>
-                    <td colSpan={9} className="px-3 py-2 text-right text-muted-foreground">Subtotal</td>
-                    <td className="px-3 py-2 text-right tabular-nums">{fmt(Number(invoice.subtotal), invoice.currency)}</td>
-                    {isDraft && <td />}
-                  </tr>
-                  {Number(invoice.discount_amount) > 0 && (
+                    )}
+                  </tbody>
+                  <tfoot className="border-t bg-muted/40">
                     <tr>
-                      <td colSpan={9} className="px-3 py-2 text-right text-muted-foreground">Discount</td>
-                      <td className="px-3 py-2 text-right tabular-nums">−{fmt(Number(invoice.discount_amount), invoice.currency)}</td>
+                      <td colSpan={9} className="px-3 py-2 text-right text-muted-foreground">Subtotal</td>
+                      <td className="px-3 py-2 text-right tabular-nums">{fmt(Number(invoice.subtotal), invoice.currency)}</td>
                       {isDraft && <td />}
                     </tr>
-                  )}
-                  <tr>
-                    <td colSpan={9} className="px-3 py-2 text-right text-muted-foreground">Taxable amount</td>
-                    <td className="px-3 py-2 text-right tabular-nums">{fmt(Number(invoice.taxable_amount), invoice.currency)}</td>
-                    {isDraft && <td />}
-                  </tr>
-                  {Number(invoice.cgst_amount) > 0 && (
+                    {Number(invoice.discount_amount) > 0 && (
+                      <tr>
+                        <td colSpan={9} className="px-3 py-2 text-right text-muted-foreground">Discount</td>
+                        <td className="px-3 py-2 text-right tabular-nums">−{fmt(Number(invoice.discount_amount), invoice.currency)}</td>
+                        {isDraft && <td />}
+                      </tr>
+                    )}
                     <tr>
-                      <td colSpan={9} className="px-3 py-2 text-right text-muted-foreground">CGST</td>
-                      <td className="px-3 py-2 text-right tabular-nums">{fmt(Number(invoice.cgst_amount), invoice.currency)}</td>
+                      <td colSpan={9} className="px-3 py-2 text-right text-muted-foreground">Taxable amount</td>
+                      <td className="px-3 py-2 text-right tabular-nums">{fmt(Number(invoice.taxable_amount), invoice.currency)}</td>
                       {isDraft && <td />}
                     </tr>
-                  )}
-                  {Number(invoice.sgst_amount) > 0 && (
-                    <tr>
-                      <td colSpan={9} className="px-3 py-2 text-right text-muted-foreground">SGST</td>
-                      <td className="px-3 py-2 text-right tabular-nums">{fmt(Number(invoice.sgst_amount), invoice.currency)}</td>
-                      {isDraft && <td />}
-                    </tr>
-                  )}
-                  {Number(invoice.igst_amount) > 0 && (
-                    <tr>
-                      <td colSpan={9} className="px-3 py-2 text-right text-muted-foreground">IGST</td>
-                      <td className="px-3 py-2 text-right tabular-nums">{fmt(Number(invoice.igst_amount), invoice.currency)}</td>
-                      {isDraft && <td />}
-                    </tr>
-                  )}
-                  <tr className="border-t">
-                    <td colSpan={9} className="px-3 py-2.5 text-right font-medium">Total</td>
-                    <td className="px-3 py-2.5 text-right text-base font-semibold tabular-nums">
-                      {fmt(Number(invoice.total_amount), invoice.currency)}
-                    </td>
-                    {isDraft && <td />}
-                  </tr>
-                  {Number(invoice.amount_paid) > 0 && (
-                    <tr>
-                      <td colSpan={9} className="px-3 py-2 text-right text-muted-foreground">Amount paid</td>
-                      <td className="px-3 py-2 text-right text-muted-foreground tabular-nums">
-                        {fmt(Number(invoice.amount_paid), invoice.currency)}
+                    {Number(invoice.cgst_amount) > 0 && (
+                      <tr>
+                        <td colSpan={9} className="px-3 py-2 text-right text-muted-foreground">CGST</td>
+                        <td className="px-3 py-2 text-right tabular-nums">{fmt(Number(invoice.cgst_amount), invoice.currency)}</td>
+                        {isDraft && <td />}
+                      </tr>
+                    )}
+                    {Number(invoice.sgst_amount) > 0 && (
+                      <tr>
+                        <td colSpan={9} className="px-3 py-2 text-right text-muted-foreground">SGST</td>
+                        <td className="px-3 py-2 text-right tabular-nums">{fmt(Number(invoice.sgst_amount), invoice.currency)}</td>
+                        {isDraft && <td />}
+                      </tr>
+                    )}
+                    {Number(invoice.igst_amount) > 0 && (
+                      <tr>
+                        <td colSpan={9} className="px-3 py-2 text-right text-muted-foreground">IGST</td>
+                        <td className="px-3 py-2 text-right tabular-nums">{fmt(Number(invoice.igst_amount), invoice.currency)}</td>
+                        {isDraft && <td />}
+                      </tr>
+                    )}
+                    <tr className="border-t">
+                      <td colSpan={9} className="px-3 py-2.5 text-right font-medium">Total</td>
+                      <td className="px-3 py-2.5 text-right text-base font-semibold tabular-nums">
+                        {fmt(Number(invoice.total_amount), invoice.currency)}
                       </td>
                       {isDraft && <td />}
                     </tr>
-                  )}
-                  {Number(invoice.amount_due) > 0 && (
-                    <tr>
-                      <td colSpan={9} className="px-3 py-2 text-right text-muted-foreground">Amount due</td>
-                      <td className="px-3 py-2 text-right text-muted-foreground tabular-nums">
-                        {fmt(Number(invoice.amount_due), invoice.currency)}
-                      </td>
-                      {isDraft && <td />}
-                    </tr>
-                  )}
-                </tfoot>
-              </table>
+                    {Number(invoice.amount_paid) > 0 && (
+                      <tr>
+                        <td colSpan={9} className="px-3 py-2 text-right text-muted-foreground">Amount paid</td>
+                        <td className="px-3 py-2 text-right text-muted-foreground tabular-nums">
+                          {fmt(Number(invoice.amount_paid), invoice.currency)}
+                        </td>
+                        {isDraft && <td />}
+                      </tr>
+                    )}
+                    {Number(invoice.amount_due) > 0 && (
+                      <tr>
+                        <td colSpan={9} className="px-3 py-2 text-right text-muted-foreground">Amount due</td>
+                        <td className="px-3 py-2 text-right text-muted-foreground tabular-nums">
+                          {fmt(Number(invoice.amount_due), invoice.currency)}
+                        </td>
+                        {isDraft && <td />}
+                      </tr>
+                    )}
+                  </tfoot>
+                </table>
+              </div>
             </div>
-            </div>
-            
+
           </CardContent>
         </Card>
 

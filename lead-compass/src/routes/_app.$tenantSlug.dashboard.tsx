@@ -1,35 +1,16 @@
-import {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
-
-import { useDispatch, useSelector } from "react-redux";
-
-import type { AppDispatch, RootState } from "@/store";
-
-import {
-  ROLE_DASHBOARD_CONFIG,
-  normalizeRole,
-} from "@/features/dashboard/dashboard.config";
-
-import type {
-  DashboardRole,
-  DashboardWidgetConfig,
-} from "@/features/dashboard/dashboard.types";
-
-import { useDashboardData } from "@/features/dashboard/useDashboardData";
-
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { ROLE_DASHBOARD_CONFIG, normalizeRole } from "@/features/dashboard/configs/dashboard.config";
+import type { DashboardRole, DashboardWidgetConfig } from "@/features/dashboard/types/dashboard.types";
+import { useDashboardData } from "@/features/dashboard/hooks/useDashboardData";
 import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
 import { WidgetRenderer } from "@/components/dashboard/WidgetRenderer";
-
-import { fetchDeals } from "@/features/deals/slice";
-import { viewLeads } from "@/features/leads/service1/slice";
-import { fetchActivities } from "@/features/activities/slice";
-import { fetchInvoices } from "@/features/invoices/service2/slice";
-import { fetchUsers } from "@/features/users/slice";
+import { leadsKeys } from "@/features/leads/keys/leads.keys";
+import { dealsKeys } from "@/features/deals/keys/deals.keys";
+import { activitiesKeys } from "@/features/activities/keys/activities.keys";
+import { invoicesKeys } from "@/features/invoices/keys/invoices.keys";
+import { ClientDashboardPage } from "./_app.$tenantSlug.client-dashboard";
+import { useCurrentUser } from "@/features/auth/hooks/useCurrentUsers";
 
 
 const COL_SPAN_CLASSES: Record<number, string> = {
@@ -103,7 +84,7 @@ function LazyDashboardWidget({
   return (
     <div
       ref={containerRef}
-      className={colSpanClass}
+      className={`${colSpanClass} h-full flex flex-col`}
     >
       {shouldRender ? (
         <WidgetRenderer
@@ -121,25 +102,23 @@ function LazyDashboardWidget({
 
 
 export function DashboardPage() {
-  const dispatch = useDispatch<AppDispatch>();
+  const queryClient = useQueryClient();
 
-  const currentUser = useSelector(
-    (state: RootState) => state.auth.user
-  );
+  const currentUser = useCurrentUser();
 
-  const activeRole = normalizeRole(currentUser?.role);
+  const activeRole = normalizeRole(currentUser?.user?.role);
 
-  const dashboardData =
-    useDashboardData(activeRole);
+  if (currentUser?.user?.role === "CLIENT") {
+    return <ClientDashboardPage />;
+  }
 
-
+  const dashboardData = useDashboardData(activeRole);
   const handleRefresh = useCallback(() => {
-    dispatch(fetchDeals());
-    dispatch(viewLeads());
-    dispatch(fetchActivities({}));
-    dispatch(fetchInvoices({}));
-    dispatch(fetchUsers());
-  }, [dispatch]);
+    queryClient.invalidateQueries({ queryKey: dealsKeys.all });
+    queryClient.invalidateQueries({ queryKey: leadsKeys.all });
+    queryClient.invalidateQueries({ queryKey: activitiesKeys.all });
+    queryClient.invalidateQueries({ queryKey: invoicesKeys.all });
+  }, [queryClient]);
 
 
   const widgets = useMemo(() => {
@@ -154,13 +133,13 @@ export function DashboardPage() {
     <div className="min-h-screen bg-background/95">
       <DashboardHeader
         activeRole={activeRole}
-        userName={currentUser?.name || "Team Member"}
+        userName={currentUser?.user?.name || "Team Member"}
         onRefresh={handleRefresh}
         isLoading={dashboardData.isLoading}
       />
 
       <div className="p-4 sm:p-6 lg:p-8">
-        <div className="grid grid-cols-12 gap-4 lg:gap-5 items-start">
+        <div className="grid grid-cols-12 gap-4 lg:gap-5 items-stretch">
           {widgets.map((widget, index) => (
             <LazyDashboardWidget
               key={`${activeRole}-${widget.id}`}

@@ -1,49 +1,54 @@
 // features/leads/leads.page.tsx
 import { useEffect, useMemo, useState } from "react";
-import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { PageHeader, EmptyState, TableSkeleton } from "@/components/ui-kit";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Search, Plus } from "lucide-react";
-import { viewLeads } from "@/features/leads/service1/slice";
-import { LEAD_STATUSES, LEAD_STATUS_COLORS } from "@/features/leads/service1/lead.types";
+import { Plus } from "lucide-react";
+import { LEAD_STATUSES, LEAD_STATUS_COLORS } from "@/features/leads/types/lead.types";
 import { AddLeadDialog } from "@/components/leads/AddLeadDialog";
 import { useNavigate, useParams } from "react-router-dom";
+import { useLeads, useSearchLeads } from "@/features/leads/hooks/useLeads";
+import SearchLead from "@/components/leads/SearchLead";
+import { useAppSelector } from "@/store/hooks";
+import { useAuthPayload } from "@/features/auth/hooks/useAuthPayload";
+
+function useDebouncedValue(value: string, delayMs: number) {
+  const [debounced, setDebounced] = useState(value);
+  useEffect(() => {
+    const timer = setTimeout(() => setDebounced(value), delayMs);
+    return () => clearTimeout(timer);
+  }, [value, delayMs]);
+  return debounced;
+}
 
 export function LeadsPage() {
   const { tenantSlug = "" } = useParams();
-  const dispatch = useAppDispatch();
-  const { leads, loading } = useAppSelector((state) => state.leads);
   const [q, setQ] = useState("");
+  const debouncedQuery = useDebouncedValue(q.trim(), 300);
   const [statusFilter, setStatusFilter] = useState<string>("all");
-  const [openId, setOpenId] = useState<string | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
   const navigate = useNavigate();
+  const auth = useAuthPayload()
+  const isSalesRep = auth?.user.role === "SALES_REP";
 
-  useEffect(() => {
-    dispatch(viewLeads());
-  }, [dispatch]);
+  const isSearching = debouncedQuery.length > 0;
+
+  const { data: allLeads = [], isLoading: loadingAll } = useLeads();
+  const { data: searchResults = [], isFetching: searching } = useSearchLeads(debouncedQuery);
+
+  const sourceLeads = isSearching ? searchResults : allLeads;
+  const loading = isSearching ? searching : loadingAll;
 
   const filtered = useMemo(() => {
-    const query = q.trim().toLowerCase();
-    return leads.filter((l) => {
-      if (statusFilter !== "all" && l.status !== statusFilter) return false;
-      if (query && !(l.contact?.first_name.toLowerCase().includes(query) ||
-        l.company_name.toLowerCase().includes(query) ||
-        (l.email ?? "").toLowerCase().includes(query)
-      )
-      )
-        return false;
-      return true;
-    });
-  }, [leads, q, statusFilter]);
+    if (statusFilter === "all") return sourceLeads;
+    return sourceLeads.filter((l) => l.status === statusFilter);
+  }, [sourceLeads, statusFilter]);
 
   return (
     <div>
       <PageHeader
-        title="Leads"
-        description="Prospects and inbound contacts across your workspace."
+        title={isSalesRep ? "My assigned leads" : "Leads"}
+        description={isSalesRep ? "Prospects currently assigned to you." : "Prospects and inbound contacts across your workspace."}
         actions={
           <Button onClick={() => setCreateOpen(true)}>
             <Plus className="mr-2 h-4 w-4" />
@@ -55,16 +60,10 @@ export function LeadsPage() {
       <div className="space-y-4 p-6">
         <div className="flex flex-wrap items-center gap-2">
           <div className="relative min-w-55 flex-1 bg-background">
-            <Search className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              value={q}
-              onChange={(e) => setQ(e.target.value)}
-              placeholder="Search name, email, company"
-              className="h-9 pl-9"
-            />
+            <SearchLead value={q} onValueChange={setQ} />
           </div>
           <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="h-9 w-40 bg-background">
+            <SelectTrigger className="h-9 w-40 bg-card">
               <SelectValue placeholder="All statuses" />
             </SelectTrigger>
             <SelectContent>
@@ -78,11 +77,16 @@ export function LeadsPage() {
           </Select>
         </div>
 
-        {loading && leads.length === 0 && <TableSkeleton />}
+        {loading && filtered.length === 0 && <TableSkeleton />}
+
         {!loading && filtered.length === 0 && (
           <EmptyState
-            title="No leads found"
-            description="Try clearing filters or add a new lead to get started."
+            title={isSearching ? `No leads match "${debouncedQuery}"` : "No leads found"}
+            description={
+              isSearching
+                ? "Try a different search term, or clear the search to see all leads."
+                : "Try clearing filters or add a new lead to get started."
+            }
             action={
               <Button onClick={() => setCreateOpen(true)}>
                 <Plus className="mr-2 h-4 w-4" />
@@ -91,6 +95,7 @@ export function LeadsPage() {
             }
           />
         )}
+
         {filtered.length > 0 && (
           <div className="overflow-hidden rounded-md border bg-card">
             <div className="overflow-x-auto scroller-hide rounded-lg border bg-card">
@@ -114,7 +119,9 @@ export function LeadsPage() {
                       className="cursor-pointer hover:bg-muted/40"
                       onClick={() => navigate(`/${tenantSlug}/lead/${l.id}`)}
                     >
-                      <td className="px-3 py-2 font-medium">{l.contact?.first_name} {l.contact?.last_name}</td>
+                      <td className="px-3 py-2 font-medium">
+                        {l.contact?.first_name} {l.contact?.last_name}
+                      </td>
                       <td className="px-3 py-2 text-muted-foreground">{l.company_name}</td>
                       <td className="px-3 py-2 text-muted-foreground">{l.contact?.designation}</td>
                       <td className="px-3 py-2 capitalize text-muted-foreground">
@@ -134,7 +141,6 @@ export function LeadsPage() {
                       <td className="px-3 py-2 text-muted-foreground">{l.contact?.email}</td>
                       <td className="px-3 py-2 text-muted-foreground">{l.contact?.phone}</td>
                       <td className="px-3 py-2 text-muted-foreground">{l.project_name}</td>
-
                     </tr>
                   ))}
                 </tbody>
@@ -145,14 +151,6 @@ export function LeadsPage() {
       </div>
 
       <AddLeadDialog open={createOpen} onOpenChange={setCreateOpen} />
-
-      {/* {openId && (
-        <EditLeadDialog
-          leadId={openId}
-          open={!!openId}
-          onOpenChange={(v) => setOpenId(v ? openId : null)}
-        />
-      )} */}
     </div>
   );
 }

@@ -7,6 +7,7 @@ import redisService from '../../shared/redis/caching';
 import { leadsRepository } from "../lead/repository/lead.repository";
 import { dealRepository } from "./repositories/deal.repository";
 import { pipelineRepository } from "./repositories/pipeline.repository";
+import { projectService } from "../projects/project.service.js";
 
 export const dealService = {
   async getById(tenantId: string, id: string) {
@@ -62,7 +63,10 @@ export const dealService = {
 
       await dealRepository.moveStage(tx, tenantId, id, stageId);
       const updatedDeal = await dealRepository.findById(tx, tenantId, id);
-      return { deal: updatedDeal || { ...deal, stage_id: stageId }, targetStage };
+      const project = targetStage.is_won
+        ? await projectService.convertWonDeal(tx, tenantId, id)
+        : null;
+      return { deal: updatedDeal || { ...deal, stage_id: stageId }, targetStage, project };
     });
 
     eventBus.emit("deal.stage_changed", {

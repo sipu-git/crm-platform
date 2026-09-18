@@ -44,6 +44,11 @@ export const notificationService = {
     assertNonEmpty(input.subject, "subject");
     assertNonEmpty(input.message, "message");
 
+    if (!userId) {
+      console.log("[dispatch] no recipient_id — skipping notification");
+      return null;
+    }
+
     const data: SendNotificationInput = {
       channel: input.channel,
       subject: input.subject,

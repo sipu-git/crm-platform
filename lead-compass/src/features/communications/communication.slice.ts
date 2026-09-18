@@ -67,6 +67,21 @@ export const disconnectGmail = createAsyncThunk(
   }
 );
 
+export const syncGmailInbox = createAsyncThunk<{ synced: number; skipped: number }, string | undefined>(
+  "communications/syncGmailInbox",
+  async (leadId, { rejectWithValue, dispatch }) => {
+    try {
+      const response = await communicationApis.syncGmailMessages();
+      if (leadId) {
+        dispatch(viewCommunications(leadId));
+      }
+      return response.data.data;
+    } catch (error) {
+      return rejectWithValue(handleApiError(error));
+    }
+  }
+);
+
 // export const viewCommunications = createAsyncThunk<Communication[],
 //   { leadId: string; filters?: CommunicationFilters },
 //   { rejectValue: string }

@@ -7,8 +7,8 @@ import {
   RefreshCw,
   Calendar,
 } from "lucide-react";
-import type { DashboardRole } from "@/features/dashboard/dashboard.types";
-import { ROLE_LABELS } from "@/features/dashboard/dashboard.config";
+import type { DashboardRole } from "@/features/dashboard/types/dashboard.types";
+import { ROLE_LABELS } from "@/features/dashboard/configs/dashboard.config";
 import { format } from "date-fns";
 
 const ROLE_ICONS: Record<DashboardRole, React.ReactNode> = {

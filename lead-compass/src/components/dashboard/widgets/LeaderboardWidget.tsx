@@ -1,14 +1,15 @@
+import { memo } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Trophy, Inbox } from "lucide-react";
-import type { LeaderboardRep, WidgetScope } from "@/features/dashboard/dashboard.types";
-import { formatCurrency } from "@/features/dashboard/useDashboardData";
+import type { LeaderboardRep, WidgetScope } from "@/features/dashboard/types/dashboard.types";
+import { formatCurrency } from "@/features/dashboard/hooks/useDashboardData";
 
 const RANK_BADGES = ["🥇", "🥈", "🥉"];
 
-export function LeaderboardWidget({
+export const LeaderboardWidget = memo(function LeaderboardWidget({
   reps = [],
   isLoading,
   scope,
@@ -73,7 +74,7 @@ export function LeaderboardWidget({
   }
 
   return (
-    <Card className="border border-border/70 bg-card shadow-sm h-full flex flex-col justify-between">
+    <Card className="border border-border/70 bg-card shadow-sm h-full flex flex-col justify-between overflow-hidden">
       <CardHeader className="pb-3 flex flex-row items-start justify-between">
         <div className="space-y-1">
           <div className="flex items-center gap-2">
@@ -83,15 +84,16 @@ export function LeaderboardWidget({
             </span>
           </div>
           <CardDescription className="text-xs">
-            Rankings ranked by closed revenue & target attainment
+            Ranked by closed revenue & target attainment ({reps.length} active reps)
           </CardDescription>
         </div>
-        <div className="grid h-8 w-8 place-items-center rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400">
+        <div className="grid h-8 w-8 place-items-center rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400 shrink-0">
           <Trophy className="h-4 w-4" />
         </div>
       </CardHeader>
 
-      <CardContent className="divide-y divide-border/40 p-0 px-6 pb-2">
+      {/* Responsive Vertical Scroller Container */}
+      <div className="max-h-[380px] min-h-[260px] overflow-y-auto px-6 pb-4 pt-1 divide-y divide-border/40 scrollbar-thin scrollbar-thumb-muted-foreground/20 hover:scrollbar-thumb-muted-foreground/40">
         {reps.map((rep) => {
           const initials = rep.name
             .split(" ")
@@ -102,21 +104,23 @@ export function LeaderboardWidget({
           const rankDisplay = RANK_BADGES[rep.rank - 1] || `#${rep.rank}`;
 
           return (
-            <div key={rep.id} className="flex flex-col gap-2 py-3 first:pt-0 last:pb-0">
+            <div key={rep.id} className="flex flex-col gap-2 py-3.5 first:pt-0 last:pb-0 group">
               <div className="flex items-center justify-between gap-3">
-                <div className="flex items-center gap-3 min-w-0">
-                  <span className="w-5 text-center text-sm font-bold font-mono">
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <span className="w-5 text-center text-xs font-bold font-mono shrink-0">
                     {rankDisplay}
                   </span>
 
-                  <Avatar className="h-8 w-8 border border-border/60">
-                    <AvatarFallback className="text-xs font-semibold bg-muted text-muted-foreground">
+                  <Avatar className="h-8 w-8 border border-border/60 shrink-0">
+                    <AvatarFallback className="text-xs font-semibold bg-primary/10 text-primary">
                       {initials}
                     </AvatarFallback>
                   </Avatar>
 
                   <div className="min-w-0">
-                    <div className="text-xs font-semibold text-foreground truncate">{rep.name}</div>
+                    <div className="text-xs font-semibold text-foreground group-hover:text-primary transition-colors truncate">
+                      {rep.name}
+                    </div>
                     <div className="text-[11px] text-muted-foreground truncate">{rep.role}</div>
                   </div>
                 </div>
@@ -126,17 +130,17 @@ export function LeaderboardWidget({
                     {formatCurrency(rep.closedRevenue)}
                   </div>
                   <div className="text-[10px] text-muted-foreground">
-                    {rep.dealsWon} deals · {rep.winRate}% win rate
+                    {rep.dealsWon} won · {rep.winRate}% win rate
                   </div>
                 </div>
               </div>
 
               {showQuota && (
-                <div className="space-y-1 pl-8">
+                <div className="space-y-1 pl-7">
                   <div className="flex justify-between text-[10px] text-muted-foreground font-medium">
-                    <span>Quota: {formatCurrency(rep.quota)}</span>
+                    <span>Target: {formatCurrency(rep.quota)}</span>
                     <span
-                      className={`font-semibold ${
+                      className={`font-semibold font-mono ${
                         isOverQuota
                           ? "text-emerald-600 dark:text-emerald-400"
                           : "text-muted-foreground"
@@ -154,7 +158,7 @@ export function LeaderboardWidget({
             </div>
           );
         })}
-      </CardContent>
+      </div>
     </Card>
   );
-}
+});

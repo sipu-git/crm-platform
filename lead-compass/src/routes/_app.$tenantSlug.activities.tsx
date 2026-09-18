@@ -1,9 +1,5 @@
-import { useEffect, useState } from "react";
-import { useAppDispatch, useAppSelector } from "@/store/hooks";
-import {
-    activitiesSelectors, fetchActivities, completeActivity,
-    selectActivitiesLoading,
-} from "@/features/activities/slice";
+import { useState } from "react";
+import { useActivities, useActivityMutation, useOwnActivities } from "@/features/activities/hooks/useActivities";
 import { PageHeader, EmptyState, TableSkeleton } from "@/components/ui-kit";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -14,6 +10,8 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import type { Activity, ActivityStatus, ActivityType, ActivityPriority } from "@/features/activities/types";
+import { useAppSelector } from "@/store/hooks";
+import { useAuthPayload } from "@/features/auth/hooks/useAuthPayload";
 
 const TYPE_ICON: Record<ActivityType, React.ReactNode> = {
     CALL: <Phone className="h-4 w-4" />,
@@ -47,16 +45,18 @@ function isOverdue(activity: Activity) {
 }
 
 export function ActivitiesPage() {
-    const dispatch = useAppDispatch();
-    const items = useAppSelector(activitiesSelectors.selectAll);
-    const loading = useAppSelector(selectActivitiesLoading);
+    const auth = useAuthPayload();
+
+    const isSaleRep = auth?.user.role === "SALES_REP";
+    const allActivitiesQuery = useActivities(undefined, !isSaleRep);
+    const ownActivitiesQuery = useOwnActivities(isSaleRep);
+
+    const { data: items = [], isLoading: loading, isError } = isSaleRep ? ownActivitiesQuery : allActivitiesQuery;
+
+    const { complete } = useActivityMutation();
     const [filter, setFilter] = useState<Filter>("open");
 
     const { tenantSlug = "" } = useParams();
-
-    useEffect(() => {
-        dispatch(fetchActivities({}));
-    }, [dispatch]);
 
     const filtered = items.filter((a) => {
         if (filter === "open") return a.status === "PENDING" || a.status === "IN_PROGRESS";
@@ -68,7 +68,7 @@ export function ActivitiesPage() {
 
     const handleComplete = async (activity: Activity) => {
         try {
-            await dispatch(completeActivity(activity.id)).unwrap();
+            await complete.mutateAsync(activity.id);
             toast.success("Marked as completed");
         } catch (err) {
             toast.error(typeof err === "string" ? err : "Failed to update activity");
@@ -78,10 +78,11 @@ export function ActivitiesPage() {
     return (
         <div>
             <PageHeader
-                title="Activities"
-                description="Tasks and follow-ups across deals, contacts, and companies."
+                title={isSaleRep ? "My activities" : "Activities"}
+                description={isSaleRep ? "Tasks assigned to you or created by you." : "Tasks and follow-ups across deals, contacts, and companies."}
             />
             <div className="p-6">
+                {isError && <p role="alert" className="mb-3 text-sm text-destructive">Could not load activities. Please try again.</p>}
                 <div className="mb-4 flex gap-1 rounded-lg bg-muted p-1 text-sm w-fit">
                     {([
                         { key: "open", label: `Open${openCount ? ` (${openCount})` : ""}` },

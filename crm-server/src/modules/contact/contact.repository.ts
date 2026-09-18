@@ -3,19 +3,22 @@ import { PrismaClientTx } from "../../shared/utils/prisma.types.js";
 import { CreateContactInput, UpdateContactInput } from "./contact.schema.js";
 
 export const contactsRepository = {
-  create(tx: PrismaClientTx, tenantId: string, createdBy: string, input: CreateContactInput) {
-    return tx.contacts.create({
-      data: {
-        tenant_id: tenantId,
-        companyId: input.companyId,
-        first_name: input.firstName,
-        last_name: input.lastName,
-        email: input.email,
-        designation: input.designation,
-        phone: input.phone,
-        created_by: createdBy,
-        updated_at: new Date(),
-      },
+  create(tx: PrismaClientTx, tenantId: string, createdBy: string | undefined, input: CreateContactInput) {
+    const data = {
+      tenant: { connect: { id: tenantId } },
+      company: { connect: { id: input.companyId } },
+      first_name: input.firstName,
+      last_name: input.lastName,
+      email: input.email,
+      designation: input.designation,
+      phone: input.phone,
+      ...(createdBy ? { user: { connect: { id: createdBy } } } : {}),
+    } as any;
+
+    return tx.contacts.upsert({
+      where: { tenant_id_email: { tenant_id: tenantId, email: input.email } },
+      update: {},
+      create: data,
     });
   },
 

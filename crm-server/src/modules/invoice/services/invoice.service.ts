@@ -19,11 +19,11 @@ export const invoiceService = {
       return invoice;
     })
   },
-  async getById(tenantId: string, id: string) {
+  async getById(tenantId: string, id: string, user?: AccessTokenPayload) {
     const redisCache = `invoice-get-${tenantId}-${id}`;
     return cacheQuery(redisCache, 400, async () => {
       const invoice = await prisma.$transaction(async (tx) => {
-        const findInvoice = await invoiceRepository.findById(tx, tenantId, id);
+        const findInvoice = await invoiceRepository.findById(tx, tenantId, id, undefined, user);
         if (!findInvoice) throw ApiError.notFound('Invoice not found');
         return findInvoice;
       })

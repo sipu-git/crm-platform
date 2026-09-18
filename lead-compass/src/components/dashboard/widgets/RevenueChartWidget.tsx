@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, memo } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -13,10 +13,10 @@ import {
   YAxis,
 } from "recharts";
 import { TrendingUp, Inbox } from "lucide-react";
-import type { RevenueDataPoint, WidgetScope } from "@/features/dashboard/dashboard.types";
-import { formatCurrency } from "@/features/dashboard/useDashboardData";
+import type { RevenueDataPoint, WidgetScope } from "@/features/dashboard/types/dashboard.types";
+import { formatCurrency } from "@/features/dashboard/hooks/useDashboardData";
 
-export function RevenueChartWidget({
+export const RevenueChartWidget = memo(function RevenueChartWidget({
   data = [],
   isLoading,
   scope,
@@ -190,4 +190,4 @@ export function RevenueChartWidget({
       </CardContent>
     </Card>
   );
-}
+});

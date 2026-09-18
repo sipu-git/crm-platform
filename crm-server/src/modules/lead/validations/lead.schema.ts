@@ -23,6 +23,10 @@ export const leadFiltersSchema = z.object({
   pageSize: z.coerce.number().min(1).max(100).default(20),
 });
 
+export const searchLeadsQuerySchema = z.object({
+  query: z.string().trim().min(1, "Search query is required"),
+  limit: z.coerce.number().int().positive().max(50).default(10),
+});
 
 export const updateLeadSchema = createLeadSchema.partial()
 

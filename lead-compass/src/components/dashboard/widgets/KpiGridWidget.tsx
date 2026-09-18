@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { memo, type ReactNode } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
@@ -23,7 +23,7 @@ import {
   ArrowUpRight,
   ArrowDownRight,
 } from "lucide-react";
-import type { KpiMetric, WidgetScope } from "@/features/dashboard/dashboard.types";
+import type { KpiMetric, WidgetScope } from "@/features/dashboard/types/dashboard.types";
 
 const ICONS_MAP: Record<string, ReactNode> = {
   DollarSign: <IndianRupee className="h-4 w-4" />,
@@ -133,7 +133,7 @@ export function KpiCard({ metric, isLoading }: { metric: KpiMetric; isLoading?: 
   );
 }
 
-export function KpiGridWidget({
+export const KpiGridWidget = memo(function KpiGridWidget({
   metrics,
   isLoading,
   scope,
@@ -164,5 +164,5 @@ export function KpiGridWidget({
       ))}
     </div>
   );
-}
+});
 

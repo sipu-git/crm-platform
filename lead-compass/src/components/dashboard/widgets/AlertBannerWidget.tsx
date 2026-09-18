@@ -11,7 +11,7 @@ import {
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import type { AlertItem, WidgetScope } from "@/features/dashboard/dashboard.types";
+import type { AlertItem, WidgetScope } from "@/features/dashboard/types/dashboard.types";
 
 const SEVERITY_CONFIG = {
   critical: {
@@ -90,7 +90,7 @@ export function AlertBannerWidget({
         </div>
       </CardHeader>
 
-      <CardContent className="space-y-3 p-0 px-6 pb-4">
+      <CardContent className="space-y-3 p-0 px-6 pb-4 max-h-[380px] overflow-y-auto scrollbar-thin scrollbar-thumb-muted-foreground/20">
         {alerts.length === 0 ? (
           <div className="py-8 text-center text-xs text-muted-foreground flex flex-col items-center gap-2">
             <CheckCircle2 className="h-6 w-6 text-emerald-500" />

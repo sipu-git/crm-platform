@@ -3,7 +3,7 @@ import { lazy, Suspense } from "react";
 import type {
   DashboardWidgetConfig,
   DashboardRole,
-} from "@/features/dashboard/dashboard.types";
+} from "@/features/dashboard/types/dashboard.types";
 
 /* Lazy-loaded widgets */
 
@@ -64,6 +64,12 @@ const InvoicesTableWidget = lazy(() =>
 const NewLeadsWidget = lazy(() =>
   import("./widgets/NewLeadsWidget").then((module) => ({
     default: module.NewLeadsWidget,
+  }))
+);
+
+const CalendarUpcomingWidget = lazy(() =>
+  import("./widgets/CalendarUpcomingWidget").then((module) => ({
+    default: module.CalendarUpcomingWidget,
   }))
 );
 
@@ -192,6 +198,9 @@ export function WidgetRenderer({
             limit={widget.props.limit}
           />
         );
+
+      case "calendar_upcoming":
+        return <CalendarUpcomingWidget />;
 
       default:
         return null;

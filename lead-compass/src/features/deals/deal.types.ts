@@ -1,5 +1,5 @@
 import type { Contact } from "@/features/contacts/contact.types";
-import { Lead } from "../leads/service1/lead.types";
+import { Lead } from "../leads/lead-m/lead.types";
 
 export interface PipelineStage {
     id: string;

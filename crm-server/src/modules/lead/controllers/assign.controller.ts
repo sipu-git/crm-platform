@@ -1,12 +1,14 @@
 import { Request, Response } from "express";
 import { successResponse } from "../../../shared/utils/ApiResponse";
-import { assignSchema } from "../validations/assign.schema";
+import { assignParams, assignSchema } from "../validations/assign.schema";
 import { assigneeService } from "../services/assign.service";
 
 export const assigneeController = {
   async create(req: Request, res: Response) {
     const parsed = assignSchema.parse(req.body);
-    const assignee = await assigneeService.create(req.tenantId!, parsed);
+    const { leadId } = req.params as assignParams;
+
+    const assignee = await assigneeService.create(req.tenantId!, leadId, parsed);
     return res.status(201).json(successResponse("Assignee created successfully!", assignee));
   },
 
@@ -22,5 +24,10 @@ export const assigneeController = {
     }
     const assignee = await assigneeService.getById(req.tenantId!, id);
     return res.status(200).json(successResponse("Assignee fetched successfully!", assignee));
+  },
+  
+  async getOwnAssignee(req: Request, res: Response) {
+    const response = await assigneeService.viewOwnAssignee(req.tenantId!, req.userId!);
+    return res.status(200).json(successResponse("Assignee fetched successfully!", response));
   },
 };

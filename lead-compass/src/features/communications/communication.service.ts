@@ -10,6 +10,8 @@ export const communicationApis = {
     getGmailAccounts: () => api.get(`${subUrl}/gmail/accounts`),
     disconnectGmailAccount: (accountId: string) => api.delete(`${subUrl}/gmail/accounts/${accountId}`),
     getGmailInbox: (limit = 20) => api.get(`${subUrl}/gmail/inbox?limit=${limit}`),
+    syncGmailMessages: () => api.post(`${subUrl}/gmail/sync`),
     sendGmailDirect: (data: SendGmailPayload) => api.post(`${subUrl}/gmail/send`, data),
-    getGmailConnectUrl: () => api.get(`${subUrl}/gmail/connect`), // authenticated call, returns { url }
+    getGmailConnectUrl: (returnTo?: string) =>
+        api.get(`${subUrl}/gmail/connect`, { params: returnTo ? { returnTo } : undefined }),
 };

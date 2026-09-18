@@ -1,0 +1,24 @@
+model Enquiry {
+  id           String   @id @default(uuid())
+  // Public fields – no tenant or creator information
+  company_name String
+  first_name   String?
+  last_name    String?
+  email        String?
+  phone        String?
+  project_name String?
+  designation  String?
+  project_type ProjectType?
+  enquiryStatus ProjectEnquiryStatus @default(PENDING)
+  timeline     String?
+  budget       String?
+  description  String?
+  isApproved   Boolean  @default(false)
+  source       Source   @default(WEBSITE)
+  created_at   DateTime @default(now())
+  updated_at   DateTime @updatedAt
+
+  // Relation back‑reference (optional, for convenience)
+  projects Project[] @relation("EnquiryProjects")
+}
+

@@ -1,42 +1,40 @@
 export type Role = "ADMIN" | "MANAGER" | "SALES_REP" | "FINANCE" | "CLIENT";
+export type InviteStatus = "PENDING" | "ACCEPTED" | "REVOKED" | "EXPIRED";
 
 export const ROLE_OPTIONS: Role[] = ["ADMIN", "MANAGER", "SALES_REP", "FINANCE", "CLIENT"];
 
-export interface TeamUser {
+export interface Invite {
     id: string;
-    full_name: string;
     email: string;
     role: Role;
-    mobile: string;
-    createdAt: string;
+    full_name?: string | null;
+    mobile?: string | null;
+    phone?: string | null;
+    status?: InviteStatus;
+    password_hash?: string | null;
+    token_hash?: string;
+    tenant_id?: string;
+    invited_by_id?: string;
+    accepted_user_id?: string | null;
+    expires_at?: string;
+    createdAt?: string;
+    updated_at?: string;
 }
 
-export interface InvitePayload {
-    full_name: string;
-    email: string;
-    mobile: string;
-    role: Role;
-}
+export type TeamUser = Invite;
+
+export type InvitePayload = Partial<Invite>;
 
 export interface InviteResult {
-    user: TeamUser;
-    tempPassword: string;
+    id?: string;
+    email?: string;
+    role?: Role;
+    user?: Invite;
+    tempPassword?: string;
+    expiresAt?: string;
 }
 
 export interface UpdateRolePayload {
     userId: string;
     role: Role;
-}
-
-export interface UsersState {
-    items: TeamUser[];
-    status: "idle" | "loading" | "succeeded" | "failed";
-    error: string | null;
-    inviteStatus: "idle" | "loading" | "succeeded" | "failed";
-    inviteError: string | null;
-    updateRoleStatus: "idle" | "loading" | "succeeded" | "failed";
-    updateRoleError: string | null;
-    removeStatus: "idle" | "loading" | "succeeded" | "failed";
-    removeError: string | null;
-    lastInviteResult: InviteResult | null;
 }

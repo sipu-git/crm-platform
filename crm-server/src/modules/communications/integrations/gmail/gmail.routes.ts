@@ -3,12 +3,13 @@ import { google } from 'googleapis';
 import { authGuard } from '../../../../shared/middleware/authGuard.middleware.js';
 import { tenantContext } from '../../../../shared/middleware/tenantContext.middleware.js';
 import { asyncHandler } from '../../../../shared/middleware/asyncHandler.middleware.js';
-import { createOAuthClient } from './gmail.config.js';
+import { createOAuthClient } from '../../../../shared/integrations/google/google.config.js';
 import { prisma } from '../../../../../lib/prisma.js';
-import { encrypt } from './utils/encryption.util.js';
+import { encryptToken } from '../../../../shared/integrations/google/google.encryption.js';
 import { gmailService } from './gmail.service.js';
 import { successResponse } from '../../../../shared/utils/ApiResponse.js';
 import { ApiError } from '../../../../shared/utils/ApiError.js';
+import { googleScopes } from '../../../../shared/integrations/google/google.scopes.js';
 
 const router = Router();
 
@@ -18,15 +19,13 @@ router.get('/connect', authGuard, (req: Request, res: Response) => {
     const statePayload = JSON.stringify({
         userId: req.auth!.userId,
         tenantId: req.auth!.tenantId,
+        returnTo: typeof req.query.returnTo === 'string' ? req.query.returnTo : '/',
     });
 
     const url = oauth2Client.generateAuthUrl({
         access_type: 'offline',
         prompt: 'consent',
-        scope: ['https://www.googleapis.com/auth/gmail.modify',
-            'https://www.googleapis.com/auth/userinfo.email',
-            'https://www.googleapis.com/auth/userinfo.profile',
-        ],
+        scope: googleScopes.combined,
         state: statePayload,
     });
 
@@ -35,19 +34,19 @@ router.get('/connect', authGuard, (req: Request, res: Response) => {
 
 router.get('/oauth/callback', async (req: Request, res: Response) => {
     const { code, state } = req.query as { code?: string; state?: string };
-     const frontendUrl = process.env.PRODUCTION_URL ?? 'https://crm-platform-weld.vercel.app';
+    const frontendUrl = process.env.CLIENT_URL ?? 'http://localhost:5173';
 
     if (!code || !state) {
-        return res.redirect(`${frontendUrl}/settings/email?error=missing_params`);
+        return res.redirect(`${frontendUrl}/?error=missing_params`);
     }
 
-    let userId: string, tenantId: string;
+    let userId: string, tenantId: string, returnTo: string;
     try {
-        ({ userId, tenantId } = JSON.parse(state));
+        ({ userId, tenantId, returnTo = '/' } = JSON.parse(state));
     } catch {
-        return res.redirect(`${frontendUrl}/settings/email?error=invalid_state`);
+        return res.redirect(`${frontendUrl}/?error=invalid_state`);
     }
-
+    const safeReturnTo = returnTo.startsWith('/') ? returnTo : '/';
     try {
         const oauth2Client = createOAuthClient();
         const { tokens } = await oauth2Client.getToken(code);
@@ -57,7 +56,7 @@ router.get('/oauth/callback', async (req: Request, res: Response) => {
         const { data: profile } = await oauth2.userinfo.get();
 
         if (!profile.email) {
-            return res.redirect(`${frontendUrl}/settings/email?error=no_email_returned`);
+            return res.redirect(`${frontendUrl}${safeReturnTo}?error=no_email_returned`);
         }
 
         const existing = await prisma.emailAccount.findUnique({
@@ -67,9 +66,9 @@ router.get('/oauth/callback', async (req: Request, res: Response) => {
         await prisma.emailAccount.upsert({
             where: { user_id_email: { user_id: userId, email: profile.email } },
             update: {
-                access_token: encrypt(tokens.access_token!),
+                access_token: encryptToken(tokens.access_token!),
                 refresh_token: tokens.refresh_token
-                    ? encrypt(tokens.refresh_token)
+                    ? encryptToken(tokens.refresh_token)
                     : existing!.refresh_token,
                 token_expiry: new Date(tokens.expiry_date!),
                 is_active: true,
@@ -78,18 +77,17 @@ router.get('/oauth/callback', async (req: Request, res: Response) => {
                 tenant_id: tenantId,
                 user_id: userId,
                 email: profile.email,
-                access_token: encrypt(tokens.access_token!),
-                refresh_token: encrypt(tokens.refresh_token!),
+                access_token: encryptToken(tokens.access_token!),
+                refresh_token: encryptToken(tokens.refresh_token!),
                 token_expiry: new Date(tokens.expiry_date!),
                 is_active: true,
             },
         });
 
-        // Adjust to your actual frontend origin (use an env var in production).
-        res.redirect(`${frontendUrl}/http://localhost:5173/settings/email?connected=true`);
+        res.redirect(`${frontendUrl}${safeReturnTo}?connected=true`);
     } catch (err) {
         console.error('Gmail OAuth callback failed:', err);
-        res.redirect(`${frontendUrl}http://localhost:5173/settings/email?error=oauth_failed`);
+        res.redirect(`${frontendUrl}${safeReturnTo}?error=oauth_failed`);
     }
 });
 

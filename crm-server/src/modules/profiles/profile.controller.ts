@@ -5,7 +5,7 @@ import { profileService } from "./profile.service.js";
 import { ApiError } from "../../shared/utils/ApiError.js";
 
 export const profileController = {
-    async getProfile(req: Request, res: Response) {
+    async viewProfile(req: Request, res: Response) {
         if (!req.auth?.userId || !req.auth?.tenantId) {
             throw ApiError.unauthorized("Unauthorized");
         }

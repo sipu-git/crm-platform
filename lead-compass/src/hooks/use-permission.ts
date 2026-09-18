@@ -1,9 +1,12 @@
 // src/hooks/usePermission.ts
+import { useAuthPayload } from "@/features/auth/hooks/useAuthPayload";
 import { hasPermission } from "@/features/auth/permission";
 import { useAppSelector } from "@/store/hooks";
 
 export function usePermission() {
-  const permissions = useAppSelector((s) => s.auth.permissions) ?? [];
+  const auth = useAuthPayload()
+  const permissions = auth?.permissions;
+
 
   const can = (required: string): boolean => hasPermission(permissions, required);
 

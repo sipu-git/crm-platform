@@ -18,6 +18,7 @@ export type DomainEvent =
   | 'lead.qualified'
   | 'lead.disqualified'
   | 'lead.converted'
+  | 'lead.assigned'
   | 'deal.created'
   | 'deal.stage_changed'
   | 'deal.won'

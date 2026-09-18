@@ -15,6 +15,11 @@ import communicationRoutes from './src/modules/communications/communication.rout
 import projectRoutes from './src/modules/projects/project.routes.js';
 import profileRoutes from './src/modules/profiles/profile.routes.js';
 import userRoutes from './src/modules/users/users.routes.js';
+import enquiryRoutes from './src/modules/enquiry/enquiry.routes.js';
+import globalApiRoutes from './src/modules/global-apis/apis.routes.js';
+import calendarRoutes from './src/modules/apps/calendar/calendar.routes.js';
+import dashboardRoutes from './src/modules/dashboard/dashboard.route.js';
+
 import { registerNotificationListeners } from './src/modules/notification/utils/notification.listener.js';
 import { registerAuditListeners } from './src/modules/audit/audit.listener.js';
 import { env } from './src/shared/configs/env.js';
@@ -38,7 +43,7 @@ export function createApp() {
   }));
   app.use(cors({
     origin: [env.clientUrl, "https://crm-platform-backend-91af.onrender.com",
-      "https://crm-platform-weld.vercel.app", "http://localhost:3000", "https://crm-landing-application.vercel.app"],
+      "https://crm-platform-weld.vercel.app", "http://localhost:3000","http://192.168.1.17:3000", "https://crm-landing-application.vercel.app"],
     credentials: true
   }));
   app.use(express.json({
@@ -64,6 +69,11 @@ export function createApp() {
   app.use('/api/project', projectRoutes);
   app.use('/api/profile', profileRoutes);
   app.use('/api/users', userRoutes);
+  app.use('/api/enquiry', enquiryRoutes);
+  app.use('/api/shared', globalApiRoutes);
+  app.use('/api/calendar', calendarRoutes);
+  app.use('/api/dashboard', dashboardRoutes);
+  
 
   app.use(errorHandler);
 

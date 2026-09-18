@@ -6,7 +6,7 @@ import { clearAllOTPs } from '../../../../shared/redis/store-otp';
 export async function resetPasswordWithToken(email: string, newPassword: string
 ): Promise<{ success: boolean; message: string }> {
     try {
-        const user = await prisma.user.findUnique({
+        const user = await prisma.user.findFirst({
             where: {
                 email
             }

@@ -15,6 +15,12 @@ export const loginSchema = z.object({
   password: z.string().min(1),
 });
 
+export const listUsersQuerySchema = z.object({
+  role: z.enum(Role).optional(),
+});
+
+export type ListUsersQuery = z.infer<typeof listUsersQuerySchema>;
+
 export const forgotPasswordSchema = z.object({
   email: z.string().email(),
 });

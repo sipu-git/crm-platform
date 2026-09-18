@@ -2,6 +2,7 @@ export const USER_SELECT = {
     id: true,
     full_name: true,
     company_name: true,
+    designation: true,
     mobile:true,
     email: true,
     role: true,

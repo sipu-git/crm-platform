@@ -54,6 +54,7 @@
   --foreground: oklch(0.208 0.042 265);
   --card: oklch(1 0 0);
   --card-foreground: oklch(0.208 0.042 265);
+  --button-1: oklch(97.545% 0.00318 15.292);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.208 0.042 265);
   /* Indigo 600 #4F46E5 */
@@ -160,4 +161,14 @@
   #root {
     height: 100%;
   }
+
+  /* Hides scrollbar visually but keeps scroll functionality */
+.no-scrollbar {
+  -ms-overflow-style: none;    /* IE and Edge */
+  scrollbar-width: none;       /* Firefox */
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;               /* Chrome, Safari, Opera */
+}
 }

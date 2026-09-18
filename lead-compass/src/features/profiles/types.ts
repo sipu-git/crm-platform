@@ -10,7 +10,7 @@ export interface Profile {
         role: string;
         createdAt: string;
         updatedAt: string;
-    },
+    };
     tenant: {
         name: string;
         gst_number: string | null;
@@ -27,12 +27,13 @@ export interface Profile {
         status: TenantStatus;
         created_at: string;
         updated_at: string;
-    }
+    };
 }
 
 export interface UpdateProfilePayload {
     full_name?: string;
     email?: string;
+    mobile?: string;
     name?: string;
     gst_number?: string;
     pan_number?: string;
@@ -70,3 +71,24 @@ export interface ProfileState {
     deleteStatus: AsyncStatus;
     deleteError: string | null;
 }
+
+export const USER_UPDATE_KEYS = ["full_name","email",  "mobile",
+] as const satisfies readonly (keyof UpdateProfilePayload & keyof Profile["user"])[];
+
+export const TENANT_UPDATE_KEYS = [
+    "name",
+    "gst_number",
+    "pan_number",
+    "address",
+    "city",
+    "state",
+    "country",
+    "pincode",
+    "website",
+    "logo_url",
+    "industry",
+    "company_size",
+] as const satisfies readonly (keyof UpdateProfilePayload & keyof Profile["tenant"])[];
+
+export type UserUpdateKey = (typeof USER_UPDATE_KEYS)[number];
+export type TenantUpdateKey = (typeof TENANT_UPDATE_KEYS)[number];

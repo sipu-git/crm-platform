@@ -1,220 +1,202 @@
-import { useEffect, useState } from "react";
-import { useAppDispatch, useAppSelector } from "@/store/hooks";
+import { ProtectedRoute } from "@/components/ProtectedRoutes";
 import { usePermission } from "@/hooks/use-permission";
+import { useCurrentUser } from "@/features/auth/hooks/useCurrentUsers";
+import { useUsers, useUserMutations } from "@/features/users/hooks/useUsers";
+import { PageHeader } from "@/components/ui-kit";
 import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import {
-    Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from "@/components/ui/select";
-import {
-    AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
-    AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import { Trash2, UserPlus } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Search, Users as UsersIcon } from "lucide-react";
 import { toast } from "sonner";
-import { Role, ROLE_OPTIONS, TeamUser } from "@/features/users/types";
-import { fetchUsers, resetRemoveStatus, resetUpdateRoleStatus, updateUserRole, removeUser } from "@/features/users/slice";
-import { InviteUserDialog } from "@/components/InviteuserDialog";
+import { Role, ROLE_OPTIONS } from "@/features/users/types";
+import { TeamMembersTable } from "@/components/team/TeamMembersTable";
+import { TeamInvitationsList } from "@/components/team/TeamInvitationsList";
+import { TeamInviteMemberDialog } from "@/components/team/TeamInviteMemberDialog";
+import { TeamChangeRoleDialog } from "@/components/team/TeamChangeRoleDialog";
+import { TeamRemoveMemberDialog } from "@/components/team/TeamRemoveMemberDialog";
+import { ROLE_DOT, DEFAULT_ROLE_DOT } from "@/components/team/TeamStyles";
+import React from "react";
 
-function initials(name: string) {
-    return name.split(" ").map((s) => s[0]).slice(0, 2).join("");
-}
+export default function TeamPage() {
+  const { can } = usePermission();
+  const currentUser = useCurrentUser();
+  const currentUserId = currentUser.user?.id;
 
-export function TeamPage() {
-    const dispatch = useAppDispatch();
-    const { can } = usePermission();
-    const currentUserId = useAppSelector((s) => s.auth.user?.id);
+  const { data: items = [], isLoading, isError, error } = useUsers();
+  const { updateRole, remove } = useUserMutations();
 
-    const { items, status, error, updateRoleStatus, updateRoleError,
-        removeStatus, removeError } = useAppSelector(
-            (s) => s.users,
-        );
+  const [inviteOpen, setInviteOpen] = React.useState(false);
+  const [query, setQuery] = React.useState("");
+  const [roleFilter, setRoleFilter] = React.useState<string>("ALL");
+  const [sortField, setSortField] = React.useState<"name" | "role">("name");
+  const [sortDir, setSortDir] = React.useState<"asc" | "desc">("asc");
+  const [pendingChange, setPendingChange] = React.useState<{
+    user: any;
+    newRole: Role;
+  } | null>(null);
+  const [pendingRemove, setPendingRemove] = React.useState<any | null>(null);
 
-    const [inviteOpen, setInviteOpen] = useState(false);
-    const [pendingChange, setPendingChange] = useState<{ user: TeamUser; newRole: Role } | null>(null);
-    const [pendingRemove, setPendingRemove] = useState<TeamUser | null>(null);
+  const canManage = can("users:manage");
 
-    const canManage = can("users:manage");
+  React.useEffect(() => {
+    if (updateRole.isSuccess) toast.success("Role updated");
+    if (updateRole.isError) toast.error(updateRole.error?.message ?? "Failed to update role");
+  }, [updateRole.isSuccess, updateRole.isError, updateRole.error]);
 
-    useEffect(() => {
-        dispatch(fetchUsers());
-    }, [dispatch]);
+  React.useEffect(() => {
+    if (remove.isSuccess) toast.success("Member removed from workspace");
+    if (remove.isError) toast.error(remove.error?.message ?? "Failed to remove user");
+  }, [remove.isSuccess, remove.isError, remove.error]);
 
-    useEffect(() => {
-        if (updateRoleStatus === "succeeded") {
-            toast.success("Role updated");
-            dispatch(resetUpdateRoleStatus());
-        }
-        if (updateRoleStatus === "failed" && updateRoleError) {
-            toast.error(updateRoleError);
-            dispatch(resetUpdateRoleStatus());
-        }
-    }, [updateRoleStatus, updateRoleError, dispatch]);
+  const confirmRoleChange = () => {
+    if (!pendingChange) return;
+    updateRole.mutate({ userId: pendingChange.user.id, role: pendingChange.newRole });
+    setPendingChange(null);
+  };
 
-    useEffect(() => {
-        if (removeStatus === "succeeded") {
-            toast.success("Member removed from workspace");
-            dispatch(resetRemoveStatus());
-        }
-        if (removeStatus === "failed" && removeError) {
-            toast.error(removeError);
-            dispatch(resetRemoveStatus());
-        }
-    }, [removeStatus, removeError, dispatch]);
+  const confirmRemoveUser = () => {
+    if (!pendingRemove) return;
+    remove.mutate(pendingRemove.id);
+    setPendingRemove(null);
+  };
 
-    function confirmRoleChange() {
-        if (!pendingChange) return;
-        dispatch(updateUserRole({ userId: pendingChange.user.id, role: pendingChange.newRole }));
-        setPendingChange(null);
+  const handleSort = (field: "name" | "role") => {
+    if (field === sortField) {
+      setSortDir(d => (d === "asc" ? "desc" : "asc"));
+    } else {
+      setSortField(field);
+      setSortDir("asc");
     }
+  };
 
-    function confirmRemoveUser() {
-        if (!pendingRemove) return;
-        dispatch(removeUser(pendingRemove.id));
-        setPendingRemove(null);
-    }
+  const filteredItems = React.useMemo(() => {
+    let current = items;
+    if (roleFilter !== "ALL") current = current.filter(u => u.role === roleFilter);
+    const q = query.trim().toLowerCase();
+    if (q) current = current.filter(u => (u.full_name || u.email).toLowerCase().includes(q) || u.email.toLowerCase().includes(q));
+    return [...current].sort((a, b) => {
+      const aVal = sortField === "name" ? (a.full_name || a.email) : a.role;
+      const bVal = sortField === "name" ? (b.full_name || b.email) : b.role;
+      const cmp = aVal.localeCompare(bVal);
+      return sortDir === "asc" ? cmp : -cmp;
+    });
+  }, [items, query, roleFilter, sortField, sortDir]);
 
-    if (status === "loading" && items.length === 0) {
-        return <div className="p-6 text-sm text-muted-foreground">Loading team...</div>;
-    }
+  const roleCounts = React.useMemo(() => {
+    const counts: Record<string, number> = {};
+    for (const u of items) counts[u.role] = (counts[u.role] ?? 0) + 1;
+    return counts;
+  }, [items]);
 
-    if (status === "failed") {
-        return <div className="p-6 text-sm text-destructive">{error}</div>;
-    }
-
+  if (isError) {
     return (
-        <div className="p-6">
-            <div className="mb-6 flex items-center justify-between">
-                <div>
-                    <h1 className="text-2xl font-semibold">Team</h1>
-                    <p className="text-sm text-muted-foreground">
-                        Manage who has access to this workspace and their role.
-                    </p>
-                </div>
-                {canManage && (
-                    <Button onClick={() => setInviteOpen(true)}>
-                        <UserPlus className="mr-2 h-4 w-4" /> Invite member
-                    </Button>
-                )}
-            </div>
-
-            <div className="overflow-hidden rounded-md border">
-                <table className="w-full text-sm">
-                    <thead className="bg-card border-border text-left text-xs uppercase text-muted-foreground">
-                        <tr>
-                            <th className="px-4 py-3 font-medium">Name</th>
-                            <th className="px-4 py-3 font-medium">Email</th>
-                            <th className="px-4 py-3 font-medium">Mobile</th>
-                            <th className="px-4 py-3 font-medium">Role</th>
-                            {canManage && <th className="px-4 py-3 font-medium text-right">Actions</th>}
-                        </tr>
-                    </thead>
-                    <tbody className="divide-y bg-input">
-                        {items.map((u) => {
-                            const isSelf = u.id === currentUserId;
-                            return (
-                                <tr key={u.id}>
-                                    <td className="px-4 py-3">
-                                        <div className="flex items-center gap-2">
-                                            <Avatar className="h-7 w-7">
-                                                <AvatarFallback className="text-xs">{initials(u.full_name)}</AvatarFallback>
-                                            </Avatar>
-                                            <span className="font-medium">{u.full_name}</span>
-                                            {isSelf && <span className="text-xs text-muted-foreground">(you)</span>}
-                                        </div>
-                                    </td>
-                                    <td className="px-4 py-3 text-muted-foreground">{u.email}</td>
-                                    <td className="px-4 py-3 text-muted-foreground">{u.mobile}</td>
-                                    <td className="px-4 py-3">
-                                        {canManage && !isSelf ? (
-                                            <Select
-                                                value={u.role}
-                                                onValueChange={(newRole: Role) =>
-                                                    setPendingChange({ user: u, newRole })
-                                                }
-                                            >
-                                                <SelectTrigger className="h-8 w-36">
-                                                    <SelectValue />
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                    {ROLE_OPTIONS.map((r) => (
-                                                        <SelectItem key={r} value={r}>{r}</SelectItem>
-                                                    ))}
-                                                </SelectContent>
-                                            </Select>
-                                        ) : (
-                                            <span className="inline-flex items-center rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-medium text-primary">
-                                                {u.role}
-                                            </span>
-                                        )}
-                                    </td>
-                                    {canManage && (
-                                        <td className="px-4 py-3 text-right">
-                                            {!isSelf && (
-                                                <Button
-                                                    variant="ghost"
-                                                    size="sm"
-                                                    className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                                                    onClick={() => setPendingRemove(u)}
-                                                >
-                                                    <Trash2 className="h-4 w-4 mr-1" /> Remove
-                                                </Button>
-                                            )}
-                                        </td>
-                                    )}
-                                </tr>
-                            );
-                        })}
-                    </tbody>
-                </table>
-            </div>
-
-            <InviteUserDialog open={inviteOpen} onOpenChange={setInviteOpen} />
-
-            <AlertDialog open={!!pendingChange} onOpenChange={(open) => !open && setPendingChange(null)}>
-                <AlertDialogContent>
-                    <AlertDialogHeader>
-                        <AlertDialogTitle>Change role?</AlertDialogTitle>
-                        <AlertDialogDescription>
-                            {pendingChange && (
-                                <>
-                                    Change <strong>{pendingChange.user.full_name}</strong>'s role from{" "}
-                                    <strong>{pendingChange.user.role}</strong> to{" "}
-                                    <strong>{pendingChange.newRole}</strong>? This takes effect immediately.
-                                </>
-                            )}
-                        </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={confirmRoleChange}>Confirm</AlertDialogAction>
-                    </AlertDialogFooter>
-                </AlertDialogContent>
-            </AlertDialog>
-
-            <AlertDialog open={!!pendingRemove} onOpenChange={(open) => !open && setPendingRemove(null)}>
-                <AlertDialogContent>
-                    <AlertDialogHeader>
-                        <AlertDialogTitle>Remove member?</AlertDialogTitle>
-                        <AlertDialogDescription>
-                            {pendingRemove && (
-                                <>
-                                    Are you sure you want to remove <strong>{pendingRemove.full_name}</strong> ({pendingRemove.email}) from this workspace? They will lose access to all CRM resources immediately.
-                                </>
-                            )}
-                        </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction
-                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                            onClick={confirmRemoveUser}
-                        >
-                            Remove
-                        </AlertDialogAction>
-                    </AlertDialogFooter>
-                </AlertDialogContent>
-            </AlertDialog>
+      <div className="p-6">
+        <div className="rounded-md border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive">
+          {error instanceof Error ? error.message : "Couldn't load the team. Try refreshing the page."}
         </div>
+      </div>
     );
+  }
+
+  const isInitialLoad = isLoading && items.length === 0;
+
+  return (
+    <ProtectedRoute resource="users">
+      <section className="space-y-8">
+        <PageHeader
+          title="Team Members"
+          description="Manage who has access to this workspace and their role."
+          actions={
+            canManage && (
+              <Button onClick={() => setInviteOpen(true)} className="shadow-sm w-full sm:w-auto">
+                <UsersIcon className="mr-2 h-4 w-4" /> Invite Member
+              </Button>
+            )
+          }
+        />
+        <div className="px-6 pb-6 space-y-8">
+          {canManage && (
+            <div className="rounded-md bg-card p-5 shadow-xs">
+              <TeamInvitationsList />
+            </div>
+          )}
+          {!isInitialLoad && items.length > 0 && (
+            <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+              <div className="relative w-full lg:max-w-3xl">
+                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  value={query}
+                  onChange={e => setQuery(e.target.value)}
+                  placeholder="Search by name or email..."
+                  className="pl-9 bg-background shadow-sm"
+                />
+              </div>
+              <div className="flex flex-wrap items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => setRoleFilter("ALL")}
+                  className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium transition-colors ${
+                    roleFilter === "ALL"
+                      ? "border-foreground/20 bg-foreground/5 text-foreground"
+                      : "border-transparent text-muted-foreground hover:bg-muted/60"
+                  }`}
+                >
+                  All <span className="text-muted-foreground">{items.length}</span>
+                </button>
+                {ROLE_OPTIONS.map(r =>
+                  roleCounts[r] > 0 && (
+                    <button
+                      key={r}
+                      type="button"
+                      onClick={() => setRoleFilter(roleFilter === r ? "ALL" : r)}
+                      className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium transition-colors ${
+                        roleFilter === r
+                          ? "border-foreground/20 bg-foreground/5 text-foreground"
+                          : "border-transparent text-muted-foreground hover:bg-muted/60"
+                      }`}
+                    >
+                      <span className={`h-1.5 w-1.5 rounded-full ${ROLE_DOT[r] ?? DEFAULT_ROLE_DOT}`} />
+                      {r}
+                      <span className="text-muted-foreground">{roleCounts[r]}</span>
+                    </button>
+                  )
+                )}
+              </div>
+            </div>
+          )}
+          <TeamMembersTable
+            items={items}
+            filteredItems={filteredItems}
+            isInitialLoad={isInitialLoad}
+            currentUserId={currentUserId}
+            canManage={canManage}
+            query={query}
+            roleFilter={roleFilter}
+            sortField={sortField}
+            sortDir={sortDir}
+            onInvite={() => setInviteOpen(true)}
+            onSort={handleSort}
+            onChangeRole={(user, newRole) => setPendingChange({ user, newRole })}
+            onRemove={user => setPendingRemove(user)}
+            onClearFilters={() => {
+              setQuery("");
+              setRoleFilter("ALL");
+            }}
+          />
+          <TeamInviteMemberDialog open={inviteOpen} onOpenChange={setInviteOpen} />
+          <TeamChangeRoleDialog
+            open={!!pendingChange}
+            pendingChange={pendingChange}
+            onOpenChange={isOpen => { if (!isOpen) setPendingChange(null); }}
+            onConfirm={confirmRoleChange}
+          />
+          <TeamRemoveMemberDialog
+            open={!!pendingRemove}
+            pendingRemove={pendingRemove}
+            onOpenChange={isOpen => { if (!isOpen) setPendingRemove(null); }}
+            onConfirm={confirmRemoveUser}
+          />
+        </div>
+      </section>
+    </ProtectedRoute>
+  );
 }

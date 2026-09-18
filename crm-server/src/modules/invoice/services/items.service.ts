@@ -1,38 +1,43 @@
-import { PrismaClientTx } from "../../../shared/utils/prisma.types";
-import { computeInvoiceItemAmounts, recomputeInvoiceItemAmounts } from "../utils/items-calculation";
-import type { CreateInvoiceItemInput, UpdateInvoiceItemInput } from "../validations/invoice-items.schema";
-import { ApiError } from "../../../shared/utils/ApiError";
-import { invoiceRepository } from "../repositories/invoice.repository";
-import { prisma } from "../../../../lib/prisma";
-import { leadsRepository } from "../../lead/repository/lead.repository";
-import { invoiceItemsRepository } from "../repositories/invoice-items.repository";
+import { PrismaClientTx } from "../../../shared/utils/prisma.types.js";
+import { computeInvoiceItemAmounts, recomputeInvoiceItemAmounts } from "../utils/items-calculation.js";
+import type { CreateInvoiceItemInput, UpdateInvoiceItemInput } from "../validations/invoice-items.schema.js";
+import { ApiError } from "../../../shared/utils/ApiError.js";
+import { invoiceRepository } from "../repositories/invoice.repository.js";
+import { prisma } from "../../../../lib/prisma.js";
+import { leadsRepository } from "../../lead/repository/lead.repository.js";
+import { invoiceItemsRepository } from "../repositories/invoice-items.repository.js";
 
 async function findInvoiceOrThrow(tx: PrismaClientTx, tenantId: string, invoiceId: string) {
     const invoice = await invoiceRepository.findById(tx, tenantId, invoiceId);
     if (!invoice) throw ApiError.notFound("Invoice not found");
     return invoice;
 }
-async function resolveDefaultDescription(tx: PrismaClientTx, tenantId: string,
+
+async function resolveDefaultDescription(
+    tx: PrismaClientTx,
+    tenantId: string,
     invoice: {
         project_id?: string | null;
-        project?: { project_name: string } | null;
+        project?: any;
         deal: {
-            lead_id: string
-        } | null
+            lead_id: string;
+        } | null;
     }
 ): Promise<string | undefined> {
     // 1. Prefer the invoice's directly linked project name
-    if (invoice.project?.project_name) {
-        return invoice.project.project_name;
+    const eagerName = invoice.project?.originatingLead?.project_name || invoice.project?.enquiry?.project_name;
+    if (eagerName) {
+        return eagerName;
     }
 
     // 2. If invoice has a project_id but wasn't eager-loaded, fetch it
     if (invoice.project_id) {
         const project = await tx.project.findUnique({
             where: { id: invoice.project_id },
-            select: { project_name: true }
+            include: { originatingLead: { select: { project_name: true } }, enquiry: { select: { project_name: true } } },
         });
-        if (project?.project_name) return project.project_name;
+        const name = project?.originatingLead?.project_name || project?.enquiry?.project_name;
+        if (name) return name;
     }
 
     // 3. Fall back to the lead's project_name via the deal
@@ -108,12 +113,7 @@ export const invoiceItemsService = {
                 throw ApiError.badRequest("Invoice item description is required");
             }
 
-            // Explicit, guaranteed-string binding — if THIS line errors,
-            // it tells you narrowing isn't the problem; resolveDefaultDescription's
-            // declared return type is.
-            const resolvedDescription: string = description;
-
-            const computed = computeInvoiceItemAmounts({ ...data, description: resolvedDescription });
+            const computed = computeInvoiceItemAmounts({ ...data, description });
             const item = await invoiceItemsRepository.create(tx, invoiceId, computed);
 
             await recalculateInvoiceTotals(tx, tenantId, invoiceId);

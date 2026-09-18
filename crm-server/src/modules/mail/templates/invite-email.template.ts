@@ -4,18 +4,18 @@ export interface InviteEmailProps {
   fullName: string;
   email: string;
   role: string;
+  tempPassword?: string;
   companyName: string;
-  tempPassword: string;
-  loginUrl: string;
+  acceptUrl: string;
 }
 
 export function inviteEmailTemplate({
   fullName,
   email,
   role,
-  companyName,
   tempPassword,
-  loginUrl,
+  companyName,
+  acceptUrl,
 }: InviteEmailProps): string {
   const body = `
     <h2 class="title">You've Been Invited to ClearView CRM</h2>
@@ -25,7 +25,7 @@ export function inviteEmailTemplate({
     </p>
 
     <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 20px; margin: 24px 0;">
-      <h3 style="margin: 0 0 14px 0; font-size: 14px; font-weight: 700; text-transform: uppercase; color: #475569; letter-spacing: 0.5px;">Your Account Credentials</h3>
+      <h3 style="margin: 0 0 14px 0; font-size: 14px; font-weight: 700; text-transform: uppercase; color: #475569; letter-spacing: 0.5px;">Your Invitation</h3>
       
       <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
         <tr>
@@ -44,25 +44,23 @@ export function inviteEmailTemplate({
           <td style="padding: 6px 0; color: #64748b;">Login Email:</td>
           <td style="padding: 6px 0; color: #0f172a; font-weight: 600;">${email}</td>
         </tr>
+        ${tempPassword ? `
         <tr>
-          <td style="padding: 8px 0; color: #64748b; vertical-align: middle;">Temporary Password:</td>
-          <td style="padding: 8px 0;">
-            <code style="font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace; font-size: 15px; font-weight: 700; background-color: #f1f5f9; color: #4f46e5; border: 1px solid #cbd5e1; padding: 4px 10px; border-radius: 6px; letter-spacing: 1px;">
-              ${tempPassword}
-            </code>
-          </td>
+          <td style="padding: 6px 0; color: #64748b;">Temporary Password:</td>
+          <td style="padding: 6px 0; color: #4338ca; font-weight: 700; font-family: monospace;">${tempPassword}</td>
         </tr>
+        ` : ''}
       </table>
     </div>
 
     <div style="text-align: center; margin: 28px 0;">
-      <a href="${loginUrl}" target="_blank" style="display: inline-block; background: linear-gradient(135deg, #4f46e5 0%, #4338ca 100%); color: #ffffff; text-decoration: none; font-size: 15px; font-weight: 600; padding: 12px 28px; border-radius: 8px; box-shadow: 0 4px 6px -1px rgba(79, 70, 229, 0.2);">
-        Sign In to Your Workspace &rarr;
+      <a href="${acceptUrl}" target="_blank" style="display: inline-block; background: linear-gradient(135deg, #4f46e5 0%, #4338ca 100%); color: #ffffff; text-decoration: none; font-size: 15px; font-weight: 600; padding: 12px 28px; border-radius: 8px; box-shadow: 0 4px 6px -1px rgba(79, 70, 229, 0.2);">
+        Accept invitation &rarr;
       </a>
     </div>
 
     <div class="security-box" style="background-color: #fffbeb; border-left: 4px solid #f59e0b; color: #92400e;">
-      <strong>⚠️ First-Time Login Notice:</strong> This is a temporary password. For security purposes, please change your password after your initial login from your profile settings.
+      <strong>⚠️ Security notice:</strong> This link can be used once and expires in seven days. ${tempPassword ? 'Use your temporary password above to log in.' : 'Choose your own password after opening it.'}
     </div>
 
     <p class="text" style="margin-top: 24px; margin-bottom: 0;">
@@ -77,4 +75,3 @@ export function inviteEmailTemplate({
 export function inviteEmailSubject(companyName: string): string {
   return `Invitation to join ${companyName} on ClearView CRM`;
 }
-

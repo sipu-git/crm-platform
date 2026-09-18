@@ -1,5 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
-import { useAppDispatch, useAppSelector } from "@/store/hooks";
+import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -11,9 +10,7 @@ import {
     CheckCircle2, Circle, Trash2, Pencil, AlertCircle,
 } from "lucide-react";
 import { toast } from "sonner";
-import {
-    fetchActivities, completeActivity, deleteActivity, selectActivitiesByDeal, selectActivitiesLoading,
-} from "@/features/activities/slice";
+import { useActivities, useActivityMutation } from "@/features/activities/hooks/useActivities";
 import type { Activity, ActivityStatus, ActivityType, ActivityPriority } from "@/features/activities/types";
 import { ActivityFormDialog } from "./ActivityFormModal";
 
@@ -56,19 +53,12 @@ function isOverdue(activity: Activity) {
 }
 
 export function ActivityTab({ dealId, contactId, companyId,defaultAssigneeId }: ActivityTabProps) {
-    const dispatch = useAppDispatch();
-
-    const byDealSelector = useMemo(() => selectActivitiesByDeal(dealId), [dealId]);
-    const activities = useAppSelector(byDealSelector);
-    const loading = useAppSelector(selectActivitiesLoading);
+    const { data: activities = [], isLoading: loading, isError } = useActivities({ dealId });
+    const { complete, delete: deleteActivity } = useActivityMutation();
 
     const [filter, setFilter] = useState<Filter>("open");
     const [formOpen, setFormOpen] = useState(false);
     const [editingActivity, setEditingActivity] = useState<Activity | null>(null);
-
-    useEffect(() => {
-        dispatch(fetchActivities({ dealId }));
-    }, [dispatch, dealId]);
 
     const filtered = activities.filter((a) => {
         if (filter === "open") return a.status === "PENDING" || a.status === "IN_PROGRESS";
@@ -80,7 +70,7 @@ export function ActivityTab({ dealId, contactId, companyId,defaultAssigneeId }: 
 
     const handleComplete = async (activity: Activity) => {
         try {
-            await dispatch(completeActivity(activity.id)).unwrap();
+            await complete.mutateAsync(activity.id);
             toast.success("Marked as completed");
         } catch (err) {
             toast.error(typeof err === "string" ? err : "Failed to update activity");
@@ -89,7 +79,7 @@ export function ActivityTab({ dealId, contactId, companyId,defaultAssigneeId }: 
 
     const handleDelete = async (activity: Activity) => {
         try {
-            await dispatch(deleteActivity(activity.id)).unwrap();
+            await deleteActivity.mutateAsync(activity.id);
             toast.success("Activity deleted");
         } catch (err) {
             toast.error(typeof err === "string" ? err : "Failed to delete activity");
@@ -108,6 +98,7 @@ export function ActivityTab({ dealId, contactId, companyId,defaultAssigneeId }: 
 
     return (
         <div className="space-y-4">
+            {isError && <p role="alert" className="text-sm text-destructive">Could not load activities. Please try again.</p>}
             {/* Header: filter tabs + new activity */}
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div className="flex gap-1 rounded-lg bg-muted p-1 text-sm">

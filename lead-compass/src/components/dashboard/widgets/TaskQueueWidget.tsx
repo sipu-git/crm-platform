@@ -1,10 +1,10 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, memo } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Skeleton } from "@/components/ui/skeleton";
 import { CheckSquare, Inbox } from "lucide-react";
 import { toast } from "sonner";
-import type { TaskItem, WidgetScope } from "@/features/dashboard/dashboard.types";
+import type { TaskItem, WidgetScope } from "@/features/dashboard/types/dashboard.types";
 
 const PRIORITY_STYLES = {
   HIGH: "bg-red-500/10 text-red-600 dark:text-red-400 border-red-200/40",
@@ -19,7 +19,7 @@ const DUE_STYLES = {
   Upcoming: "bg-muted text-muted-foreground",
 };
 
-export function TaskQueueWidget({
+export const TaskQueueWidget = memo(function TaskQueueWidget({
   tasks: initialTasks = [],
   isLoading,
   scope,
@@ -170,4 +170,4 @@ export function TaskQueueWidget({
       </CardContent>
     </Card>
   );
-}
+});

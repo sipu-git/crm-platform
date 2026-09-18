@@ -2,11 +2,12 @@
 import { Role } from "../../shared/configs/role.js";
 
 export const ROLE_PERMISSIONS: Record<Role, string[]> = {
+    SUPER_ADMIN: ["*"],
     ADMIN: ["*", "users:*"],
 
     MANAGER: [
-        "leads:*", "deals:*", "contacts:*", "company:*",
-        "communications:*",
+        "leads:*", "leads:convert", "deals:*", "contacts:*", "company:*",
+        "communications:*","enquires:*",
         "activities:*", "projects:*", "invoices:read", "audit:view",
         "notifications:read:own", "automation:respond",
         "users:manage", "users:read"
@@ -15,8 +16,9 @@ export const ROLE_PERMISSIONS: Record<Role, string[]> = {
     SALES_REP: [
         "leads:read", "leads:write:own", "leads:status:update", "leads:assign:own", "leads:update",
         "deals:read", "deals:write:own", "deals:stage:read", "deals:stage:update", "deals:update",
-        "activities:create", "activities:read:own", "activities:delete", "activities:update",
+        "activities:create", "activities:read", "activities:read:own", "activities:delete", "activities:update",
         "contacts:read", "contacts:update", "contacts:delete",
+        "enquires:read","enquires:write",
         "communications:read", "communications:write",
         "company:read", "company:update",
         "invoices:read",
@@ -27,15 +29,13 @@ export const ROLE_PERMISSIONS: Record<Role, string[]> = {
     ],
 
     FINANCE: [
-        "deals:read","deals:stage:read",
+        "deals:read", "deals:stage:read",
         "invoices:*", "contacts:read", "deals:read",
-        "projects:read", "company:read", "notifications:read:own",
+        "company:read", "notifications:read:own",
     ],
 
     CLIENT: [
-        "leads:read:own", "deals:read:own", "contacts:read",
-        "invoices:read:own_company",
-        "projects:read:own_company", "projects:write:own_company",
-        "company:read:own_company", "notifications:read:own",
+        "invoices:read:own", "company:read:own", "company:update:own",
+        "projects:read:own", "notifications:read:own",
     ],
 };

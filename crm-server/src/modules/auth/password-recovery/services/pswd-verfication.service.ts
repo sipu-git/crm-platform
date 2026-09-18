@@ -10,7 +10,7 @@ export const emailSendService = {
     async sendForGotPasswordOtp(email: string): Promise<string> {
         try {
             await checkRateLimit(email)
-            const user = await prisma.user.findUnique({
+            const user = await prisma.user.findFirst({
                 where: {
                     email: email
                 }
@@ -33,7 +33,7 @@ export const emailSendService = {
             if (!verify.isValid) {
                 throw ApiError.badRequest('Invalid OTP');
             }
-            const findUser = await prisma.user.findUnique({
+            const findUser = await prisma.user.findFirst({
                 where: {
                     email
                 }

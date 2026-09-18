@@ -3,8 +3,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { FileText, Inbox } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import { format } from "date-fns";
-import type { WidgetScope } from "@/features/dashboard/dashboard.types";
-import { formatCurrency } from "@/features/dashboard/useDashboardData";
+import type { WidgetScope } from "@/features/dashboard/types/dashboard.types";
+import { formatCurrency } from "@/features/dashboard/hooks/useDashboardData";
 
 interface InvoiceRow {
   id: string;

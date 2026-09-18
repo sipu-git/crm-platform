@@ -1,5 +1,6 @@
 model Tenant {
     id             String           @id @default(uuid())
+    slug           String?           @unique
     name           String
     user           User[]
     company        Company[]
@@ -16,6 +17,8 @@ model Tenant {
     deviceToken    DeviceToken[]
     project        Project[]
     emailAccount   EmailAccount[]
+    invites        Invite[]
+    projectMembers ProjectMember[]
     created_at     DateTime         @default(now())
 
     // --- new fields ---

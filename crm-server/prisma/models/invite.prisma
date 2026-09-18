@@ -1,0 +1,24 @@
+model Invite {
+  id               String       @id @default(cuid())
+  tenant_id        String
+  email            String
+  role             Role
+  full_name        String?
+  mobile           String?
+  password_hash    String?
+  token_hash       String       @unique
+  status           InviteStatus @default(PENDING)
+  expires_at       DateTime
+  invited_by_id    String
+  accepted_user_id String?
+  created_at       DateTime     @default(now())
+  updated_at       DateTime     @updatedAt
+
+  tenant       Tenant @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
+  invitedBy    User   @relation("InviteSender", fields: [invited_by_id], references: [id], onDelete: Restrict)
+  acceptedUser User?  @relation("InviteAcceptedUser", fields: [accepted_user_id], references: [id], onDelete: SetNull)
+
+  @@index([tenant_id, email])
+  @@index([tenant_id, status])
+}
+

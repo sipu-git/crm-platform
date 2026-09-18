@@ -1,6 +1,6 @@
 // src/features/contacts/contacts.types.ts
 
-import { Lead } from "../leads/service1/lead.types";
+import { Lead } from "../leads/lead-m/lead.types";
 
 export interface Contact {
     id: string;

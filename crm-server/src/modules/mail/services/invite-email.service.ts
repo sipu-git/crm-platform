@@ -16,11 +16,10 @@ export async function sendInviteEmail(props: InviteEmailProps): Promise<boolean>
     console.error("Error sending invite email:", error);
     if (process.env.NODE_ENV !== "production") {
       console.log(
-        `\n=======================================================\n[DEV ONLY] Member Invite Email for ${props.email}\nName: ${props.fullName}\nWorkspace: ${props.companyName}\nRole: ${props.role}\nTemp Password: ${props.tempPassword}\nLogin URL: ${props.loginUrl}\n=======================================================\n`
+        `\n[DEV ONLY] Invitation created for ${props.email} (${props.role}) in ${props.companyName}.\n`
       );
       return true;
     }
     return false;
   }
 }
-

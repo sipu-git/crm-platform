@@ -7,6 +7,7 @@ export const updateProfileSchema = z.object({
     // Personal — any authenticated user may set these
     full_name: z.string().trim().min(1, "Full name is required").max(150).optional(),
     email: z.string().trim().email("Invalid email").max(254).optional(),
+    mobile: z.string().trim().optional(),
 
     // Workspace/company — OWNER/ADMIN only, enforced in profileService
     name: z.string().trim().min(1).max(200).optional(),
@@ -27,7 +28,7 @@ export const updateProfileSchema = z.object({
 
 export type UpdateProfileInput = z.infer<typeof updateProfileSchema>;
 
-const USER_FIELDS = ["full_name", "email"] as const;
+const USER_FIELDS = ["full_name", "email","mobile"] as const;
 const TENANT_FIELDS = [
     "name", "gst_number", "pan_number", "address", "city", "state",
     "country", "pincode", "website", "logo_url", "industry", "company_size",

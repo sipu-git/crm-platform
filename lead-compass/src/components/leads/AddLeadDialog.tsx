@@ -1,15 +1,12 @@
 // features/leads/components/AddLeadDialog.tsx
 import { useState } from "react";
 import { toast } from "sonner";
-import { useAppDispatch } from "@/store/hooks";
-import type { CreateLeadInput } from "@/features/leads/service1/lead.types";
-import { LEAD_SOURCES } from "@/features/leads/service1/lead.types";
-import { validateLead, type LeadFormErrors } from "@/features/leads/service1/lead.validates";
-import { leadValidationMessages as msg } from "@/features/leads/service1/lead.validate-messages";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { addLead } from "@/features/leads/service1/slice";
+import { CreateLeadInput, LEAD_SOURCES } from "@/features/leads/types/lead.types";
+import { LeadFormErrors, validateLead } from "@/features/leads/validations/lead.validates";
+import { useCreateLead } from "@/features/leads/hooks/useLeads";
 
 const inputClass = "w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm text-slate-800 placeholder:text-slate-400 outline-none transition-colors focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500";
 
@@ -48,10 +45,10 @@ export function AddLeadDialog({
   open: boolean;
   onOpenChange: (v: boolean) => void;
 }) {
-  const dispatch = useAppDispatch();
   const [draft, setDraft] = useState<Partial<CreateLeadInput>>(emptyDraft());
   const [errors, setErrors] = useState<LeadFormErrors>({});
-  const [submitting, setSubmitting] = useState(false);
+  
+  const { mutateAsync: createLead, isPending: submitting } = useCreateLead();
 
   const update = <K extends keyof CreateLeadInput>(key: K, value: CreateLeadInput[K]) => {
     setDraft((prev) => ({ ...prev, [key]: value }));
@@ -67,20 +64,17 @@ export function AddLeadDialog({
     const { success, errors: validationErrors } = validateLead(draft);
     if (!success) {
       setErrors(validationErrors);
-      toast.error(msg.form.incomplete);
+      toast.error("Please fill in all required fields");
       return;
     }
 
-    setSubmitting(true);
     try {
-      await dispatch(addLead(draft as CreateLeadInput)).unwrap();
+      await createLead(draft as CreateLeadInput);
       toast.success("Lead created");
       reset();
       onOpenChange(false);
     } catch (err) {
       toast.error(typeof err === "string" ? err : "Failed to create lead");
-    } finally {
-      setSubmitting(false);
     }
   };
 
@@ -151,14 +145,6 @@ export function AddLeadDialog({
               placeholder="e-commerce"
             />
           </Field>
-          {/* <Field label="Owner name" error={errors.owner_name}>
-            <input
-              className={inputClass}
-              value={draft.owner_name ?? ""}
-              onChange={(e) => update("owner_name", e.target.value)}
-              placeholder="Who owns this relationship at their end"
-            />
-          </Field> */}
 
           <div className="grid grid-cols-2 gap-4">
             <Field label="Email" error={errors.email}>

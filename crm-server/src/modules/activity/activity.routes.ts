@@ -8,7 +8,8 @@ import { requirePermission } from '../../shared/middleware/requireRole.middlewar
 const router = Router();
 router.use(authGuard, tenantContext);
 
-router.get('/', requirePermission("activities:read:own"), asyncHandler(activityController.list));
+router.get('/', requirePermission("activities:read"), asyncHandler(activityController.list));
+router.get('/view-activity', requirePermission("activities:read:own"), asyncHandler(activityController.getOwnActivities));
 router.post('/', requirePermission("activities:create"), asyncHandler(activityController.create));
 router.get('/:id', requirePermission("activities:read:own"), asyncHandler(activityController.getById));
 router.patch('/:id', requirePermission("activities:update"), asyncHandler(activityController.update));

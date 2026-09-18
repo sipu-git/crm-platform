@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import {
     Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription,
 } from "@/components/ui/dialog";
@@ -11,8 +10,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "sonner";
 import { Phone, Mail, Users, CheckSquare, StickyNote, User, CalendarClock } from "lucide-react";
 import { Activity, ACTIVITY_PRIORITIES, ACTIVITY_TYPES, ActivityPriority, ActivityType } from "@/features/activities/types";
-import { fetchAssignees, selectAssignees, selectAssigneesLoading } from "@/features/leads/service2/slice";
-import { createActivity, updateActivity } from "@/features/activities/slice";
+import { useActivityMutation } from "@/features/activities/hooks/useActivities";
+import { useAssignment } from "@/features/leads/hooks/useAssignment";
 import {
     activityFormSchema, validateActivityForm, ACTIVITY_FORM_DEFAULTS, type ActivityFormValues, type ActivityFormErrors,
 } from "@/features/activities/activity.validate";
@@ -71,9 +70,8 @@ function activityToFormValues(activity?: Activity | null): ActivityFormValues {
 export function ActivityFormDialog({
     open, onOpenChange, dealId, contactId, companyId, activity, defaultAssigneeId
 }: ActivityFormDialogProps) {
-    const dispatch = useAppDispatch();
-    const assignees = useAppSelector(selectAssignees);
-    const loadingAssignees = useAppSelector(selectAssigneesLoading);
+    const { create: createActivity, update: updateActivity } = useActivityMutation();
+    const { data: assignees = [], isLoading: loadingAssignees } = useAssignment();
     const isEdit = !!activity;
 
     // Single source of truth for the form, typed against the same schema
@@ -86,11 +84,11 @@ export function ActivityFormDialog({
 
     useEffect(() => {
         if (!open) return;
-        dispatch(fetchAssignees());
+        // dispatch(fetchAssignees());
         setValues(activityToFormValues(activity));
         setErrors({});
         setTouched({});
-    }, [open, activity, dispatch]);
+    }, [open, activity]);
 
     const updateField = <K extends keyof ActivityFormValues>(field: K, value: ActivityFormValues[K]) => {
         setValues((prev) => ({ ...prev, [field]: value }));
@@ -124,10 +122,9 @@ export function ActivityFormDialog({
         setSaving(true);
         try {
             if (isEdit && activity) {
-                await dispatch(
-                    updateActivity({
+                await updateActivity.mutateAsync({
                         id: activity.id,
-                        data: {
+                        value: {
                             title: payload.title,
                             description: payload.description ?? "",
                             type: payload.type,
@@ -135,12 +132,10 @@ export function ActivityFormDialog({
                             dueDate: new Date(payload.dueDate).toISOString(),
                             assignedTo: payload.assignedTo || undefined,
                         },
-                    })
-                ).unwrap();
+                    });
                 toast.success("Activity updated");
             } else {
-                await dispatch(
-                    createActivity({
+                await createActivity.mutateAsync({
                         dealId,
                         contactId,
                         companyId,
@@ -150,8 +145,7 @@ export function ActivityFormDialog({
                         priority: payload.priority,
                         dueDate: new Date(payload.dueDate).toISOString(),
                         assignedTo: payload.assignedTo || undefined,
-                    })
-                ).unwrap();
+                    });
                 toast.success("Activity created");
             }
             onOpenChange(false);

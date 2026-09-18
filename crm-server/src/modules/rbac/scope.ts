@@ -24,9 +24,10 @@ export function buildOwnershipFilter(
 
     // CLIENT role is scoped by companyId, never by their own user id.
     if (user.role === "CLIENT") {
-        if (!user.companyId) {
-            throw new Error("CLIENT user missing companyId — cannot scope query safely");
+        if (module === "invoices") {
+            return { project: { members: { some: { user_id: user.userId, tenant_id: user.tenantId } } } };
         }
+        if (!user.companyId) throw new Error("CLIENT user missing companyId — cannot scope query safely");
         return { companyId: user.companyId };
     }
 

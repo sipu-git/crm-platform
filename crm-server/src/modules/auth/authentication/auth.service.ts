@@ -4,6 +4,7 @@ import { ApiError } from '../../../shared/utils/ApiError.js';
 import { signAccessToken, signRefreshToken, verifyRefreshToken } from '../../../shared/utils/jwt.js';
 import { pipelineRepository } from '../../deal/repositories/pipeline.repository.js';
 import { ROLE_PERMISSIONS } from '../../rbac/permissions.js';
+import { authRepository } from './auth.repository.js';
 import type { RegisterInput, LoginInput } from './auth.schema.js';
 import bcrypt from 'bcrypt';
 
@@ -14,7 +15,11 @@ const AUTH_USER_SELECT = {
 
 export const authService = {
   async register(input: RegisterInput) {
-    const existingTenantUser = await prisma.user.findFirst({ where: { email: input.email } });
+    const normalizedEmail = input.email.trim().toLowerCase();
+
+    const existingTenantUser = await prisma.user.findFirst({
+      where: { email: { equals: normalizedEmail, mode: 'insensitive' } },
+    });
     if (existingTenantUser) throw ApiError.badRequest('An account with this email already exists');
     const passwordHash = await bcrypt.hash(input.password, 10);
 
@@ -28,7 +33,7 @@ export const authService = {
           tenantId: tenant.id,
           full_name: input.full_name,
           company_name: input.company_name,
-          email: input.email,
+          email: normalizedEmail,
           password: passwordHash,
           mobile: input.mobile,
           role: 'ADMIN',
@@ -41,15 +46,21 @@ export const authService = {
     eventBus.emit('user.registered', { userId: user.id, tenantId: tenant.id });
     return { userId: user.id, tenantId: tenant.id };
   },
+  
+  async listUsers(tenantId: string, filters: { role?: string }) {
+    const users = await prisma.$transaction(async (tx) => {
+      return authRepository.findByTenant(tx, tenantId, filters);
+    })
+    return users;
+  },
 
   async login(input: LoginInput) {
+    const normalizedEmail = input.email.trim().toLowerCase();
+
     const user = await prisma.user.findFirst({
-      where: { email: input.email },
+      where: { email: { equals: normalizedEmail, mode: 'insensitive' } },
       select: AUTH_USER_SELECT,
     });
-
-    // Same error for "no such user" and "wrong password" — don't let the
-    // response shape tell an attacker which emails are registered.
     if (!user || !(await bcrypt.compare(input.password, user.password))) {
       throw ApiError.unauthorized('Incorrect email or password');
     }

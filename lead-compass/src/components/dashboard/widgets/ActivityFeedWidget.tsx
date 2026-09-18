@@ -1,3 +1,4 @@
+import { memo } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -11,7 +12,7 @@ import {
   Inbox,
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
-import type { WidgetScope } from "@/features/dashboard/dashboard.types";
+import type { WidgetScope } from "@/features/dashboard/types/dashboard.types";
 
 interface ActivityItem {
   id: string;
@@ -31,7 +32,7 @@ const TYPE_ICONS: Record<string, React.ReactNode> = {
   default: <MessageSquare className="h-3.5 w-3.5 text-muted-foreground" />,
 };
 
-export function ActivityFeedWidget({
+export const ActivityFeedWidget = memo(function ActivityFeedWidget({
   activities = [],
   isLoading,
   scope,
@@ -113,7 +114,7 @@ export function ActivityFeedWidget({
         </div>
       </CardHeader>
 
-      <CardContent className="p-0 px-6 pb-4">
+      <CardContent className="p-0 px-6 pb-4 max-h-[380px] overflow-y-auto scrollbar-thin scrollbar-thumb-muted-foreground/20">
         <div className="relative pl-6 after:absolute after:inset-y-2 after:left-2.5 after:w-[1px] after:bg-border/60">
           <div className="space-y-4">
             {displayActivities.map((act) => {
@@ -145,4 +146,4 @@ export function ActivityFeedWidget({
       </CardContent>
     </Card>
   );
-}
+});

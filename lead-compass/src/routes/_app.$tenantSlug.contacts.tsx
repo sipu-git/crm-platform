@@ -1,9 +1,8 @@
 // features/contacts/pages/ContactsPage.tsx
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { toast } from "sonner";
 import { Mail, Phone, Trash2 } from "lucide-react";
-import { useAppDispatch, useAppSelector } from "@/store/hooks";
-import { deleteContact, fetchContacts } from "@/features/contacts/slice";
+import { useContacts, useContactMutation } from "@/features/contacts/hooks/useContacts";
 import { PageHeader, EmptyState, TableSkeleton } from "@/components/ui-kit";
 import { Button } from "@/components/ui/button";
 import {
@@ -14,21 +13,16 @@ import { formatFullName } from "@/hooks/use-format";
 import { useNavigate, useParams } from "react-router-dom";
 
 export function ContactsPage() {
-  const dispatch = useAppDispatch();
-  const contacts = useAppSelector((state) => state.contacts.contacts);
-  const loading = useAppSelector((state) => state.contacts.loading);
+  const { data: contacts = [], isLoading: loading, isError } = useContacts();
+  const { delete: deleteContact } = useContactMutation();
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
   const { tenantSlug = "" } = useParams<{ tenantSlug: string; leadId: string }>();
   const navigate = useNavigate();
 
-  useEffect(() => {
-    dispatch(fetchContacts());
-  }, [dispatch]);
-
   const confirmDelete = async () => {
     if (!pendingDeleteId) return;
     try {
-      await dispatch(deleteContact(pendingDeleteId)).unwrap();
+      await deleteContact.mutateAsync(pendingDeleteId);
       toast.success("Contact removed");
     } catch (error) {
       toast.error(typeof error === "string" ? error : "Failed to remove contact");
@@ -45,6 +39,7 @@ export function ContactsPage() {
       />
 
       <div className="p-6">
+        {isError && <p role="alert" className="mb-3 text-sm text-destructive">Could not load contacts. Please try again.</p>}
         {loading && !contacts.length && <TableSkeleton />}
 
         {!loading && !contacts.length && (

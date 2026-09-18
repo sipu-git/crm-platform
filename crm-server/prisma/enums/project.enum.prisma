@@ -5,3 +5,20 @@ enum ProjectStatus {
   COMPLETED
   CANCELLED
 }
+
+enum ProjectType{
+  Web_Application
+  Mobile_Application
+  Desktop_Application
+  SaaS_Platform
+  AI_ML_Application
+  Automation_System
+  IoT_Application
+}
+
+enum ProjectEnquiryStatus{
+  PENDING
+  IN_REVIEW
+  APPROVED
+  REJECTED
+}

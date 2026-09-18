@@ -3,9 +3,9 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Sparkles, ArrowRight, Inbox } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { formatDistanceToNow } from "date-fns";
-import type { WidgetScope } from "@/features/dashboard/dashboard.types";
+import type { WidgetScope } from "@/features/dashboard/types/dashboard.types";
 
 interface LeadItem {
   id: string;
@@ -20,13 +20,8 @@ interface LeadItem {
   created_at?: string;
 }
 
-export function NewLeadsWidget({
-  leads = [],
-  isLoading,
-  scope,
-  title = "Assigned Inbound Leads",
-  subtitle = "Prospective accounts waiting for initial outreach",
-  limit = 5,
+export function NewLeadsWidget({leads = [],isLoading,scope,title = "Assigned Inbound Leads",
+  subtitle = "Prospective accounts waiting for initial outreach",limit = 5,
 }: {
   leads?: LeadItem[];
   isLoading?: boolean;
@@ -36,6 +31,7 @@ export function NewLeadsWidget({
   limit?: number;
 }) {
   const navigate = useNavigate();
+  const { tenantSlug = "" } = useParams();
 
   if (isLoading) {
     return (
@@ -156,7 +152,7 @@ export function NewLeadsWidget({
                 <Button
                   size="sm"
                   variant="ghost"
-                  onClick={() => navigate(`/lead/${lead.id}`)}
+                  onClick={() => navigate(`/${tenantSlug}/lead/${lead.id}`)}
                   className="h-7 w-7 p-0"
                 >
                   <ArrowRight className="h-3.5 w-3.5" />

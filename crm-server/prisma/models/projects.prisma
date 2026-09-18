@@ -3,16 +3,12 @@ model Project {
   tenant_id      String
   companyId      String
   contact_id     String?
-  description    String?
-  project_name   String
-  project_type   String?
   status         ProjectStatus @default(NOT_STARTED)
-  start_date     DateTime?
-  due_date       DateTime?
-  budget         Decimal?
   owner_id       String?     
+  enquiry_id     String?
+  enquiry        Enquiry? @relation("EnquiryProjects", fields: [enquiry_id], references: [id])
   originating_lead_id String? @unique
-  created_by     String
+  originating_deal_id String? @unique
   created_at     DateTime      @default(now())
   updated_at     DateTime      @updatedAt
 
@@ -20,13 +16,30 @@ model Project {
   company        Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
   contacts       Contacts?   @relation(fields: [contact_id], references: [id], onDelete: Cascade)
   owner          Assignee? @relation(fields: [owner_id], references: [id], onDelete: SetNull)
-  creator        User      @relation(fields: [created_by], references: [id], onDelete: Restrict)
+  // creator        User?     @relation(fields: [created_by], references: [id], onDelete: Restrict)
   originatingLead Leads?   @relation(fields: [originating_lead_id], references: [id], onDelete: SetNull)
+  originatingDeal Deal?    @relation(fields: [originating_deal_id], references: [id], onDelete: SetNull)
 
   invoices       Invoice[]
   activities     Activities[]
+  members        ProjectMember[]
 
   @@index([tenant_id])
   @@index([companyId])
   @@index([status])
+}
+
+model ProjectMember {
+  id         String   @id @default(cuid())
+  tenant_id  String
+  project_id String
+  user_id    String
+  created_at DateTime @default(now())
+
+  tenant  Tenant  @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
+  project Project @relation(fields: [project_id], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@unique([project_id, user_id])
+  @@index([tenant_id, user_id])
 }

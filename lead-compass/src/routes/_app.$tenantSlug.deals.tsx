@@ -1,11 +1,10 @@
 // features/deals/pages/DealsPage.tsx
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { toast } from "sonner";
 import { DndContext, DragOverlay, PointerSensor, useDroppable, useDraggable, useSensor, useSensors, type DragEndEvent, type DragStartEvent } from "@dnd-kit/core";
 import { Kanban as KanbanIcon, Rows3, Building2, Calendar, User } from "lucide-react";
-import { useAppDispatch, useAppSelector } from "@/store/hooks";
-import { fetchDeals, fetchDealBoard, moveDealStage, selectDeals, selectDealBoard, selectDealsLoading } from "@/features/deals/slice";
+import { useDealBoard, useDealMutation, useDeals } from "@/features/deals/hooks/useDeals";
 import type { Deal, DealBoardColumn } from "@/features/deals/deal.types";
 import { PageHeader, TableSkeleton, EmptyState } from "@/components/ui-kit";
 import { Button } from "@/components/ui/button";
@@ -22,16 +21,10 @@ function fmtDate(dateStr: string) {
 
 export function DealsPage() {
   const { tenantSlug = "" } = useParams();
-  const dispatch = useAppDispatch();
-  const deals = useAppSelector(selectDeals);
-  const board = useAppSelector(selectDealBoard);
-  const loading = useAppSelector(selectDealsLoading);
+  const { data: deals = [], isLoading: dealsLoading, isError: dealsError } = useDeals();
+  const { data: board = [], isLoading: boardLoading, isError: boardError } = useDealBoard();
+  const loading = dealsLoading || boardLoading;
   const [view, setView] = useState<ViewMode>("kanban");
-
-  useEffect(() => {
-    dispatch(fetchDealBoard());
-    dispatch(fetchDeals());
-  }, [dispatch]);
 
   return (
     <div>
@@ -63,6 +56,7 @@ export function DealsPage() {
       />
 
       <div className="p-4 sm:p-6">
+        {(dealsError || boardError) && <p role="alert" className="mb-3 text-sm text-destructive">Could not load deals. Please try again.</p>}
         {loading && deals.length === 0 && board.length === 0 && <TableSkeleton rows={4} cols={5} />}
 
         {!loading && board.length === 0 && deals.length === 0 && (
@@ -86,7 +80,7 @@ export function DealsPage() {
 // ---------- Kanban ----------
 
 function KanbanView({ tenantSlug, board }: { tenantSlug: string; board: DealBoardColumn[] }) {
-  const dispatch = useAppDispatch();
+  const { moveStage } = useDealMutation();
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }));
   const [dragging, setDragging] = useState<Deal | null>(null);
 
@@ -107,7 +101,7 @@ function KanbanView({ tenantSlug, board }: { tenantSlug: string; board: DealBoar
     if (!deal || deal.stage_id === targetStageId) return;
 
     try {
-      await dispatch(moveDealStage({ id: dealId, data: { stageId: targetStageId } })).unwrap();
+      await moveStage.mutateAsync({ id: dealId, value: { stageId: targetStageId } });
     } catch (error) {
       toast.error(typeof error === "string" ? error : "Failed to move deal");
     }

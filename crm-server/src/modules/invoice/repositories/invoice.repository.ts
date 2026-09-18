@@ -29,9 +29,9 @@ export const invoiceRepository = {
     });
   },
 
-  async findById(tx: PrismaClientTx, tenantId: string, id: string, dealId?: string) {
+  async findById(tx: PrismaClientTx, tenantId: string, id: string, dealId?: string, user?: AccessTokenPayload) {
     const invoice = await tx.invoice.findFirst({
-      where: { id, tenant_id: tenantId },
+      where: { id, tenant_id: tenantId, ...(user ? buildOwnershipFilter(user, "invoices") : {}) },
       include: { deal: true, items: true, project: true },
     });
 

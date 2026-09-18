@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
-import { fetchDeal, updateDeal, selectDealDetail, selectDealsLoading, clearDealDetail, deleteDeal } from "@/features/deals/slice";
-import { fetchInvoices, selectInvoices, selectInvoicesLoading } from "@/features/invoices/service2/slice";
+import { useDealById, useDealMutation } from "@/features/deals/hooks/useDeals";
+import { useInvoices } from "@/features/invoices/hooks/useInvoices";
 import { PageHeader } from "@/components/ui-kit";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -33,12 +33,11 @@ const fmt = formatCurrency;
 export function DealDetail() {
   const { tenantSlug = "", dealId = "" } = useParams();
   const dispatch = useAppDispatch();
-  const deal = useAppSelector(selectDealDetail);
-  const loading = useAppSelector(selectDealsLoading);
+  const { data: deal, isLoading: loading, isError } = useDealById(dealId);
+  const { update: updateDeal, delete: deleteDeal } = useDealMutation();
 
   const companyName = deal?.leads?.company_name;
-  const invoices = useAppSelector(selectInvoices);
-  const invoicesLoading = useAppSelector(selectInvoicesLoading);
+  const { data: invoices = [], isLoading: invoicesLoading } = useInvoices({ dealId });
 
   // --- inline amount editing state ---
   const [isEditingAmount, setIsEditingAmount] = useState(false);
@@ -47,17 +46,6 @@ export function DealDetail() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const navigate = useNavigate();
-
-  useEffect(() => {
-    if (dealId) dispatch(fetchDeal(dealId));
-    return () => {
-      dispatch(clearDealDetail());
-    };
-  }, [dispatch, dealId]);
-
-  useEffect(() => {
-    if (dealId) dispatch(fetchInvoices({ dealId }));
-  }, [dispatch, dealId]);
 
   // reset draft whenever the underlying deal amount changes (fresh fetch, cancel, etc.)
   useEffect(() => {
@@ -114,7 +102,7 @@ export function DealDetail() {
     }
     try {
       setSavingAmount(true);
-      await dispatch(updateDeal({ id: deal!.id, changes: { amount: parsed } })).unwrap();
+      await updateDeal.mutateAsync({ id: deal!.id, value: { amount: parsed } });
       setIsEditingAmount(false);
       toast.success("Amount updated");
     } catch (err) {
@@ -127,7 +115,7 @@ export function DealDetail() {
   async function handleDeleteDeal() {
     try {
       setIsDeleting(true);
-      await dispatch(deleteDeal(deal!.id)).unwrap();
+      await deleteDeal.mutateAsync(deal!.id);
       toast.success("Deal deleted");
       navigate(`/${tenantSlug}/deals`);
     } catch (err) {

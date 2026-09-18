@@ -19,7 +19,8 @@ export const invoiceController = {
   },
 
   async getById(req: Request, res: Response) {
-    const invoice = await invoiceService.getById(req.tenantId!, getId(req));
+    if (!req.auth) throw ApiError.unauthorized('Not authenticated');
+    const invoice = await invoiceService.getById(req.tenantId!, getId(req), req.auth);
     return res.status(200).json(successResponse("Invoice fetched successfully!", invoice));
   },
   async viewOwnInvoice(req: Request, res: Response) {

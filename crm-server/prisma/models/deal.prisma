@@ -14,6 +14,7 @@ model Deal {
     activities     Activities[]
     communications Communications[]
     invoice        Invoice[]
+    project        Project?
 
     tenant   Tenant   @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
     leads    Leads   @relation(fields: [lead_id], references: [id], onDelete: Cascade)

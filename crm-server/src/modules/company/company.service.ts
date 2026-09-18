@@ -9,19 +9,28 @@ export const companyService = {
     async listCompanies(tenantId: string) {
         const redisKey = `company-list-${tenantId}`;
         return cacheQuery(redisKey, 400, async () => {
-            const company = await prisma.$transaction(async (tx) => {
+            return prisma.$transaction(async (tx) => {
                 return companyRepository.findManyCompanies(tx, tenantId);
             });
-            if (!company || company.length === 0) throw ApiError.notFound('No companies found');
-            return company;
         })
     },
-    
+
     async findCompany(tenantId: string, id: string) {
         const redisKey = `company-get-${tenantId}-${id}`;
         return cacheQuery(redisKey, 200, async () => {
             const company = await prisma.$transaction(async (tx) => {
                 return companyRepository.findCompany(tx, tenantId, id);
+            });
+            if (!company) throw ApiError.notFound('Company not found');
+            return company;
+        })
+    },
+
+    async ownCompany(tenantId: string, userId: string) {
+        const redisKey = `company-get-${tenantId}-${userId}`;
+        return cacheQuery(redisKey, 200, async () => {
+            const company = await prisma.$transaction(async (tx) => {
+                return companyRepository.findOwnCompany(tx, tenantId, userId);
             });
             if (!company) throw ApiError.notFound('Company not found');
             return company;
@@ -37,7 +46,7 @@ export const companyService = {
         await Promise.all([
             redisService.deleteByPattern(`company-get-${tenantId}-*`),
             redisService.deleteByPattern(`company-list-${tenantId}-*`),
-            redisService.deleteByPattern(`company-filter-${tenantId}-*`)
+            redisService.deleteByPattern(`company-filter-${tenantId}-*`),
         ])
         return companty;
     },
@@ -52,18 +61,20 @@ export const companyService = {
             return company;
         })
     },
-
-    async modify(tenantId: string, id: string, data: any) {
+    async modify(tenantId: string, companyId: string, data: any) {
         const company = await prisma.$transaction(async (tx) => {
-            return companyRepository.modify(tx, tenantId, id, data);
+            return companyRepository.modify(tx, tenantId, companyId, data);
         });
         if (!company) throw ApiError.notFound('Company not found');
 
         await Promise.all([
-            redisService.delete(`company-get-${tenantId}-${id}`),      // exact key, exact delete
-            redisService.delete(`company-list-${tenantId}`),           // exact key, exact delete
+            redisService.delete(`company-list-${tenantId}`),
             redisService.deleteByPattern(`company-filter-${tenantId}-*`),
-            redisService.deleteByPattern(`lead-get-${tenantId}-${id}`),
+            redisService.deleteByPattern(`company-get-${tenantId}-*`),
+            // Invalidate lead caches so updated company_name is reflected
+            redisService.deleteByPattern(`lead-get-${tenantId}-*`),
+            redisService.deleteByPattern(`lead-list-${tenantId}-*`),
+            redisService.deleteByPattern(`lead-filter-${tenantId}-*`),
         ]);
 
         return company;

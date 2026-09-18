@@ -4,13 +4,14 @@ model Assignee {
     full_name   String
     designation String
     department  String?
+    email       String?
     userId      String? @unique
 
     leads      Leads[]
     activities Activities[]
     project    Project[]
-    user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
-    tenant Tenant  @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
+    user       User?        @relation(fields: [userId], references: [id], onDelete: SetNull)
+    tenant     Tenant       @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
 
     @@index([tenant_id])
 }

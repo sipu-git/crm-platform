@@ -15,7 +15,8 @@ export function AuthLayout({
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(255,255,255,0.18),transparent_50%),radial-gradient(circle_at_80%_70%,rgba(255,255,255,0.12),transparent_50%)]" />
         <div className="relative z-10 flex h-full flex-col justify-between p-12 text-primary-foreground">
           <div className="flex items-center gap-2">
-            <div className="grid h-9 w-9 place-items-center rounded-md bg-white/15 font-bold">C</div>
+            <img src="/favicon.ico" alt="Clearview CRM" className="h-9 w-9" />
+            {/* <div className="grid h-9 w-9 place-items-center rounded-md bg-white/15 font-bold">C</div> */}
             <span className="text-lg font-semibold">Clearview CRM</span>
           </div>
           <div className="space-y-4">

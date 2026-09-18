@@ -1,7 +1,6 @@
 import { google } from 'googleapis';
 import { prisma } from '../../../../../lib/prisma.js';
-import { getAuthorizedClient } from './gmail.config.js';
-import { decrypt } from './utils/encryption.util.js';
+import { googleAccountService } from '../../../../shared/integrations/google/google.account.service.js';
 import { ApiError } from '../../../../shared/utils/ApiError.js';
 import { CommunicationChannel, CommunicationDirection, CommunicationStatus, MessageType } from '../../../../../generated/prisma/enums.js';
 import { extractBody, parseFromEmail } from './utils/parser.util.js';
@@ -73,14 +72,9 @@ export const gmailService = {
     return { disconnected: true };
   },
 
-  /**
- * Fetch recent inbox messages and log any new ones (not yet synced)
- * as INBOUND Communications rows, matched to a Lead by contact email.
- */
   async syncInbox(userId: string, tenantId: string, maxResults = 20) {
     const account = await this.getAccount(userId);
-    const refreshToken = decrypt(account.refresh_token);
-    const authClient = getAuthorizedClient(refreshToken);
+    const authClient = await googleAccountService.getAuthorizedOAuth2Client(userId);
     const gmail = google.gmail({ auth: authClient, version: 'v1' });
 
     const listRes = await gmail.users.messages.list({
@@ -127,7 +121,7 @@ export const gmailService = {
       // Match sender to an existing Lead via its Contact's email.
       const lead = await prisma.leads.findFirst({
         where: { tenant_id: tenantId, contact: { email: fromEmail } },
-        select: { id: true, tenant_id: true, company_id: true, contact_id: true },
+        select: { id: true, tenant_id: true, companyId: true, contactId: true },
       });
 
       if (!lead) {
@@ -142,8 +136,8 @@ export const gmailService = {
         data: {
           tenant_id: lead.tenant_id,
           lead_id: lead.id,
-          contact_id: lead.contact_id,
-          company_id: lead.company_id,
+          contact_id: lead.contactId,
+          company_id: lead.companyId,
           channel: CommunicationChannel.EMAIL,
           direction: CommunicationDirection.INBOUND,
           message_type: MessageType.TEXT,
@@ -163,8 +157,7 @@ export const gmailService = {
   async sendEmail({ userId, to, subject, body, threadId }: SendGmailOptions) {
     const account = await this.getAccount(userId);
 
-    const refreshToken = decrypt(account.refresh_token);
-    const authClient = getAuthorizedClient(refreshToken);
+    const authClient = await googleAccountService.getAuthorizedOAuth2Client(userId);
     const gmail = google.gmail({ auth: authClient, version: 'v1' });
 
     // Build RFC 2822-compliant message
@@ -196,8 +189,7 @@ export const gmailService = {
    */
   async listInbox(userId: string, maxResults = 20) {
     const account = await this.getAccount(userId);
-    const refreshToken = decrypt(account.refresh_token);
-    const authClient = getAuthorizedClient(refreshToken);
+    const authClient = await googleAccountService.getAuthorizedOAuth2Client(userId);
     const gmail = google.gmail({ auth: authClient, version: 'v1' });
 
     const listRes = await gmail.users.messages.list({

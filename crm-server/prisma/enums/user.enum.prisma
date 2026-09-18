@@ -1,4 +1,5 @@
 enum Role {
+    SUPER_ADMIN
     ADMIN
     MANAGER
     SALES_REP

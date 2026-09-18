@@ -4,8 +4,9 @@ model User {
     tenant       Tenant         @relation(fields: [tenantId], references: [id])
     full_name    String
     company_name String
+    designation  String?
     mobile       String
-    email        String         @unique
+    email        String @unique
     password     String
     role         Role
     createdAt    DateTime       @default(now())
@@ -24,8 +25,11 @@ model User {
     notification Notification[]
     audits       AuditLogs[]
     deviceToken  DeviceToken[]
-    project      Project[]
+    // project      Project[]
     emailAccount EmailAccount[]
+    projectMemberships ProjectMember[]
+    sentInvites       Invite[] @relation("InviteSender")
+    acceptedInvites   Invite[] @relation("InviteAcceptedUser")
 
     @@unique([tenantId, email])
     @@index([tenantId])

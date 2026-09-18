@@ -1,6 +1,6 @@
 import type { Request, Response } from 'express';
 import { authService } from './auth.service.js';
-import { registerSchema, loginSchema } from './auth.schema.js';
+import { registerSchema, loginSchema, listUsersQuerySchema } from './auth.schema.js';
 import { env } from '../../../shared/configs/env.js';
 import { successResponse } from '../../../shared/utils/ApiResponse.js';
 
@@ -29,6 +29,12 @@ export const authController = {
     return res.json({ accessToken, refreshToken, user, permissions });
   },
 
+  async listUsers(req: Request, res: Response) {
+    const query = listUsersQuerySchema.parse(req.query);
+    const users = await authService.listUsers(req.auth?.tenantId!, query);
+    res.status(200).json(users);
+  },
+  
   async refresh(req: Request, res: Response) {
     try {
       // Prioritize explicit body refreshToken from active client session

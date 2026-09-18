@@ -9,7 +9,7 @@ import { tenantContext } from "../../shared/middleware/tenantContext.middleware.
 const router = express.Router();
 router.use(authGuard, tenantContext);
 
-router.get("/", asyncHandler(profileController.getProfile));
+router.get("/", asyncHandler(profileController.viewProfile));
 router.patch("/", validate({ body: updateProfileSchema }), asyncHandler(profileController.updateProfile));
 router.delete("/", validate({ body: deleteProfileSchema }), asyncHandler(profileController.deleteProfile));
 

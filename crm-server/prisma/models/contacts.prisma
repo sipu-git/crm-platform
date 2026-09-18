@@ -5,14 +5,14 @@ model Contacts {
     first_name  String
     last_name   String?
     designation String?
-    email       String   @unique
+    email       String
     phone       String?
-    created_by  String
+    created_by  String?
     created_at  DateTime @default(now())
     updated_at  DateTime @updatedAt
 
-    tenant  Tenant?  @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
-    company Company? @relation(fields: [companyId], references: [id], onDelete: Cascade)
+    tenant  Tenant  @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
+    company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
     user    User?    @relation(fields: [created_by], references: [id], onDelete: Cascade)
 
     deals          Deal[]
@@ -21,6 +21,6 @@ model Contacts {
     communications Communications[]
     invoice        Invoice[]
     project        Project[]
-    @@unique([tenant_id, companyId, email])
+    @@unique([tenant_id, email])
     @@index([tenant_id])
 }

@@ -17,7 +17,7 @@ import {
 } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
-import type { DashboardRole, WidgetScope } from "@/features/dashboard/dashboard.types";
+import type { DashboardRole, WidgetScope } from "@/features/dashboard/types/dashboard.types";
 
 interface ActionItem {
   id: string;

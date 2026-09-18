@@ -1,13 +1,14 @@
 import { useEffect, type ReactNode } from "react";
-import { Provider, useDispatch } from "react-redux";
+import { Provider } from "react-redux";
 import { store, tenantReset } from "@/store";
 import { useAppSelector } from "@/store/hooks";
 import { configureApi } from "@/api/client";
-import { logout, setSession, setToken } from "@/features/auth/slice";
 import { setCurrentTenant } from "@/features/tenant/slice";
 import { Toaster } from "@/components/ui/sonner";
 import { useNavigate } from "react-router-dom";
 import { PushNotificationManager } from "@/features/notifications/PushNotificationManager";
+import { useQueryClient } from "@tanstack/react-query";
+import { useAuth } from "@/features/auth/hooks/useAuth";
 
 function ThemeSync() {
   const theme = useAppSelector((s) => s.ui.theme);
@@ -15,8 +16,7 @@ function ThemeSync() {
     const apply = () => {
       const isDark =
         theme === "dark" ||
-        (theme === "system" &&
-          window.matchMedia("(prefers-color-scheme: dark)").matches);
+        (theme === "system" && window.matchMedia("(prefers-color-scheme: dark)").matches);
       document.documentElement.classList.toggle("dark", isDark);
     };
     apply();
@@ -29,34 +29,51 @@ function ThemeSync() {
   return null;
 }
 
+const getCurrentToken = () => {
+  // Directly read token from localStorage; avoid using React hooks here
+  return typeof window !== "undefined" ? localStorage.getItem("crm.auth.token") : null;
+};
+
 function ApiConfigurator() {
-  const dispatch = useDispatch();
   const navigate = useNavigate();
-  const token = useAppSelector((s) => s.auth.token);
+  const queryClient = useQueryClient();
 
   useEffect(() => {
     configureApi({
-      getAuthToken: () => store.getState().auth.token,
+      getAuthToken: getCurrentToken,
       getTenantId: () => null,
       onUnauthorized: () => {
-        dispatch(logout());
+        if (typeof window !== "undefined") {
+          localStorage.removeItem("crm.auth.token");
+          localStorage.removeItem("crm.auth.refresh_token");
+          localStorage.removeItem("crm.tenant.slug");
+        }
+        queryClient.clear();
         navigate("/login");
       },
+      onForbidden: (message, from) => {
+        navigate("/403", { replace: true, state: { message, from } });
+      },
       onTokenRefreshed: (newToken, user, permissions) => {
+        if (typeof window !== "undefined") {
+          localStorage.setItem("crm.auth.token", newToken);
+        }
+        // keep the React‑Query auth cache in sync
         if (user && permissions) {
-          dispatch(setSession({ accessToken: newToken, user, permissions }));
-        } else {
-          dispatch(setToken(newToken));
+          queryClient.setQueryData(["auth", "me"], {
+            accessToken: newToken,
+            user,
+            permissions,
+          });
         }
       },
     });
-  }, [token, dispatch, navigate]);
+  }, [navigate, queryClient]);
   return null;
 }
 
 function PushNotifications() {
-  const token = useAppSelector((s) => s.auth.token);
-  return <PushNotificationManager authenticated={Boolean(token)} />;
+  return <PushNotificationManager authenticated={Boolean(getCurrentToken())} />;
 }
 
 export function TenantSwitchHelper({
