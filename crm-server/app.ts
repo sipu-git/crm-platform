@@ -43,7 +43,7 @@ export function createApp() {
   }));
   app.use(cors({
     origin: [env.clientUrl, "https://crm-platform-backend-91af.onrender.com",
-      "https://crm-platform-weld.vercel.app", "http://localhost:3000","http://192.168.1.17:3000", "https://crm-landing-application.vercel.app"],
+      "https://crm-platform-weld.vercel.app", "http://localhost:3000", "http://192.168.1.17:3000", "https://crm-landing-application.vercel.app"],
     credentials: true
   }));
   app.use(express.json({
