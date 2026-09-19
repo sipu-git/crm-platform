@@ -34,7 +34,7 @@ router.get('/connect', authGuard, (req: Request, res: Response) => {
 
 router.get('/oauth/callback', async (req: Request, res: Response) => {
     const { code, state } = req.query as { code?: string; state?: string };
-    const frontendUrl = process.env.CLIENT_URL ?? 'http://localhost:5173';
+    const frontendUrl = process.env.PRODUCTION_URL ?? 'https://crm-platform-weld.vercel.app';
 
     if (!code || !state) {
         return res.redirect(`${frontendUrl}/?error=missing_params`);
