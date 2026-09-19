@@ -1,10 +1,17 @@
 import { z } from "zod";
-import { ProjectStatus } from "../../../generated/prisma/enums";
+import { ProjectStatus, ProjectType, Source } from "../../../generated/prisma/enums.js";
 
 const phoneRegex = /^[+]?[0-9][0-9\s\-()]{6,20}$/;
 
 export const createProjectSchema = z.object({
-  status: z.enum(ProjectStatus).default("ON_HOLD"),
+  company_name: z.string().trim().min(1, "Company name is required"),
+  project_name: z.string().trim().nullable().optional().default(null),
+  project_type: z.enum(ProjectType).nullable().optional().default(null),
+  source: z.enum(Source),
+  description: z.string().optional(),
+  timeline: z.string().optional(),
+  budget: z.string().optional(),
+  status: z.enum(ProjectStatus).optional().default("ON_HOLD"),
 });
 
 

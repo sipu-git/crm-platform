@@ -80,7 +80,7 @@ export const projectService = {
             if (!lead) {
                 const newLead = await leadsRepository.create(tx, tenantId, company.id, contact.id, creatorId, {
                     company_name: data.company_name,
-                    ...(data.project_name ? { project_name: data.project_name } : {}),
+                    project_name: data.project_name || "New Project",
                     ...(data.project_type ? { project_type: data.project_type as any } : {}),
                     source: data.source,
                     status: LeadStatus.NEW,

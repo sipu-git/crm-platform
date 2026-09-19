@@ -79,7 +79,7 @@ export const companyRepository = {
             take: limit,
         });
     },
-    upsertStubByName(tx: PrismaClientTx, tenantId: string | undefined, ownerId: string | undefined, companyName: string, soruce?: string) {
+    async upsertStubByName(tx: PrismaClientTx, tenantId: string | undefined, ownerId: string | undefined, companyName: string, soruce?: string) {
         if (tenantId) {
             // tenant‑aware upsert – uses the composite unique (tenant_id, name)
             return tx.company.upsert({
@@ -94,17 +94,13 @@ export const companyRepository = {
                 },
             });
         }
-        // public (no tenant) upsert – falls back to unique "name" index
-        return tx.company.upsert({
+        // public (no tenant) fallback lookup
+        const existing = await tx.company.findFirst({
             where: { name: companyName.trim() },
-            update: {},
-            create: {
-                name: companyName.trim(),
-                owner_id: ownerId,
-                source: soruce ?? 'OTHER',
-                company_status: 'PROSPECT',
-            },
         });
+        if (existing) return existing;
+
+        throw new Error("tenantId is required to create a new company");
     },
 };
 

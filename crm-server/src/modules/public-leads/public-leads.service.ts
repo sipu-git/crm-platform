@@ -42,9 +42,9 @@ export const publicLeadService = {
           contactId: contact.id,
           data: {
             company_name: input.company_name,
-            project_name: input.project_name ?? undefined,
+            project_name: input.project_name ?? null,
             source: 'WEBSITE',
-            project_type: input.project_type ?? undefined,
+            project_type: (input.project_type as any) ?? null,
           },
         });
         return lead;
