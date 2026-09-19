@@ -15,7 +15,7 @@ import {
 import { useDebounceHook } from "@/hooks/use-debouce";
 import { cn } from "@/lib/utils";
 
-const MIN_QUERY_LENGTH = 2;
+const MIN_QUERY_LENGTH = 3;
 
 type FilterTab = "all" | "leads" | "deals" | "invoices";
 
@@ -35,7 +35,7 @@ export function HeaderSearch() {
   const containerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const debouncedQuery = useDebounceHook(query, 300);
+  const debouncedQuery = useDebounceHook(query, 450);
 
   // fire the search once the debounced value settles
   useEffect(() => {
