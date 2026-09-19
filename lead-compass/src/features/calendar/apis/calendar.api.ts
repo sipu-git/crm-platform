@@ -16,10 +16,12 @@ export const calendarApi = {
     return payload(await api.get<Envelope<GoogleAccountStatus>>("/calendar/status"));
   },
 
-  async getConnectUrl(returnTo = "/calendar"): Promise<{ url: string }> {
+  async getConnectUrl(returnTo?: string): Promise<{ url: string }> {
+    const defaultPath = typeof window !== "undefined" ? window.location.pathname : "/calendar";
+    const targetPath = returnTo || defaultPath;
     return payload(
       await api.get<Envelope<{ url: string }>>("/calendar/connect", {
-        params: { returnTo },
+        params: { returnTo: targetPath },
       })
     );
   },

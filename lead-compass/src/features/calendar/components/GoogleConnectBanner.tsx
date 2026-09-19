@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useParams } from "react-router-dom";
 import { useCalendarStatus } from "../hooks/useCalendar";
 import { calendarApi } from "../apis/calendar.api";
 import { Button } from "@/components/ui/button";
@@ -8,13 +9,15 @@ import { Calendar, CheckCircle2, ExternalLink, RefreshCw, Video } from "lucide-r
 import { toast } from "sonner";
 
 export function GoogleConnectBanner() {
+  const { tenantSlug = "" } = useParams();
   const { data: status, isLoading, refetch } = useCalendarStatus();
   const [connecting, setConnecting] = useState(false);
 
   const handleConnect = async () => {
     try {
       setConnecting(true);
-      const { url } = await calendarApi.getConnectUrl("/calendar");
+      const returnTo = tenantSlug ? `/${tenantSlug}/calendar` : window.location.pathname;
+      const { url } = await calendarApi.getConnectUrl(returnTo);
       window.location.href = url;
     } catch (err: any) {
       toast.error(err?.response?.data?.message || "Failed to generate Google connection link.");

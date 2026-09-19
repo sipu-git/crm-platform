@@ -52,6 +52,7 @@ export function HeaderSearch() {
 
   // close on outside click
   useEffect(() => {
+
     function handleClickOutside(e: MouseEvent) {
       if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
         setOpen(false);
