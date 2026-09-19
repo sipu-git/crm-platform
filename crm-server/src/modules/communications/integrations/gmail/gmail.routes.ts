@@ -96,7 +96,7 @@ router.get('/oauth/callback', async (req: Request, res: Response) => {
 router.use(authGuard, tenantContext);
 
 /** GET /gmail/status  — check if the current user has a connected Gmail account */
-router.get('/status', asyncHandler(async (req: Request, res: Response) => {
+router.get('/status',asyncHandler(async(req: Request, res: Response) => {
     const status = await gmailService.getStatus(req.auth!.userId);
     return res.status(200).json(successResponse('Gmail account status', status));
 }));
