@@ -1,14 +1,21 @@
 import { baseEmailLayout } from "./base.templates.js";
 
-export type OtpEmailType = "FORGOT_PASSWORD" | "CHANGE_PASSWORD";
+export type OtpEmailType = "FORGOT_PASSWORD" | "CHANGE_PASSWORD" | "SIGNUP";
 
 export function otpEmailTemplate(otp: string, type: OtpEmailType): string {
-    const title = type === "FORGOT_PASSWORD" ? "Reset Your Password" : "Change Your Password";
-    const message =
-        type === "FORGOT_PASSWORD"
-            ? "We received a request to reset the password for your ClearView CRM account. Use the One-Time Password (OTP) below to proceed:"
-            : "We received a request to change the password for your ClearView CRM account. Use the One-Time Password (OTP) below to proceed:";
-    const actionLabel = type === "FORGOT_PASSWORD" ? "password reset" : "password change";
+    let title = "Reset Your Password";
+    let message = "We received a request to reset the password for your ClearView CRM account. Use the One-Time Password (OTP) below to proceed:";
+    let actionLabel = "password reset";
+
+    if (type === "CHANGE_PASSWORD") {
+        title = "Change Your Password";
+        message = "We received a request to change the password for your ClearView CRM account. Use the One-Time Password (OTP) below to proceed:";
+        actionLabel = "password change";
+    } else if (type === "SIGNUP") {
+        title = "Verify Your Email Address";
+        message = "Welcome to ClearView CRM! Use the One-Time Password (OTP) below to verify your email address and complete your workspace setup:";
+        actionLabel = "account registration";
+    }
 
     const body = `
       <h2 class="title">${title}</h2>
@@ -21,17 +28,17 @@ export function otpEmailTemplate(otp: string, type: OtpEmailType): string {
       <div class="security-box">
         <strong>🔒 Security Notice:</strong> Never share this OTP with anyone. ClearView staff will never ask for your verification code via email, phone, or message.
       </div>
-      <p class="text">If you did not request a ${actionLabel}, you can safely disregard this email or contact your workspace administrator.</p>
+      <p class="text">If you did not request ${actionLabel}, you can safely disregard this email.</p>
       <p class="text" style="margin-top: 24px; margin-bottom: 0;">
         Best regards,<br />
-        <strong>ClearView Security Team</strong>
+        <strong>ClearView Onboarding Team</strong>
       </p>`;
 
     return baseEmailLayout(body);
 }
 
 export function otpEmailSubject(type: OtpEmailType): string {
-    return type === "FORGOT_PASSWORD"
-        ? "Password Reset Code - ClearView CRM"
-        : "Security Verification Code - ClearView CRM";
+    if (type === "FORGOT_PASSWORD") return "Password Reset Code - ClearView CRM";
+    if (type === "CHANGE_PASSWORD") return "Security Verification Code - ClearView CRM";
+    return "Verify Your Email - ClearView CRM";
 }

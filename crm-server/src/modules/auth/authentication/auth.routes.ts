@@ -5,8 +5,6 @@ import { authGuard } from '../../../shared/middleware/authGuard.middleware.js';
 
 const router = Router();
 
-// Tenant creation is intentionally not exposed publicly. Use the one-time
-// bootstrap command for the first administrator, then invitation acceptance.
 router.post('/login', asyncHandler(authController.login));
 router.post('/refresh', asyncHandler(authController.refresh));
 router.post('/logout', asyncHandler(authController.logout));

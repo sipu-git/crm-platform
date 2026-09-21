@@ -5,15 +5,17 @@ const otp_expiry = 600;
 const otp_rate_limit = 300;
 const max_request = 4;
 
+export type OtpType = 'FORGOT_PASSWORD' | 'CHANGE_PASSWORD' | 'SIGNUP';
+
 interface OtpData {
     otp: string;
     email: string;
-    type: 'FORGOT_PASSWORD' | 'CHANGE_PASSWORD';
+    type: OtpType;
     createdAt: number;
     expiresAt: number;
 }
 
-export async function storeOtp(email: string, otp: string, type: 'FORGOT_PASSWORD' | 'CHANGE_PASSWORD'): Promise<boolean> {
+export async function storeOtp(email: string, otp: string, type: OtpType): Promise<boolean> {
     try {
         const key = `OTP:${type}:${email}`;
         const otpData: OtpData = {
@@ -29,8 +31,7 @@ export async function storeOtp(email: string, otp: string, type: 'FORGOT_PASSWOR
     }
 }
 
-
-export async function verfiyOtp(email: string, otp: string, type: 'FORGOT_PASSWORD' | 'CHANGE_PASSWORD'): Promise<{ isValid: boolean; data?: OtpData }> {
+export async function verfiyOtp(email: string, otp: string, type: OtpType): Promise<{ isValid: boolean; data?: OtpData }> {
     try {
         const key = `OTP:${type}:${email}`;
         const otpData = await redis.get(key)
@@ -39,7 +40,7 @@ export async function verfiyOtp(email: string, otp: string, type: 'FORGOT_PASSWO
         }
         const parsedData: OtpData = JSON.parse(otpData);
         if (parsedData.otp !== otp) {
-            throw new Error('Invalid OTP');
+            throw ApiError.badRequest('Invalid OTP');
         }
         if (Date.now() > parsedData.expiresAt) {
             await deleteOTP(email, type);
@@ -58,7 +59,7 @@ export async function verfiyOtp(email: string, otp: string, type: 'FORGOT_PASSWO
 
 export async function deleteOTP(
     email: string,
-    type: 'FORGOT_PASSWORD' | 'CHANGE_PASSWORD'
+    type: OtpType
 ): Promise<boolean> {
     try {
         const key = `OTP:${type}:${email}`;
@@ -112,7 +113,7 @@ export async function getRemainingAttempts(email: string): Promise<number> {
     }
 }
 
-export async function getOTPTTL(email: string, type: 'FORGOT_PASSWORD' | 'CHANGE_PASSWORD'): Promise<number> {
+export async function getOTPTTL(email: string, type: OtpType): Promise<number> {
     try {
         const key = `OTP:${type}:${email}`;
         const ttl = await redis.ttl(key);

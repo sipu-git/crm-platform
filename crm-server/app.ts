@@ -32,7 +32,7 @@ import { verifyConnection } from './src/modules/mail/services/email-connection.s
 export function createApp() {
   const app = express();
   app.set('trust proxy', 1);
-  
+
   connectDB();
   verifyConnection();
 
@@ -54,7 +54,13 @@ export function createApp() {
   app.use(cookieParser());
   app.use(requestLogger);
 
-  app.get('/health', (_req, res) => res.json({ status: 'ok' }));
+  app.get('/', (_req, res) => {
+    res.status(200).json({
+      status: 'ok',
+      service: 'crm-platform-backend',
+      timestamp: new Date().toISOString()
+    });
+  });
 
   app.use('/api/module-auth', authRoutes);
   app.use('/api/contacts', contactRoutes);
@@ -73,7 +79,7 @@ export function createApp() {
   app.use('/api/shared', globalApiRoutes);
   app.use('/api/calendar', calendarRoutes);
   app.use('/api/dashboard', dashboardRoutes);
-  
+
 
   app.use(errorHandler);
 
