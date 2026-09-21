@@ -5,7 +5,7 @@ import type {
     CreateActivityInput,
     ListActivitiesQuery,
     UpdateActivityInput,
-} from "../types";
+} from "../types/activities.types";
 
 const cache = {
     staleTime: 1000 * 60,

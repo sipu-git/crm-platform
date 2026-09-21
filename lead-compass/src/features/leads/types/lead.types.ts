@@ -13,7 +13,7 @@ export const LEAD_SOURCES = [
 ] as const;
 export type Source = (typeof LEAD_SOURCES)[number];
 
-export const LEAD_STATUSES = ["NEW", "CONTRACTED", "QUALIFIED","CONVERTED", "DISQUALIFIED"] as const;
+export const LEAD_STATUSES = ["NEW", "CONTRACTED", "QUALIFIED", "CONVERTED", "DISQUALIFIED"] as const;
 export type LeadStatus = (typeof LEAD_STATUSES)[number];
 
 export const LEAD_STATUS_ICONS: Record<LeadStatus, string> = {
@@ -36,6 +36,8 @@ export interface Lead {
   id: string;
   tenant_id: string;
   company_name: string;
+  first_name: string;
+  designation: string;
   companyId?: string;
   project_name: string;
   project_type?: string;

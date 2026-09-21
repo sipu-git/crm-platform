@@ -1,6 +1,6 @@
 // features/activities/activity-form.validation.ts
 import { z } from "zod";
-import { ACTIVITY_TYPES, ACTIVITY_PRIORITIES } from "@/features/activities/types";
+import { ACTIVITY_PRIORITIES, ACTIVITY_TYPES } from "./types/activities.types";
 
 export const activityFormSchema = z.object({
     title: z.string().trim().min(1, "Title is required"),

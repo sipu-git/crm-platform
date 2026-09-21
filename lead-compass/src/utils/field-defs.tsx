@@ -1,7 +1,7 @@
 import { User, Briefcase, Mail, Phone, Building2, Layers, Tag } from "lucide-react";
 import type { JSX } from "react";
 import type { Contact } from "@/features/contacts/contact.types";
-import type { Lead } from "@/features/leads/lead-m/lead.types";
+import type { Lead } from "@/features/leads/types/lead.types";
 
 export type FieldDef<T> = { key: keyof T & string; label: string; icon: JSX.Element; placeholder?: string };
 

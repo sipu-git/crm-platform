@@ -3,38 +3,40 @@ import { useEffect } from "react";
 import { AppShell } from "@/components/AppShell";
 import { useAppDispatch } from "@/store/hooks";
 import { setCurrentTenant } from "@/features/tenant/slice";
-import { LoginPage } from "@/routes/login";
-import { ForgotPasswordPage } from "@/routes/forgot-password";
-import { AcceptInvitePage } from "@/routes/accept-invite";
+import { LoginPage } from "@/features/auth/routes/login";
+import { ForgotPasswordPage } from "@/features/auth/routes/forgot-password";
+import { AcceptInvitePage } from "@/features/users/routes/accept-invite";
 // import { RegisterPage } from "@/routes/register";
-import { DashboardPage } from "@/routes/_app.$tenantSlug.dashboard";
-import { LeadsPage } from "@/routes/_app.$tenantSlug.leads";
-import { ContactsPage } from "@/routes/_app.$tenantSlug.contacts";
-import { CompaniesPage } from "@/routes/_app.$tenantSlug.companies";
-import { DealsPage } from "@/routes/_app.$tenantSlug.deals";
-import { DealDetail } from "@/routes/_app.$tenantSlug.deals.$dealId";
-import { ActivitiesPage } from "@/routes/_app.$tenantSlug.activities";
-import { InvoicesPage } from "@/routes/_app.$tenantSlug.invoices";
-import { InvoiceDetail } from "@/routes/_app.$tenantSlug.invoices.$invoiceId";
-import { NotificationsPage } from "@/routes/_app.$tenantSlug.notifications";
-import { AuditPage } from "@/routes/_app.$tenantSlug.audit";
+import { DashboardPage } from "@/features/dashboard/routes/_app.$tenantSlug.dashboard";
+import { LeadsPage } from "@/features/leads/routes/_app.$tenantSlug.leads";
+import { ContactsPage } from "@/features/contacts/routes/_app.$tenantSlug.contacts";
+import { DealsPage } from "@/features/deals/routes/_app.$tenantSlug.deals";
+import { DealDetail } from "@/features/deals/routes/_app.$tenantSlug.deals.$dealId";
+import { ActivitiesPage } from "@/features/activities/routes/_app.$tenantSlug.activities";
+import { InvoicesPage } from "@/features/invoices/routes/_app.$tenantSlug.invoices";
+import { InvoiceDetail } from "@/features/invoices/routes/_app.$tenantSlug.invoices.$invoiceId";
+import { NotificationsPage } from "@/features/notifications/routes/_app.$tenantSlug.notifications";
+import { AuditPage } from "@/features/audit/routes/_app.$tenantSlug.audit";
 // import { SettingsPage } from "@/routes/_app.$tenantSlug.settings";
-import { LeadDetailPage } from "@/routes/_app.$tenantSlug.lead.$leadId";
-import Communications from "@/routes/_app.$tenantSlug.communications.$leadId";
-import { CompanyDetailPage } from "./routes/_app.$tenantSlug.company.$companyId";
-import ProfilePage from "./routes/_app.$tenantSlug.profiles";
+import { LeadDetailPage } from "@/features/leads/routes/_app.$tenantSlug.lead.$leadId";
+import Communications from "@/features/communications/routes/_app.$tenantSlug.communications.$leadId";
+import { CompanyDetailPage } from "./features/companies/routes/_app.$tenantSlug.company.$companyId";
+import ProfilePage from "./features/profiles/routes/_app.$tenantSlug.profiles";
 import { ForbiddenPage } from "./routes/forbidden";
 import { ProtectedRoute } from "./components/ProtectedRoutes";
 import { FullPageSpinner } from "./components/FullPageSpinner";
-import { ProjectsPage } from "./routes/_app.$tenantSlug.projects";
-import { ClientDashboardPage } from "./routes/_app.$tenantSlug.client-dashboard";
-import OwnCompany from "./routes/_app.$tenantSlug.company";
+import { ProjectsPage } from "./features/projects/routes/_app.$tenantSlug.projects";
+import { ClientDashboardPage } from "./features/dashboard/routes/_app.$tenantSlug.client-dashboard";
+import OwnCompany from "./features/companies/routes/_app.$tenantSlug.company";
 // import { fetchMe } from "@/features/auth/slice";
 import { useAuth } from "@/features/auth/hooks/useAuth";
-import EnquiriesPage from "./routes/_app.$tenantSlug.enquiries";
-import EnquiryDetailPage from "./routes/_app.$tenantSlug.enquiry.$enquiryId";
-import TeamPage from "./routes/_app.$tenantSlug.team";
-import CalendarPage from "./routes/_app.$tenantSlug.calendar";
+import EnquiriesPage from "./features/enquiries/routes/_app.$tenantSlug.enquiries";
+import EnquiryDetailPage from "./features/enquiries/routes/_app.$tenantSlug.enquiry.$enquiryId";
+import TeamPage from "./features/users/routes/_app.$tenantSlug.team";
+import CalendarPage from "./features/calendar/routes/_app.$tenantSlug.calendar";
+
+import { SignupWizard } from "@/features/auth/components/SignupWizard";
+import { CompaniesPage } from "./features/companies/routes/_app.$tenantSlug.companies";
 
 function RequireAuth() {
   const { tenantSlug = "acme" } = useParams();
@@ -69,6 +71,7 @@ export function App() {
   return <Routes>
     <Route path="/" element={<HomeRedirect />} />
     <Route path="/login" element={<LoginPage />} />
+    <Route path="/signup" element={<SignupWizard />} />
     <Route path="/forgot-password" element={<ForgotPasswordPage />} />
     <Route path="/accept-invite" element={<AcceptInvitePage />} />
     <Route path="/reset-password" element={<ForgotPasswordPage />} />

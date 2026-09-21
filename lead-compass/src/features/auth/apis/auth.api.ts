@@ -8,3 +8,4 @@ export const authApi = {
   listUsers: () => api.get<UsersResponse>("/module-auth/auth/list-users"),
 };
 
+

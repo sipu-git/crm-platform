@@ -10,7 +10,7 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { usePermission } from "@/hooks/use-permission";
+import { usePermission } from "@/features/auth/hooks/use-permission";
 
 // same `resource` keys as NAV_GROUPS, so visibility stays consistent with the sidebar
 const QUICK_CREATE_ITEMS = [

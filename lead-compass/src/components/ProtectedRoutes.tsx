@@ -1,4 +1,4 @@
-import { usePermission } from "@/hooks/use-permission";
+import { usePermission } from "@/features/auth/hooks/use-permission";
 import { Navigate, useLocation } from "react-router-dom";
 import { useAppSelector } from "@/store/hooks";
 

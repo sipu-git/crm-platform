@@ -1,6 +1,6 @@
 
 import { api } from "@/api/client";
-import type { Activity, CreateActivityInput, ListActivitiesQuery, UpdateActivityInput } from "../types";
+import type { Activity, CreateActivityInput, ListActivitiesQuery, UpdateActivityInput } from "../types/activities.types";
 type Envelope<T> = { data: T };
 const payload = <T,>(response: { data: Envelope<T> }) => response.data.data;
 

@@ -14,7 +14,7 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
 import { useState, useEffect } from "react";
 import { NotificationBell } from "./Header/NotificationBell";
-import { usePermission } from "@/hooks/use-permission";
+import { usePermission } from "@/features/auth/hooks/use-permission";
 import { HeaderSearch } from "./Header/DebouceSearch";
 import MemberBadges from "./Header/MemberBadges";
 import { ThemeMenu } from "./Header/ThemeMenu";
@@ -251,6 +251,11 @@ export function AppShell({ tenantSlug }: { tenantSlug: string }) {
             <Outlet />
           </div>
         </main>
+        <div className="">
+          <footer className="max-w-4xl w-full mx-auto text-center text-xs text-slate-500 py-2">
+            © {new Date().getFullYear()} Lead Compass CRM. Multi-tenant Enterprise Platform. All rights reserved.
+          </footer>
+        </div>
       </div>
     </div>
   );
