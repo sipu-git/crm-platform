@@ -19,7 +19,7 @@ export const userService = {
             orderBy: { createdAt: 'asc' },
         });
     },
-  
+
     async listInvites(tenantId: string) {
         return prisma.invite.findMany({
             where: { tenant_id: tenantId, status: 'PENDING' },
@@ -60,32 +60,56 @@ export const userService = {
     },
 
     async invite(tenantId: string, inviterId: string, input: InviteUserInput) {
-        const existing = await prisma.user.findFirst({ where: { tenantId, email: input.email.toLowerCase() } });
+        const email = input.email.trim().toLowerCase(); // normalize ONCE, use everywhere below
+
+        const existing = await prisma.user.findFirst({
+            where: {
+                email: { equals: email, mode: 'insensitive' },
+            },
+            select: { id: true },
+        });
         if (existing) throw ApiError.badRequest('An account with this email already exists');
 
         if (input.role === 'CLIENT') {
-            const contact = await prisma.contacts.findFirst({ where: { tenant_id: tenantId, email: input.email.toLowerCase() } });
+            const contact = await prisma.contacts.findFirst({
+                where: { tenant_id: tenantId, email: { equals: email, mode: 'insensitive' } },
+            });
             if (!contact) throw ApiError.badRequest('Create the tenant contact before inviting a client');
         }
 
         const tenant = await prisma.tenant.findUnique({ where: { id: tenantId }, select: { name: true } });
         const tenantName = tenant?.name || 'ClearView Workspace';
-        const email = input.email.trim().toLowerCase();
         const token = crypto.randomBytes(32).toString('base64url');
         const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
-
         const tempPassword = crypto.randomBytes(5).toString('hex');
         const passwordHash = await bcrypt.hash(tempPassword, 12);
 
         const invite = await prisma.$transaction(async (tx) => {
             const active = await tx.invite.findFirst({
-                where: { tenant_id: tenantId, email, role: input.role, status: 'PENDING', expires_at: { gt: new Date() } },
+                where: {
+                    tenant_id: tenantId,
+                    email: {
+                        equals: email,
+                        mode: 'insensitive'
+                    },
+                    status: 'PENDING',
+                    expires_at: { gt: new Date() },
+                },
             });
-            if (active) throw ApiError.badRequest('An active invitation already exists for this email and role');
+            if (active) {
+                throw ApiError.badRequest(
+                    active.role === input.role
+                        ? 'An active invitation already exists for this email and role'
+                        : `An active invitation already exists for this email (role: ${active.role})`
+                );
+            }
+
+            // Expire any stale pending invites for this email (any role), not just same-role ones
             await tx.invite.updateMany({
-                where: { tenant_id: tenantId, email, role: input.role, status: 'PENDING', expires_at: { lte: new Date() } },
+                where: { tenant_id: tenantId, email, status: 'PENDING', expires_at: { lte: new Date() } },
                 data: { status: 'EXPIRED' },
             });
+
             return tx.invite.create({
                 data: {
                     tenant_id: tenantId,
@@ -121,7 +145,6 @@ export const userService = {
             expiresAt: invite.expires_at,
         };
     },
-
     async getInviteDetails(token: string) {
         if (!token) throw ApiError.badRequest('Token is required');
         const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
