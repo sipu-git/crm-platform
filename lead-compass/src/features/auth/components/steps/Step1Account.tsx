@@ -59,8 +59,8 @@ export const Step1Account: React.FC<Props> = ({ formData, updateFormData, onSucc
         <div className="text-indigo-400 font-bold text-xs tracking-widest uppercase mb-1">
           STEP 1 OF 8
         </div>
-        <h2 className="text-3xl font-extrabold text-white tracking-tight">Create your admin account</h2>
-        <p className="text-sm text-slate-400 mt-1">Start your 14-day free trial. No credit card required.</p>
+        <h2 className="text-3xl font-semibold text-slate-400 tracking-tight">Create your admin account</h2>
+        <p className="text-sm text-slate-50 mt-1">Start your 14-day free trial. No credit card required.</p>
       </div>
 
       {/* Already Have Account Wrapped Header Banner */}
@@ -102,40 +102,7 @@ export const Step1Account: React.FC<Props> = ({ formData, updateFormData, onSucc
           </div>
         </div>
       )}
-
-      {/* Benefits Card Grid */}
-      <div className="bg-[#13172E]/60 border border-indigo-500/20 rounded-xl p-4 grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="flex items-start gap-3 sm:border-r sm:border-indigo-500/20 sm:pr-2">
-          <div className="p-2 bg-indigo-500/10 rounded-lg text-indigo-400 border border-indigo-500/20 flex-shrink-0">
-            <ShieldCheck className="h-5 w-5" />
-          </div>
-          <div>
-            <h4 className="text-xs font-semibold text-white">14-Day Free Trial</h4>
-            <p className="text-[11px] text-slate-400 mt-0.5">No credit card required</p>
-          </div>
-        </div>
-
-        <div className="flex items-start gap-3 sm:border-r sm:border-indigo-500/20 sm:px-2">
-          <div className="p-2 bg-indigo-500/10 rounded-lg text-indigo-400 border border-indigo-500/20 flex-shrink-0">
-            <Zap className="h-5 w-5" />
-          </div>
-          <div>
-            <h4 className="text-xs font-semibold text-white">Instant Setup</h4>
-            <p className="text-[11px] text-slate-400 mt-0.5">Get started in minutes</p>
-          </div>
-        </div>
-
-        <div className="flex items-start gap-3 sm:pl-2">
-          <div className="p-2 bg-indigo-500/10 rounded-lg text-indigo-400 border border-indigo-500/20 flex-shrink-0">
-            <Users className="h-5 w-5" />
-          </div>
-          <div>
-            <h4 className="text-xs font-semibold text-white">Full Admin Access</h4>
-            <p className="text-[11px] text-slate-400 mt-0.5">All features included</p>
-          </div>
-        </div>
-      </div>
-
+    
       <div className="space-y-4">
         {/* Full Name */}
         <div>

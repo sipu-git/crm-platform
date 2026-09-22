@@ -107,16 +107,16 @@ export function LoginPage() {
         </Button>
 
         {/* Wrapped Create New Workspace Banner */}
-        <div className="mt-6 rounded-2xl border border-indigo-500/30 bg-gradient-to-r from-indigo-950/40 via-indigo-900/30 to-purple-950/40 p-4 text-center shadow-lg backdrop-blur-sm">
-          <div className="flex items-center justify-center gap-1.5 text-xs font-bold text-indigo-300 mb-1">
-            <Building2 className="h-4 w-4 text-indigo-400" /> Setting up a new organization?
+        <div className="mt-4 flex flex-col justify-center items-center space-y-2">
+          <div className="flex items-center  justify-center gap-1.5 text-xs font-bold text-chart-5 mb-1">
+            <Building2 className="h-4 w-4 text-primary" /> Setting up a new organization?
           </div>
-          <p className="text-xs text-slate-300 leading-relaxed mb-3">
+          <p className="text-xs text-slate-900 leading-relaxed my-3">
             Register your company and start your 14-day free trial.
           </p>
           <Link
             to="/signup"
-            className="inline-flex items-center justify-center w-full px-4 py-2.5 bg-gradient-to-r from-indigo-600 via-indigo-500 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-bold rounded-xl text-xs shadow-md shadow-indigo-500/20 transition-all gap-1.5 active:scale-[0.98]"
+            className="inline-flex items-center justify-center w-full px-4 py-2.5 transition-all duration-500 ease-linear bg-linear-to-r from-slate-600 via-slate-800 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-bold rounded-xl text-xs shadow-md shadow-indigo-500/20 gap-1.5 active:scale-[0.98]"
           >
             <Sparkles className="h-3.5 w-3.5" />
             Create New Workspace →

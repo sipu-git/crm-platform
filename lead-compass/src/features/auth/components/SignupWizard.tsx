@@ -37,8 +37,8 @@ export const SignupWizard: React.FC = () => {
   return (
     <div className="relative bg-[#070913] overflow-x-hidden flex flex-col justify-between p-4 sm:p-6 text-slate-100">
       {/* Background Ambient Glow Orbs */}
-      <div className="absolute top-[-10%] left-1/4 w-[500px] h-[500px] bg-indigo-600/15 rounded-full blur-[120px] pointer-events-none" />
-      <div className="absolute bottom-[-10%] right-1/4 w-[500px] h-[500px] bg-purple-600/10 rounded-full blur-[120px] pointer-events-none" />
+      {/* <div className="absolute top-[-10%] left-1/4 w-[500px] h-[500px] bg-indigo-600/15 rounded-full blur-[120px] pointer-events-none" />
+      <div className="absolute bottom-[-10%] right-1/4 w-[500px] h-[500px] bg-purple-600/10 rounded-full blur-[120px] pointer-events-none" /> */}
 
       {/* Top Header */}
       <header className="relative z-10 max-w-4xl w-full mx-auto flex items-center justify-between py-2">
