@@ -41,7 +41,6 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-// Prevents multiple simultaneous refresh calls when several requests 401 at once
 let isRefreshing = false;
 let refreshQueue: Array<(token: string | null) => void> = [];
 
@@ -57,13 +56,14 @@ api.interceptors.response.use(
     const msg = error.response.data?.message || error.response.data?.error || error.message;
     const originalRequest = error.config as any;
 
-    if (status === 401 && !originalRequest._retry) {
-      if (originalRequest.url?.includes("/module-auth/auth/refresh")) {
-        // The refresh call itself failed — refresh token is invalid/expired
-        onUnauthorized();
-        return Promise.reject(error);
-      }
+    //  FIX 1: make sure the real backend message is what everyone downstream sees
+    error.message = msg;
 
+    // FIX 2: don't run token-refresh logic for endpoints that aren't authenticated yet
+    const isAuthEndpoint = originalRequest.url?.includes("/module-auth/auth/refresh") ||
+      originalRequest.url?.includes("/module-auth/auth/login") || originalRequest.url?.includes("/module-auth/auth/register");
+
+    if (status === 401 && !originalRequest._retry && !isAuthEndpoint) {
       originalRequest._retry = true;
 
       if (isRefreshing) {

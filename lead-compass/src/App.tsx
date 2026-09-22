@@ -37,6 +37,8 @@ import CalendarPage from "./features/calendar/routes/_app.$tenantSlug.calendar";
 
 import { SignupWizard } from "@/features/auth/components/SignupWizard";
 import { CompaniesPage } from "./features/companies/routes/_app.$tenantSlug.companies";
+import PrivacyPOlicy from "./pages/PrivacyPolicy";
+import TermsOfService from "./pages/TermsOfService";
 
 function RequireAuth() {
   const { tenantSlug = "acme" } = useParams();
@@ -72,6 +74,9 @@ export function App() {
     <Route path="/" element={<HomeRedirect />} />
     <Route path="/login" element={<LoginPage />} />
     <Route path="/signup" element={<SignupWizard />} />
+    <Route path="/privacy-policy" element={<PrivacyPOlicy />} />
+    <Route path="/terms" element={<TermsOfService />} />
+
     <Route path="/forgot-password" element={<ForgotPasswordPage />} />
     <Route path="/accept-invite" element={<AcceptInvitePage />} />
     <Route path="/reset-password" element={<ForgotPasswordPage />} />

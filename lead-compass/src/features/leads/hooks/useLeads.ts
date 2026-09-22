@@ -3,12 +3,17 @@ import { leadsKeys } from "../keys/leads.keys";
 import { leadsApi } from "../apis/leads.api";
 import { CreateLeadInput, Lead, LeadStatus, UpdateLeadInput } from "../types/lead.types";
 
+let caching = {
+    staleTime: 1000 * 60,
+    gcTime: 5 * 60_000,
+}
+
 export function useLeads(filters?: Record<string, unknown>) {
     return useQuery({
         queryKey: filters ? leadsKeys.list(filters) : leadsKeys.lists(),
         queryFn: () => leadsApi.getAll(filters),
         placeholderData: keepPreviousData,
-        staleTime: 1000 * 60,
+        ...caching
         // refetchInterval: 10000, 
         // refetchIntervalInBackground: true, 
     });
@@ -19,7 +24,7 @@ export function useSearchLeads(query: string) {
         queryKey: leadsKeys.search(query),
         queryFn: () => leadsApi.search(query),
         enabled: !!query,
-        staleTime: 1000 * 60,
+        ...caching
     });
 }
 
@@ -34,7 +39,7 @@ export function useLead(id?: string) {
             return lead;
         },
         enabled: !!id,
-        staleTime: 1000 * 60,
+        ...caching,
         refetchOnMount: "always",
     });
 }

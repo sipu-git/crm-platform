@@ -5,10 +5,11 @@ import { AuthLayout } from "@/features/auth/components/auth-layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { toast } from "sonner";
-import { Eye, EyeOff, Sparkles, Building2 } from "lucide-react";
+import { Eye, EyeOff, Sparkles, Building2, Loader2 } from "lucide-react";
 import { useLogin } from "@/features/auth/hooks/useAuth";
 import { LoginFormValues, loginSchema, validate } from "@/features/auth/validations/auth.validation";
+import { useMutationStatus } from "@/hooks/use-mutation-status";
+import { FormAlert } from "@/components/ui-form-alert";
 
 const EMPTY_FORM: LoginFormValues = { email: "", password: "" };
 
@@ -17,11 +18,13 @@ export function LoginPage() {
   const queryClient = useQueryClient();
 
   // React‑Query login mutation
-  const { mutateAsync: loginAsync, isPending, isError, error } = useLogin();
+  const { mutateAsync: loginAsync, isPending, isError, isSuccess, error } = useLogin();
 
   const [form, setForm] = useState<LoginFormValues>(EMPTY_FORM);
   const [fieldErrors, setFieldErrors] = useState<Partial<Record<string, string>>>({});
   const [showPassword, setShowPassword] = useState(false);
+
+  const messageStatus = useMutationStatus({ isError, isSuccess, error });
 
   function handleChange<K extends keyof LoginFormValues>(field: K) {
     return (e: React.ChangeEvent<HTMLInputElement>) =>
@@ -37,18 +40,12 @@ export function LoginPage() {
       return;
     }
     setFieldErrors({});
-
-    // Clear any stale cache from a previous session
     queryClient.clear();
 
     try {
       const res = await loginAsync(result.data);
-      toast.success(`Welcome, ${res.user.name}`);
       navigate(`/${res.user.tenantId}/dashboard`);
     } catch (err: any) {
-      console.error('Login error:', err);
-      const message = err?.response?.data?.message || err?.message || 'Login failed. Please check your credentials.';
-      toast.error(message);
     }
   }
 
@@ -98,14 +95,15 @@ export function LoginPage() {
           {fieldErrors.password && <p className="text-sm text-destructive">{fieldErrors.password}</p>}
         </div>
 
-        {isError && error && (
-          <div className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
-            {typeof error === "string" ? error : "Login error"}
-          </div>
-        )}
+        {messageStatus && <FormAlert type={messageStatus.type} message={messageStatus.message} />}
 
         <Button type="submit" className="w-full" disabled={isPending}>
-          {isPending ? "Signing in..." : "Sign in"}
+          {isPending ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Signing...
+            </>
+          ) : ("Sign in")}
         </Button>
 
         {/* Wrapped Create New Workspace Banner */}

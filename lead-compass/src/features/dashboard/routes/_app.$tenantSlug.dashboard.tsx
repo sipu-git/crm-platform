@@ -147,7 +147,7 @@ export function DashboardPage() {
               role={activeRole}
               data={dashboardData}
               isLoading={dashboardData.isLoading}
-              priority={index < 4}
+              priority={index < 4 || widget.type === "activity_feed"}
             />
           ))}
         </div>

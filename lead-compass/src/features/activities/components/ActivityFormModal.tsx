@@ -7,14 +7,15 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { toast } from "sonner";
-import { Phone, Mail, Users, CheckSquare, StickyNote, User, CalendarClock } from "lucide-react";
+import { Phone, Mail, Users, CheckSquare, StickyNote, User, CalendarClock, Loader2 } from "lucide-react";
 import { Activity, ACTIVITY_PRIORITIES, ACTIVITY_TYPES, ActivityPriority, ActivityType } from "../types/activities.types";
 import { useActivityMutation } from "@/features/activities/hooks/useActivities";
 import { useAssignment } from "@/features/leads/hooks/useAssignment";
 import {
     activityFormSchema, validateActivityForm, ACTIVITY_FORM_DEFAULTS, type ActivityFormValues, type ActivityFormErrors,
 } from "@/features/activities/activity.validate";
+import { handleApiError } from "@/lib/apiError";
+import { FormAlert } from "@/components/ui-form-alert";
 
 interface ActivityFormDialogProps {
     open: boolean;
@@ -25,6 +26,8 @@ interface ActivityFormDialogProps {
     activity?: Activity | null;
     defaultAssigneeId?: string | null;
 }
+
+type FormStatus = { type: "success" | "error"; message: string } | null;
 
 const TYPE_META: Record<ActivityType, { label: string; icon: React.ReactNode }> = {
     CALL: { label: "Call", icon: <Phone className="h-3.5 w-3.5" /> },
@@ -82,12 +85,18 @@ export function ActivityFormDialog({
     const [touched, setTouched] = useState<Partial<Record<keyof ActivityFormValues, boolean>>>({});
     const [saving, setSaving] = useState(false);
 
+    // Drives the inline FormAlert. Local state (not useMutationStatus) because
+    // this form submits through whichever of createActivity/updateActivity
+    // applies at submit time, inside a try/catch around mutateAsync.
+    const [status, setStatus] = useState<FormStatus>(null);
+
     useEffect(() => {
         if (!open) return;
         // dispatch(fetchAssignees());
         setValues(activityToFormValues(activity));
         setErrors({});
         setTouched({});
+        setStatus(null);
     }, [open, activity]);
 
     const updateField = <K extends keyof ActivityFormValues>(field: K, value: ActivityFormValues[K]) => {
@@ -113,44 +122,45 @@ export function ActivityFormDialog({
         });
 
         if (Object.keys(validationErrors).length > 0) {
-            toast.error(Object.values(validationErrors)[0]);
+            setStatus({ type: "error", message: Object.values(validationErrors)[0]! });
             return;
         }
 
         const payload = activityFormSchema.parse(values);
 
         setSaving(true);
+        setStatus(null);
         try {
             if (isEdit && activity) {
                 await updateActivity.mutateAsync({
-                        id: activity.id,
-                        value: {
-                            title: payload.title,
-                            description: payload.description ?? "",
-                            type: payload.type,
-                            priority: payload.priority,
-                            dueDate: new Date(payload.dueDate).toISOString(),
-                            assignedTo: payload.assignedTo || undefined,
-                        },
-                    });
-                toast.success("Activity updated");
-            } else {
-                await createActivity.mutateAsync({
-                        dealId,
-                        contactId,
-                        companyId,
+                    id: activity.id,
+                    value: {
                         title: payload.title,
                         description: payload.description ?? "",
                         type: payload.type,
                         priority: payload.priority,
                         dueDate: new Date(payload.dueDate).toISOString(),
                         assignedTo: payload.assignedTo || undefined,
-                    });
-                toast.success("Activity created");
+                    },
+                });
+                setStatus({ type: "success", message: "Activity updated" });
+            } else {
+                await createActivity.mutateAsync({
+                    dealId,
+                    contactId,
+                    companyId,
+                    title: payload.title,
+                    description: payload.description ?? "",
+                    type: payload.type,
+                    priority: payload.priority,
+                    dueDate: new Date(payload.dueDate).toISOString(),
+                    assignedTo: payload.assignedTo || undefined,
+                });
+                setStatus({ type: "success", message: "Activity created" });
             }
             onOpenChange(false);
         } catch (err) {
-            toast.error(typeof err === "string" ? err : "Failed to save activity");
+            setStatus({ type: "error", message: handleApiError(err) });
         } finally {
             setSaving(false);
         }
@@ -321,6 +331,8 @@ export function ActivityFormDialog({
                             Due {new Date(values.dueDate).toLocaleDateString(undefined, { weekday: "long", month: "short", day: "numeric" })}
                         </div>
                     )}
+
+                    {status && <FormAlert type={status.type} message={status.message} />}
                 </div>
 
                 <DialogFooter>
@@ -328,7 +340,10 @@ export function ActivityFormDialog({
                         Cancel
                     </Button>
                     <Button onClick={handleSubmit} disabled={saving}>
-                        {saving ? "Saving…" : isEdit ? "Save changes" : "Create activity"}
+                        {saving ? (<>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Saving...
+                        </>) : (isEdit ? "Save changes" : "Create activity")}
                     </Button>
                 </DialogFooter>
             </DialogContent>

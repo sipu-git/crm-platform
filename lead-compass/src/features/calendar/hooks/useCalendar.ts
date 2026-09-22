@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient, type UseQueryOptions } from "@tanstack/react-query";
 import { calendarApi } from "../apis/calendar.api";
 import { calendarKeys } from "../keys/calendar.keys";
 import type {
@@ -8,11 +8,17 @@ import type {
 } from "../types";
 
 const cacheConfig = {
-  staleTime: 1000 * 60 * 5, // 5 minutes
-  refetchInterval: false as const,
+  staleTime: 1000 * 60 * 5,
+  gcTime: 1000 * 60 * 30,
+  refetchInterval: false,
+  refetchOnMount: false,
   refetchOnWindowFocus: false,
+  refetchOnReconnect: false,
   retry: 1,
-};
+} as const; 
+
+type QueryOverrides<TData> = Partial<Omit<UseQueryOptions<TData>, "queryKey" | "queryFn">
+>;
 
 export function useCalendarStatus() {
   return useQuery({
@@ -24,24 +30,36 @@ export function useCalendarStatus() {
   });
 }
 
-export function useCalendarEvents(filters?: ListEventsQuery, enabled = true) {
+export function useCalendarEvents(
+  filters?: ListEventsQuery,
+  options?: { enabled?: boolean } & QueryOverrides<Awaited<ReturnType<typeof calendarApi.listEvents>>>
+) {
+  const { enabled = true, ...overrides } = options ?? {};
+
   return useQuery({
     queryKey: calendarKeys.list(filters),
     queryFn: () => calendarApi.listEvents(filters),
     enabled,
     ...cacheConfig,
+    ...overrides,
   });
 }
 
-export function useCalendarHolidays(filters?: ListEventsQuery, enabled = true) {
+export function useCalendarHolidays(
+  filters?: ListEventsQuery,
+  options?: { enabled?: boolean } & QueryOverrides<Awaited<ReturnType<typeof calendarApi.listHolidays>>>
+) {
+  const { enabled = true, ...overrides } = options ?? {};
+
   return useQuery({
     queryKey: calendarKeys.holidays(filters),
     queryFn: () => calendarApi.listHolidays(filters),
     enabled,
-    staleTime: 1000 * 60 * 60, // 1 hour for holidays
+    staleTime: 1000 * 60 * 60,
     refetchInterval: false as const,
     refetchOnWindowFocus: false,
     retry: 1,
+    ...overrides,
   });
 }
 
@@ -79,4 +97,3 @@ export function useCalendarMutations() {
     }),
   };
 }
-

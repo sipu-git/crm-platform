@@ -1,16 +1,7 @@
 import { memo } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import {
-  PhoneCall,
-  Mail,
-  Calendar,
-  CheckCircle2,
-  FileText,
-  MessageSquare,
-  Activity as ActivityIcon,
-  Inbox,
-} from "lucide-react";
+import {PhoneCall,Mail,Calendar,CheckCircle2,FileText,MessageSquare,Activity as ActivityIcon,Inbox} from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import type { WidgetScope } from "@/features/dashboard/types/dashboard.types";
 

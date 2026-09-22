@@ -14,12 +14,30 @@ export function CalendarUpcomingWidget() {
   const { tenantSlug = "acme" } = useParams();
   const [newEventOpen, setNewEventOpen] = useState(false);
 
-  const nowIso = useMemo(() => new Date().toISOString(), []);
-  const filters = useMemo(() => ({ timeMin: nowIso }), [nowIso]);
+  // const nowIso = useMemo(() => new Date().toISOString(), []);
 
-  const { data: events = [], isLoading: eventsLoading } = useCalendarEvents(filters);
+  const filters = useMemo(() => {
+    const startOfToday = new Date();
+    startOfToday.setHours(0, 0, 0, 0);
 
-  const { data: rawHolidays = [], isLoading: holidaysLoading } = useCalendarHolidays(filters);
+    return {
+      timeMin: startOfToday.toISOString(),
+    };
+  }, []);
+
+  const { data: events = [], isLoading: eventsLoading } = useCalendarEvents(filters, {
+    staleTime: 5 * 60 * 1000,
+    gcTime: 30 * 60 * 1000,
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
+  });
+
+  const { data: rawHolidays = [], isLoading: holidaysLoading } = useCalendarHolidays(filters, {
+    staleTime: 5 * 60 * 1000,
+    gcTime: 30 * 60 * 1000,
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
+  });
 
   const decoratedHolidays = useMemo(() => decorateGoogleHolidays(rawHolidays), [rawHolidays]);
 

@@ -4,8 +4,8 @@ import { contactsKeys } from "../keys/contacts.keys";
 import type { CreateContactInput, UpdateContact } from "../contact.types";
 
 const cache = {
-  staleTime: 5 * 60_000,
-  gcTime: 15 * 60_000,
+  staleTime: 1000 * 60,
+  gcTime: 5 * 60_000,
 };
 
 export function useContacts(filters?: Record<string, unknown>) {
