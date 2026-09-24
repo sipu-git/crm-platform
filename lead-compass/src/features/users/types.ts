@@ -38,3 +38,12 @@ export interface UpdateRolePayload {
     userId: string;
     role: Role;
 }
+
+export interface SearchPersonResult {
+    id: string;
+    name: string;
+    email: string;
+    phone: string;
+    designation: string;
+    source: "contact";
+}

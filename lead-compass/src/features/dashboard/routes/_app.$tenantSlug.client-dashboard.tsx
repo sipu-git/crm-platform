@@ -4,6 +4,7 @@ import { useInvoices } from "@/features/invoices/hooks/useInvoices";
 import { useClientProjects } from "@/features/projects/hooks/useClientProjects";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PageHeader, TableSkeleton } from "@/components/ui-kit";
+import { InvoiceList } from "@/features/invoices/components/InvoiceList";
 
 const statusMeta: Record<string, { label: string; className: string; icon: React.ComponentType<{ className?: string }> }> = {
   OVERDUE: { label: "Overdue", className: "bg-destructive/10 text-destructive border-destructive/20", icon: AlertCircle },
@@ -33,7 +34,7 @@ export function ClientDashboardPage() {
           <TableSkeleton rows={2} cols={3} />
         ) : (
           <>
-            {/* Summary tiles — icon well, big number, contextual sub-line instead of a bare label */}
+            {/* Summary tiles */}
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               <SummaryCard
                 icon={<FolderKanban className="h-4.5 w-4.5" />}
@@ -61,8 +62,9 @@ export function ClientDashboardPage() {
               />
             </div>
 
+            {/* Detailed sections */}
             <div className="grid gap-4 lg:grid-cols-5">
-              {/* Billing — takes more width, richer rows with status + relative due date */}
+              {/* Billing details */}
               <Card className="lg:col-span-3">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0">
                   <CardTitle className="text-base">Billing at a glance</CardTitle>
@@ -109,7 +111,7 @@ export function ClientDashboardPage() {
                 </CardContent>
               </Card>
 
-              {/* Active projects preview — new, gives the dashboard a second point of substance */}
+              {/* Active projects preview */}
               <Card className="lg:col-span-2">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0">
                   <CardTitle className="text-base">Active projects</CardTitle>
@@ -146,6 +148,12 @@ export function ClientDashboardPage() {
                 </CardContent>
               </Card>
             </div>
+
+            {/* Real‑time invoice list for clients */}
+            <div className="mt-6">
+              <h2 className="mb-3 text-lg font-semibold">Recent invoices</h2>
+              <InvoiceList tenantSlug={tenantSlug} />
+            </div>
           </>
         )}
       </div>
@@ -153,16 +161,7 @@ export function ClientDashboardPage() {
   );
 }
 
-function SummaryCard({
-  icon, label, value, sub, to, accent,
-}: {
-  icon: React.ReactNode;
-  label: string;
-  value: React.ReactNode;
-  sub: string;
-  to: string;
-  accent: string;
-}) {
+function SummaryCard({ icon, label, value, sub, to, accent }: { icon: React.ReactNode; label: string; value: React.ReactNode; sub: string; to: string; accent: string }) {
   return (
     <Link to={to} className="group rounded-xl border bg-card p-4 shadow-xs transition-all hover:border-border hover:shadow-sm">
       <div className="flex items-center justify-between">

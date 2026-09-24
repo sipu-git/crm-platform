@@ -9,8 +9,8 @@ export const inviteUserSchema = z.object({
     .string()
     .regex(/^[0-9]{7,15}$/, { message: "Invalid mobile number" })
     .min(1, { message: "Mobile is required" }),
-  // Role must be one of the allowed roles (excluding CLIENT)
-  role: z.enum(["ADMIN", "MANAGER", "SALES_REP", "FINANCE"] as const),
+  // All roles are allowed — superiors can invite anyone including clients
+  role: z.enum(["ADMIN", "MANAGER", "SALES_REP", "FINANCE", "CLIENT"] as const),
 });
 
 export type InviteUserInput = z.infer<typeof inviteUserSchema>;

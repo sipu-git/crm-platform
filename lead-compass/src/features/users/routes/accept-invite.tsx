@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
-import { toast } from "sonner";
+import { FormAlert, useFormAlert } from "@/components/ui/form-alert";
 import { Mail, Phone, User, ShieldCheck, Building2, Loader2, EyeOff, Eye } from "lucide-react";
 import { ROLE_LABELS } from "@/features/users/components/TeamStyles";
 
@@ -28,6 +28,7 @@ export function AcceptInvitePage() {
   const [form, setForm] = useState({ password: "", confirmPassword: "" });
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setConfirmShowPassword] = useState(false);
+  const { alert, showSuccess, showError, dismiss } = useFormAlert();
 
   // Fetch invitation details using the token
   const {
@@ -52,11 +53,11 @@ export function AcceptInvitePage() {
         password: form.password,
       }),
     onSuccess: () => {
-      toast.success("Invitation accepted! You can now sign in.");
-      navigate("/login", { replace: true });
+      showSuccess("Invitation accepted! You can now sign in.");
+      setTimeout(() => navigate("/login", { replace: true }), 1500);
     },
     onError: (err: any) => {
-      toast.error(err?.response?.data?.message || "Failed to accept invitation.");
+      showError(err?.response?.data?.message || "Failed to accept invitation.");
     },
   });
 
@@ -65,9 +66,10 @@ export function AcceptInvitePage() {
 
   const submit = (event: React.FormEvent) => {
     event.preventDefault();
-    if (!token) return toast.error("This invitation link is incomplete.");
-    if (form.password.length < 8) return toast.error("Use a password with at least 8 characters.");
-    if (form.password !== form.confirmPassword) return toast.error("Passwords do not match.");
+    dismiss();
+    if (!token) { showError("This invitation link is incomplete."); return; }
+    if (form.password.length < 8) { showError("Use a password with at least 8 characters."); return; }
+    if (form.password !== form.confirmPassword) { showError("Passwords do not match."); return; }
     accept.mutate();
   };
 
@@ -153,6 +155,9 @@ export function AcceptInvitePage() {
         </div>
       </div>
 
+      {/* Inline alert for accept results */}
+      <FormAlert alert={alert} onDismiss={dismiss} />
+
       {/* Password Setup Form */}
       <form onSubmit={submit} className="space-y-4 pt-2">
         <Field label="Set account password">
@@ -196,12 +201,6 @@ export function AcceptInvitePage() {
             </button>
           </div>
         </Field>
-
-        {accept.isError && (
-          <p className="text-sm text-destructive">
-            Failed to accept invitation. Please try again or contact your admin.
-          </p>
-        )}
 
         <Button type="submit" className="w-full mt-2" disabled={accept.isPending}>
           {accept.isPending ? (

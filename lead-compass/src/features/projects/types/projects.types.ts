@@ -11,13 +11,15 @@ export interface Project {
     id: string;
     tenant_id: string;
     companyId: string;
-    contactId: string | null;
+    contact_id: string | null;
+    status: ProjectStatus;
     owner_id: string | null;
+    enquiry_id: string | null;
     originating_lead_id: string | null;
-    created_by: string;
+    originating_deal_id: string | null;
     created_at: string;
     updated_at: string;
-    status: ProjectStatus;
+    owner: any | null; // Placeholder for owner type if available
     enquiry?: Enquiry | null;
     company?: Company | null;
     contacts?: Contact | null;

@@ -6,7 +6,7 @@ import { PageHeader } from "@/components/ui-kit";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Search, Users as UsersIcon } from "lucide-react";
-import { toast } from "sonner";
+import { FormAlert, useFormAlert } from "@/components/ui/form-alert";
 import { Role, ROLE_OPTIONS } from "@/features/users/types";
 import { TeamInvitationsList } from "@/features/users/components/TeamInvitationsList";
 import { TeamInviteMemberDialog } from "@/features/users/components/TeamInviteMemberDialog";
@@ -36,25 +36,29 @@ export default function TeamPage() {
   const [pendingRemove, setPendingRemove] = React.useState<any | null>(null);
 
   const canManage = can("users:manage");
+  const { alert, showSuccess, showError, dismiss } = useFormAlert();
 
+  // Show FormAlert on mutation results instead of toast
   React.useEffect(() => {
-    if (updateRole.isSuccess) toast.success("Role updated");
-    if (updateRole.isError) toast.error(updateRole.error?.message ?? "Failed to update role");
+    if (updateRole.isSuccess) showSuccess("Role updated successfully");
+    if (updateRole.isError) showError(updateRole.error?.message ?? "Failed to update role");
   }, [updateRole.isSuccess, updateRole.isError, updateRole.error]);
 
   React.useEffect(() => {
-    if (remove.isSuccess) toast.success("Member removed from workspace");
-    if (remove.isError) toast.error(remove.error?.message ?? "Failed to remove user");
+    if (remove.isSuccess) showSuccess("Member removed from workspace");
+    if (remove.isError) showError(remove.error?.message ?? "Failed to remove user");
   }, [remove.isSuccess, remove.isError, remove.error]);
 
   const confirmRoleChange = () => {
     if (!pendingChange) return;
+    dismiss();
     updateRole.mutate({ userId: pendingChange.user.id, role: pendingChange.newRole });
     setPendingChange(null);
   };
 
   const confirmRemoveUser = () => {
     if (!pendingRemove) return;
+    dismiss();
     remove.mutate(pendingRemove.id);
     setPendingRemove(null);
   };
@@ -114,6 +118,9 @@ export default function TeamPage() {
           }
         />
         <div className="px-6 pb-6 space-y-8">
+          {/* Inline alert for mutation feedback */}
+          <FormAlert alert={alert} onDismiss={dismiss} />
+
           {canManage && (
             <div className="rounded-md bg-card p-5 shadow-xs">
               <TeamInvitationsList />

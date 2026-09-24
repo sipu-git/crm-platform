@@ -1,5 +1,4 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { toast } from "sonner";
 import {Mail,Phone,RotateCcw,Trash2,Pencil,Clock,Loader2,SendHorizonal,InboxIcon} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -22,6 +21,7 @@ import {
   ROLE_ICONS,
 } from "@/features/users/components/TeamStyles";
 import { inviteUserSchema } from "@/features/users/validation";
+import { FormAlert, useFormAlert } from "@/components/ui/form-alert";
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
@@ -45,6 +45,7 @@ type EditDialogProps = {
 function EditInviteDialog({ invite, onOpenChange }: EditDialogProps) {
   const { invite: inviteMutation } = useUserMutations();
   const open = !!invite;
+  const { alert, showSuccess, showError, dismiss } = useFormAlert();
 
   const [form, setForm] = useState({
     full_name: "",
@@ -64,27 +65,31 @@ function EditInviteDialog({ invite, onOpenChange }: EditDialogProps) {
         role: invite.role,
       });
       setErrors({});
+      dismiss();
       inviteMutation.reset();
     }
   }, [invite?.id]);
 
   useEffect(() => {
     if (inviteMutation.isSuccess) {
-      toast.success("Invitation updated & resent");
-      onOpenChange(false);
+      showSuccess("Invitation updated & resent");
+      const t = setTimeout(() => onOpenChange(false), 1200);
+      return () => clearTimeout(t);
     }
     if (inviteMutation.isError) {
-      toast.error(inviteMutation.error?.message ?? "Failed to update invitation");
+      showError(inviteMutation.error?.message ?? "Failed to update invitation");
     }
   }, [inviteMutation.isSuccess, inviteMutation.isError]);
 
   const handleChange = (name: string, value: string) => {
     setForm((prev) => ({ ...prev, [name]: value }));
     setErrors((prev) => ({ ...prev, [name]: "" }));
+    dismiss();
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    dismiss();
     const result = inviteUserSchema.safeParse(form);
     if (!result.success) {
       const fieldErrors: Record<string, string> = {};
@@ -107,6 +112,7 @@ function EditInviteDialog({ invite, onOpenChange }: EditDialogProps) {
             Update the invitation details. A new invite email will be sent.
           </DialogDescription>
         </DialogHeader>
+        <FormAlert alert={alert} onDismiss={dismiss} />
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="edit_full_name">Full name</Label>
@@ -149,7 +155,7 @@ function EditInviteDialog({ invite, onOpenChange }: EditDialogProps) {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {ROLE_OPTIONS.filter((r) => r !== "CLIENT").map((r) => (
+                {ROLE_OPTIONS.map((r) => (
                   <SelectItem key={r} value={r}>
                     <span className="flex items-center gap-2">
                       {ROLE_ICONS[r]}
@@ -328,6 +334,7 @@ export function TeamInvitationsList() {
   const [editTarget, setEditTarget] = useState<Invite | null>(null);
   const [revokeTarget, setRevokeTarget] = useState<Invite | null>(null);
   const [resendingId, setResendingId] = useState<string | null>(null);
+  const { alert, showSuccess, showError, dismiss } = useFormAlert();
 
   // ── Infinite scroll with throttle ────────────────────────────────────────
   const loaderRef = useRef<HTMLDivElement | null>(null);
@@ -372,13 +379,14 @@ export function TeamInvitationsList() {
 
   const handleResend = (inviteId: string) => {
     setResendingId(inviteId);
+    dismiss();
     resendInvite.mutate(inviteId, {
       onSuccess: () => {
-        toast.success("Invitation resent successfully");
+        showSuccess("Invitation resent successfully");
         setResendingId(null);
       },
       onError: (err: any) => {
-        toast.error(err?.message ?? "Failed to resend invitation");
+        showError(err?.message ?? "Failed to resend invitation");
         setResendingId(null);
       },
     });
@@ -386,13 +394,14 @@ export function TeamInvitationsList() {
 
   const handleRevokeConfirm = () => {
     if (!revokeTarget) return;
+    dismiss();
     revokeInvite.mutate(revokeTarget.id, {
       onSuccess: () => {
-        toast.success(`Invitation to ${revokeTarget.email} revoked`);
+        showSuccess(`Invitation to ${revokeTarget.email} revoked`);
         setRevokeTarget(null);
       },
       onError: (err: any) => {
-        toast.error(err?.message ?? "Failed to revoke invitation");
+        showError(err?.message ?? "Failed to revoke invitation");
         setRevokeTarget(null);
       },
     });
@@ -421,6 +430,9 @@ export function TeamInvitationsList() {
           )}
         </div>
       </div>
+
+      {/* Inline alert for invitation actions */}
+      <FormAlert alert={alert} onDismiss={dismiss} className="mb-4" />
 
       {/* Skeleton state */}
       {isLoading && (
@@ -508,4 +520,3 @@ export function TeamInvitationsList() {
     </>
   );
 }
-

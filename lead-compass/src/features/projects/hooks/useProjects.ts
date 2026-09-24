@@ -29,7 +29,26 @@ export function useProjectMutation() {
   const refreshLeads = () => queryClient.invalidateQueries({ queryKey: leadsKeys.lists() });
   const refreshAssignee = () => queryClient.invalidateQueries({ queryKey: assignmentKeys.lists() });
   return {
-    // create: useMutation({ mutationFn: (value: CreateProjectPayload) => projectsApi.(value), onSuccess: (project) => { queryClient.setQueryData(projectsKeys.detail(project.id), project); return Promise.all([refreshProjects(), refreshLeads(), refreshAssignee()]); } }),
+    create: useMutation({
+      mutationFn: async (value: CreateProjectPayload) => {
+        const cached = queryClient.getQueryData<Project[]>(projectsKeys.lists());
+        if (cached) {
+          const dup = cached.find(p =>
+            (value.first_name && p.contacts?.first_name === value.first_name && value.last_name && p.contacts?.last_name === value.last_name) ||
+            (value.contact_email && p.contacts?.email === value.contact_email) ||
+            (value.contact_phone && p.contacts?.phone === value.contact_phone)
+          );
+          if (dup) {
+            throw new Error('A project or enquiry with the same name, email, or phone already exists.');
+          }
+        }
+        return await projectsApi.create(value);
+      },
+      onSuccess: (project) => {
+        queryClient.setQueryData(projectsKeys.detail(project.id), project);
+        return Promise.all([refreshProjects(), refreshLeads(), refreshAssignee()]);
+      },
+    }),
     convertLead: useMutation({ mutationFn: (value: ConvertLeadToProjectPayload) => projectsApi.convertLead(value), onSuccess: (project, value) => { queryClient.setQueryData(projectsKeys.detail(project.id), project); return Promise.all([refreshProjects(), queryClient.invalidateQueries({ queryKey: leadsKeys.detail(value.lead_id) }), refreshLeads()]); } }),
     update: useMutation({ mutationFn: ({ id, value }: { id: string; value: UpdateProjectPayload }) => projectsApi.update(id, value), onSuccess: (project) => { queryClient.setQueryData(projectsKeys.detail(project.id), project); return refreshProjects(); } }),
   };

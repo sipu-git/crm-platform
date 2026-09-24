@@ -17,4 +17,6 @@ export const projectsApi = {
   }, 
  async convertLead(value: ConvertLeadToProjectPayload): Promise<Project> { return (await api.post<ApiSuccess<Project>>(`${endpoint}/convert-lead`, value)).data.data; },
   async update(id: string, value: UpdateProjectPayload): Promise<Project> { return (await api.patch<ApiSuccess<Project>>(`${endpoint}/${id}`, value)).data.data; },
-};
+  async create(value: CreateProjectPayload): Promise<Project> { return (await api.post<ApiSuccess<Project>>(`${endpoint}`, value)).data.data; 
+  },
+}

@@ -1,5 +1,5 @@
 import { api } from "@/api/client";
-import type { Invite, InvitePayload, InviteResult, UpdateRolePayload } from "../types";
+import type { Invite, InvitePayload, InviteResult, UpdateRolePayload, SearchPersonResult } from "../types";
 
 export const userApi = {
   list: async (): Promise<Invite[]> => {
@@ -33,5 +33,11 @@ export const userApi = {
 
   revokeInvite: async (inviteId: string): Promise<void> => {
     await api.delete(`/users/invites/${inviteId}`);
+  },
+
+  // Global search for invite dialog
+  searchPeople: async (query: string): Promise<SearchPersonResult[]> => {
+    const res = await api.get("/users/search-people", { params: { q: query } });
+    return res.data.data as SearchPersonResult[];
   },
 };
