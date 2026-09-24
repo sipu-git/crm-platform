@@ -271,4 +271,39 @@ export const userService = {
             });
         });
     },
+
+    async searchPeople(tenantId: string, query: string) {
+        const q = query.trim().toLowerCase();
+        if (!q || q.length < 2) return [];
+
+        const contacts = await prisma.contacts.findMany({
+            where: {
+                tenant_id: tenantId,
+                OR: [
+                    { first_name: { contains: q, mode: 'insensitive' } },
+                    { last_name: { contains: q, mode: 'insensitive' } },
+                    { email: { contains: q, mode: 'insensitive' } },
+                ],
+            },
+            select: {
+                id: true,
+                first_name: true,
+                last_name: true,
+                email: true,
+                phone: true,
+                designation: true,
+            },
+            take: 15,
+            orderBy: { first_name: 'asc' },
+        });
+
+        return contacts.map((c) => ({
+            id: c.id,
+            name: [c.first_name, c.last_name].filter(Boolean).join(' '),
+            email: c.email,
+            phone: c.phone || '',
+            designation: c.designation || '',
+            source: 'contact' as const,
+        }));
+    },
 };

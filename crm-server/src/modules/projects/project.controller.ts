@@ -37,12 +37,7 @@ export const projectController = {
     },
     findOwnProjects: async (req: Request, res: Response) => {
         if (!req.auth) throw ApiError.unauthorized('Not authenticated');
-        const response = await projectService.viewOwnProjects(req.auth.tenantId, req.auth.userId!);
-        return res.status(200).json(successResponse("Project found successfully", response));
-    },
-    findOwnProjectById: async (req: Request, res: Response) => {
-        if (!req.auth) throw ApiError.unauthorized('Not authenticated');
-        const response = await projectService.viewOwnProject(req.auth.tenantId, req.auth.userId!, getId(req));
+        const response = await projectService.viewOwnProjects(req.auth.userId!);
         return res.status(200).json(successResponse("Project found successfully", response));
     },
     findAllProjects: async (req: Request, res: Response) => {

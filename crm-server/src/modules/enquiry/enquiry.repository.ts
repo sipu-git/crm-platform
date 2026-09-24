@@ -29,6 +29,7 @@ export const enquiryRepository = {
             orderBy: { created_at: 'desc' },
         });
     },
+
     findById(tx: PrismaClientTx, enquiryId: string) {
         return tx.enquiry.findFirst({ where: { id: enquiryId } });
     },

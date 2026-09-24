@@ -9,7 +9,7 @@ const OWNER_FIELD: Record<OwnableModule, string> = {
     deals: "ownerId",
     activities: "created_by", 
     projects: "creatorId",
-    invoices: "companyId",
+    invoices: "company_id",
     company: "id", // company itself is scoped by its own id matching companyId
 };
 
@@ -22,10 +22,16 @@ export function buildOwnershipFilter(
         return {};
     }
 
-    // CLIENT role is scoped by companyId, never by their own user id.
+    // CLIENT role is scoped by companyId or project membership.
     if (user.role === "CLIENT") {
         if (module === "invoices") {
-            return { project: { members: { some: { user_id: user.userId, tenant_id: user.tenantId } } } };
+            const conditions: Record<string, unknown>[] = [
+                { project: { members: { some: { user_id: user.userId, tenant_id: user.tenantId } } } }
+            ];
+            if (user.companyId) {
+                conditions.push({ company_id: user.companyId });
+            }
+            return conditions.length === 1 ? conditions[0] : { OR: conditions };
         }
         if (!user.companyId) throw new Error("CLIENT user missing companyId — cannot scope query safely");
         return { companyId: user.companyId };
@@ -36,10 +42,13 @@ export function buildOwnershipFilter(
     return { [field]: user.userId };
 }
 
-export function canAccessRecord(user: AccessTokenPayload,module: OwnableModule,record: Record<string, unknown>): boolean {
+export function canAccessRecord(user: AccessTokenPayload, module: OwnableModule, record: Record<string, unknown>): boolean {
     if (hasPermission(user.role, `${module}:read`)) return true;
 
     if (user.role === "CLIENT") {
+        if (module === "invoices") {
+            return record.company_id === user.companyId || Boolean(record.project);
+        }
         return record.companyId === user.companyId;
     }
 

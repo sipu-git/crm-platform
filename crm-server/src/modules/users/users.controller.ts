@@ -1,6 +1,6 @@
 import type { Request, Response } from 'express';
 import { userService } from './users.service.js';
-import { acceptInviteSchema, inviteUserSchema, updateRoleSchema } from './users.schema.js';
+import { acceptInviteSchema, inviteUserSchema, searchPeopleSchema, updateRoleSchema } from './users.schema.js';
 import { successResponse } from '../../shared/utils/ApiResponse.js';
 import { ApiError } from '../../shared/utils/ApiError.js';
 
@@ -71,5 +71,11 @@ export const userController = {
         if (!inviteId) throw ApiError.badRequest('Invite id is required');
         await userService.revokeInvite(req.auth!.tenantId, inviteId);
         return res.status(200).json(successResponse('Invitation revoked', null));
+    },
+
+    async searchPeople(req: Request, res: Response) {
+        const { q } = searchPeopleSchema.parse(req.query);
+        const results = await userService.searchPeople(req.auth!.tenantId, q);
+        return res.status(200).json(successResponse('Search results', results));
     },
 };

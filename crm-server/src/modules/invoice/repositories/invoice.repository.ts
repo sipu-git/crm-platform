@@ -22,9 +22,27 @@ export const invoiceRepository = {
     });
   },
   
-  findOwnInvoice(tx: PrismaClientTx, tenantId: string, creator: string) {
+  async findOwnInvoice(tx: PrismaClientTx, tenantId: string, userId: string) {
+    const user = await tx.user.findFirst({
+      where: { id: userId },
+      select: { email: true, company_id: true },
+    });
+    if (!user) return [];
+
+    const conditions: Record<string, unknown>[] = [];
+    if (user.company_id) {
+      conditions.push({ company_id: user.company_id });
+    }
+    if (user.email) {
+      conditions.push({ contact: { email: user.email } });
+    }
+    conditions.push({ project: { members: { some: { user_id: userId, tenant_id: tenantId } } } });
+
     return tx.invoice.findMany({
-      where: { tenant_id: tenantId, created_by: creator },
+      where: {
+        tenant_id: tenantId,
+        OR: conditions,
+      },
       include: { deal: true, items: true },
     });
   },

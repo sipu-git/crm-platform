@@ -39,33 +39,24 @@ export const projectRepository = {
             }
         });
     },
-
-    async findOwnProjects(tx: PrismaClientTx, tenantId: string, userId: string) {
+    async findOwnProjects(tx: PrismaClientTx, userId: string) {
         const user = await tx.user.findFirst({
-            where: { id: userId, tenantId },
+            where: { id: userId },
+            select: { email: true, role: true },
         });
+
+        if (!user) return [];
 
         return tx.project.findMany({
             where: {
-                tenant_id: tenantId,
-                // creator: user?.role === "CLIENT" ? undefined : { id: userId },
+                ...(user.role === "CLIENT" ? {
+                    OR: [
+                        { contacts: { email: user.email } },
+                        { enquiry: { email: user.email } },
+                    ]
+                } : {}),
             },
-            include: { owner: true, originatingLead: true, company: true, contacts: true },
-        });
-    },
-
-    async findOwnProject(tx: PrismaClientTx, tenantId: string, userId: string, id: string, isClient = false) {
-        const user = await tx.user.findFirst({
-            where: { id: userId, tenantId },
-        });
-
-        return tx.project.findMany({
-            where: {
-                tenant_id: tenantId,
-                id,
-                creator: user?.role === "CLIENT" ? undefined : { id: userId },
-            },
-            include: { owner: true, originatingLead: true, company: true, contacts: true },
+            include: { owner: true, originatingLead: true, company: true, contacts: true, enquiry: true },
         });
     },
 

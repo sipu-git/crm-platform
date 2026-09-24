@@ -7,7 +7,7 @@ import { updateInvoiceSchema } from '../validations/invoice.schema.js';
 
 const router = Router();
 
-router.get('/view-own-invoice', requirePermission("invoices:read:own"), asyncHandler(invoiceController.list));
+router.get('/view-own-invoice', requirePermission("invoices:read:own"), asyncHandler(invoiceController.viewOwnInvoice));
 router.get('/view-own-invoice/:id', requirePermission("invoices:read:own"), asyncHandler(invoiceController.getById));
 router.get('/', requirePermission("invoices:read"), asyncHandler(invoiceController.list));
 router.get('/:id', requirePermission("invoices:read"), asyncHandler(invoiceController.getById));

@@ -19,4 +19,7 @@ router.get('/invites', requirePermission('users:manage'), userController.listInv
 router.post('/invites/:id/resend', requirePermission('users:manage'), userController.resendInvite);
 router.delete('/invites/:id', requirePermission('users:manage'), userController.revokeInvite);
 
+// Global search for invite dialog
+router.get('/search-people', requirePermission('users:manage'), userController.searchPeople);
+
 export default router;

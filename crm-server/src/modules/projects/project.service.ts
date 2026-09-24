@@ -160,11 +160,11 @@ export const projectService = {
         });
     },
 
-    async viewOwnProjects(tenantId: string, userId: string) {
-        const cacheKey = `project-list-${tenantId}-${userId}`;
+    async viewOwnProjects(userId: string) {
+        const cacheKey = `project-list-${userId}`;
         return cacheQuery(cacheKey, 200, async () => {
             const projects = await prisma.$transaction(async (tx) => {
-                return projectRepository.findOwnProjects(tx, tenantId, userId);
+                return projectRepository.findOwnProjects(tx, userId);
             });
             return projects;
         });
@@ -178,13 +178,6 @@ export const projectService = {
             });
             return project;
         });
-    },
-
-    async viewOwnProject(tenantId: string, userId: string, id: string) {
-        const project = await prisma.$transaction((tx) =>
-            projectRepository.findOwnProject(tx, tenantId, userId, id)
-        );
-        return project;
     },
 
     async viewAllProjects(tenantId: string) {
