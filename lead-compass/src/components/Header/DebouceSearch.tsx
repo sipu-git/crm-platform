@@ -133,7 +133,7 @@ export function HeaderSearch() {
           onChange={(e) => dispatch(setQuery(e.target.value))}
           onFocus={() => query.trim().length >= MIN_QUERY_LENGTH && setOpen(true)}
           placeholder="Search leads, contacts, deals, invoices, GSTIN..."
-          className="w-full h-9 bg-background/60 backdrop-blur-sm border-sidebar-border focus-visible:ring-1 focus-visible:ring-primary"
+          className="w-full h-9 bg-background/60 backdrop-blur-sm border-sidebar-border focus-visible:ring-1 focus-visible:ring-primary lg:placeholder:text-md placeholder:text-sm"
         />
         {query ? (
           <button
