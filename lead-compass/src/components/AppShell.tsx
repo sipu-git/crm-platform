@@ -104,7 +104,7 @@ const AppSidebar = React.memo(function AppSidebar({ slug }: { slug: string }) {
   }, [groups, canSeeModule]);
 
   return (
-    <Sidebar collapsible="icon" className="border-r-0">
+    <Sidebar collapsible="icon" className="">
       <SidebarHeader>
         <div className="flex items-center gap-2 pt-1">
           <div className="flex h-8 w-8 shrink-0 items-center justify-center">
@@ -116,7 +116,7 @@ const AppSidebar = React.memo(function AppSidebar({ slug }: { slug: string }) {
           </div>
         </div>
       </SidebarHeader>
-      <SidebarContent>
+      <SidebarContent className="scrollbar-hide">
         {visibleGroups.map((group) => (
           <SidebarGroup key={group.label}>
             <SidebarGroupLabel>{group.label}</SidebarGroupLabel>
