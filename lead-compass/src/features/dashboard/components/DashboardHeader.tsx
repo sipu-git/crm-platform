@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   ShieldCheck,
@@ -30,6 +31,7 @@ export function DashboardHeader({
   isLoading?: boolean;
 }) {
   const currentMeta = ROLE_LABELS[activeRole] || ROLE_LABELS.ADMIN;
+  const [isCopilotOpen, setIsCopilotOpen] = useState(false);
 
   return (
     <div className="flex flex-col gap-4 border-b border-border/70 bg-card/60 backdrop-blur-md px-6 py-4.5 sm:flex-row sm:items-center sm:justify-between">
@@ -47,14 +49,13 @@ export function DashboardHeader({
         <p className="text-xs text-muted-foreground">{currentMeta.description}</p>
       </div>
 
-      {/* Date & Refresh */}
+      {/* Date, AI Co-Pilot & Refresh */}
       <div className="flex items-center gap-2.5">
         {/* Date period badge */}
         <div className="flex items-center gap-1.5 rounded-lg border border-border/60 bg-muted/40 px-2.5 py-1.5 text-xs font-medium text-muted-foreground">
           <Calendar className="h-3.5 w-3.5" />
           <span>{format(new Date(), "MMMM yyyy")}</span>
-        </div>
-
+        </div>      
         {/* Refresh button */}
         {onRefresh && (
           <Button
@@ -69,7 +70,7 @@ export function DashboardHeader({
             <span className="hidden sm:inline">Refresh</span>
           </Button>
         )}
-      </div>
+      </div>    
     </div>
   );
 }

@@ -9,6 +9,8 @@ import {
   FileText, Calendar, Briefcase, Wallet, Clock, Tag, ShieldCheck, UserCheck,
 } from "lucide-react";
 import { useEnquiry, useApproveEnquiry, useRejectEnquiry } from "@/features/enquiries/hooks/useEnquiries";
+import { useAnalyzeEnquiryMutation } from "@/features/ai/hooks/useAi";
+import { AILeadBadge } from "@/features/ai/components/AILeadBadge";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { EnquiryStatus } from "@/features/enquiries/types/enquiry.types";
@@ -65,12 +67,29 @@ export default function EnquiryDetailPage() {
   const { data: enquiry, isLoading, isError, error } = useEnquiry(id);
   const { mutate: approve, isPending: isApprovePending } = useApproveEnquiry();
   const { mutate: reject, isPending: isRejectPending } = useRejectEnquiry();
+  const analyzeMutation = useAnalyzeEnquiryMutation();
+
   const isPending = isApprovePending || isRejectPending;
 
   const fullName = useMemo(
     () => (enquiry ? `${enquiry.first_name} ${enquiry.last_name}` : ""),
     [enquiry],
   );
+
+  const handleAnalyze = () => {
+    if (!enquiry) return;
+    analyzeMutation.mutate({
+      company_name: enquiry.company_name,
+      first_name: enquiry.first_name,
+      last_name: enquiry.last_name,
+      email: enquiry.email,
+      project_name: enquiry.project_name,
+      project_type: enquiry.project_type,
+      budget: enquiry.budget,
+      timeline: enquiry.timeline,
+      description: enquiry.description,
+    });
+  };
 
   if (isLoading) {
     return (
@@ -129,6 +148,13 @@ export default function EnquiryDetailPage() {
           </div>
         </div>
 
+        {/* AI Intelligence Badge */}
+        <AILeadBadge
+          analysis={analyzeMutation.data}
+          isLoading={analyzeMutation.isPending}
+          onAnalyze={handleAnalyze}
+        />
+
         <div className="grid gap-6 md:grid-cols-3">
           {/* Left column: Contact + Meta */}
           <div className="space-y-6 md:col-span-1">
@@ -181,17 +207,22 @@ export default function EnquiryDetailPage() {
             </Card>
           </div>
 
-          {/* Right column: Project + Description */}
+          {/* Right column: Project Details */}
           <div className="space-y-6 md:col-span-2">
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-base">
-                  <Briefcase className="h-4 w-4" /> Project details
+                  <Briefcase className="h-4 w-4" /> Project Scope
                 </CardTitle>
               </CardHeader>
-              <CardContent>
+              <CardContent className="space-y-6">
                 <div className="grid gap-4 sm:grid-cols-2">
-                  <InfoRow icon={FileText} label="Project name" value={enquiry.project_name} />
+                  <InfoRow
+                    icon={Briefcase}
+                    label="Project name"
+                    value={enquiry.project_name}
+                    muted={!enquiry.project_name}
+                  />
                   <InfoRow
                     icon={Tag}
                     label="Project type"
@@ -199,76 +230,76 @@ export default function EnquiryDetailPage() {
                     muted={!enquiry.project_type}
                   />
                   <InfoRow
-                    icon={Clock}
-                    label="Timeline"
-                    value={enquiry.timeline}
-                    muted={!enquiry.timeline}
-                  />
-                  <InfoRow
                     icon={Wallet}
                     label="Budget"
                     value={enquiry.budget}
                     muted={!enquiry.budget}
                   />
+                  <InfoRow
+                    icon={Clock}
+                    label="Timeline"
+                    value={enquiry.timeline}
+                    muted={!enquiry.timeline}
+                  />
                 </div>
-              </CardContent>
-            </Card>
 
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-base">
-                  <FileText className="h-4 w-4" /> Description
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="whitespace-pre-wrap leading-7 text-foreground/80">
-                  {enquiry.description || (
-                    <span className="italic text-muted-foreground">No description provided.</span>
+                <Separator />
+
+                <div>
+                  <div className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase text-muted-foreground">
+                    <FileText className="h-3.5 w-3.5" /> Description / Notes
+                  </div>
+                  {enquiry.description ? (
+                    <p className="whitespace-pre-wrap rounded-lg bg-muted/50 p-4 text-sm leading-relaxed">
+                      {enquiry.description}
+                    </p>
+                  ) : (
+                    <p className="text-sm italic text-muted-foreground">No description provided.</p>
                   )}
-                </p>
+                </div>
+
+                {!isDecided && (
+                  <>
+                    <Separator />
+                    <div className="flex flex-wrap items-center justify-end gap-3 pt-2">
+                      <Button
+                        variant="outline"
+                        className="border-rose-500/30 text-rose-600 hover:bg-rose-500/10 hover:text-rose-700"
+                        disabled={isPending}
+                        onClick={() =>
+                          reject(
+                            { id, input: {} },
+                            {
+                              onSuccess: () => toast.success("Enquiry rejected."),
+                              onError: (err) =>
+                                toast.error(err instanceof Error ? err.message : "Failed to reject."),
+                            }
+                          )
+                        }
+                      >
+                        <XCircle className="mr-2 h-4 w-4" /> Reject
+                      </Button>
+                      <Button
+                        className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                        disabled={isPending}
+                        onClick={() =>
+                          approve(
+                            { id, input: {} },
+                            {
+                              onSuccess: () => toast.success("Enquiry approved!"),
+                              onError: (err) =>
+                                toast.error(err instanceof Error ? err.message : "Failed to approve."),
+                            }
+                          )
+                        }
+                      >
+                        <CheckCircle2 className="mr-2 h-4 w-4" /> Approve Enquiry
+                      </Button>
+                    </div>
+                  </>
+                )}
               </CardContent>
             </Card>
-
-            {!isDecided && (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-base">Decision</CardTitle>
-                </CardHeader>
-                <CardContent className="flex flex-wrap gap-3">
-                  <Button
-                    className="gap-2"
-                    disabled={isPending}
-                    onClick={() =>
-                      approve(
-                        { id: enquiry.id, input: { status: "APPROVED", approvedBy: "Admin" } },
-                        {
-                          onSuccess: () => toast.success("Enquiry approved"),
-                          onError: () => toast.error("Approval failed"),
-                        },
-                      )
-                    }
-                  >
-                    <CheckCircle2 className="h-4 w-4" /> Approve
-                  </Button>
-                  <Button
-                    variant="outline"
-                    className="gap-2"
-                    disabled={isPending}
-                    onClick={() =>
-                      reject(
-                        { id: enquiry.id, input: { status: "REJECTED", approvedBy: "Admin" } },
-                        {
-                          onSuccess: () => toast.success("Enquiry rejected"),
-                          onError: () => toast.error("Decision failed"),
-                        },
-                      )
-                    }
-                  >
-                    <XCircle className="h-4 w-4" /> Reject
-                  </Button>
-                </CardContent>
-              </Card>
-            )}
           </div>
         </div>
       </div>

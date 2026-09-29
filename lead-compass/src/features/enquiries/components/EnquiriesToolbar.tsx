@@ -1,4 +1,5 @@
-import { Search, Filter, Send } from "lucide-react";
+import { useState } from "react";
+import { Search, Filter, Send, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -22,6 +23,7 @@ export function EnquiriesToolbar({
   onQueryChange,
   onStatusChange,
 }: EnquiriesToolbarProps) {
+
   return (
     <section className="rounded-2xl border bg-card shadow-sm">
       <div className="flex flex-wrap items-center justify-between gap-3 border-b px-4 py-4">

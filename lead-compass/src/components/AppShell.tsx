@@ -8,6 +8,8 @@ import {
   Laptop, Check, ContactRound, ListTodo, ShieldCheck, Building2,
   Users2, FolderKanban, ReceiptText, UserRound,
   Building, Calendar,
+  Sparkles,
+  Bot,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -20,6 +22,8 @@ import MemberBadges from "./Header/MemberBadges";
 import { ThemeMenu } from "./Header/ThemeMenu";
 import { UserMenu } from "./Header/UserMenu";
 import { useAuthPayload } from "@/features/auth/hooks/useAuthPayload";
+import { AICopilotModal } from "@/features/ai/components/AICopilotModal";
+import { SynoraAiButton } from "./SynoraAiButton";
 
 // `resource: null` means always visible — no permission gate (dashboard, notifications, settings)
 const NAV_GROUPS = [
@@ -164,9 +168,7 @@ export function AppShell({ tenantSlug }: { tenantSlug: string }) {
   const { data: authResult } = useAuth();
   const role = authResult?.user?.role;
   const userRole = role === "CLIENT";
-  const [mobileOpen, setMobileOpen] = useState(false);
-
-  // useUsers({ enabled: !userRole });
+  const [isCopilotOpen, setIsCopilotOpen] = useState(false);
 
   return (
     <div className="flex h-screen w-full overflow-hidden [background:var(--app-bg)]">
@@ -205,29 +207,8 @@ export function AppShell({ tenantSlug }: { tenantSlug: string }) {
         <header className="grid h-14 shrink-0 grid-cols-[1fr_auto_1fr] items-center px-4 border-b border-sidebar-border 
         [background:var(--sidebar)] text-sidebar-foreground">
           {/* Left: Mobile Menu + Members Badge */}
-          <div className="flex items-center gap-2 justify-start">
-            <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
-              <SheetTrigger asChild>
-                <Button variant="ghost" size="icon" className="md:hidden">
-                  <Menu className="h-5 w-5" />
-                </Button>
-              </SheetTrigger>
-              <SheetContent
-                side="left"
-                className="w-64 border-sidebar-border p-0 text-sidebar-foreground [background:var(--sidebar)]"
-              >
-                <Brand collapsed={false} name={tenantSlug} />
-                <NavList slug={tenantSlug} collapsed={false} onNavigate={() => setMobileOpen(false)} />
-              </SheetContent>
-            </Sheet>
-
-            <div className="">
-              {userRole ? (
-                <div className="hidden" />
-              ) : (
-                <MemberBadges />
-              )}
-            </div>
+          <div className="">
+            <SynoraAiButton onClick={()=>setIsCopilotOpen(true)} className="fixed bottom-6 right-6 z-50" />
           </div>
 
           {/* Center: Search component */}
@@ -256,6 +237,10 @@ export function AppShell({ tenantSlug }: { tenantSlug: string }) {
             © {new Date().getFullYear()} Lead Compass CRM. Multi-tenant Enterprise Platform. All rights reserved.
           </footer>
         </div>
+        <AICopilotModal
+          isOpen={isCopilotOpen}
+          onClose={() => setIsCopilotOpen(false)}
+        />
       </div>
     </div>
   );

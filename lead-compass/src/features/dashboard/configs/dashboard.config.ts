@@ -1,4 +1,4 @@
-import type { DashboardConfigMap, DashboardRole } from "./dashboard.types";
+import type { DashboardConfigMap, DashboardRole } from "../types/dashboard.types";
 
 export const ROLE_DASHBOARD_CONFIG: DashboardConfigMap = {
   ADMIN: [
