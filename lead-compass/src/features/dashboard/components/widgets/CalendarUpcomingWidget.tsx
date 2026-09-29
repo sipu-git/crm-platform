@@ -111,7 +111,7 @@ export function CalendarUpcomingWidget() {
               <div className="grid h-10 w-10 place-items-center rounded-full bg-muted/60">
                 <VideoOff className="h-5 w-5 text-muted-foreground/60" />
               </div>
-              <p className="text-xs font-semibold text-foreground">No upcoming meetings</p>
+              <p className="text-xs font-semibold text-foreground">No Upcoming meetings</p>
               <p className="text-[11px] text-muted-foreground max-w-xs">
                 Your schedule is clear. Click below to schedule a call with clients.
               </p>
