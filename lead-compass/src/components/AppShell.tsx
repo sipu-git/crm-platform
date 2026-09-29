@@ -157,24 +157,34 @@ export function AppShell({ tenantSlug }: { tenantSlug: string }) {
     <SidebarProvider>
       <AppSidebar slug={tenantSlug} />
       <SidebarInset className="flex flex-col h-screen overflow-hidden">
-        <header className="flex h-14 shrink-0 items-center justify-between px-4 border-b border-sidebar-border [background:var(--sidebar)] text-sidebar-foreground">
-          {/* Left: Mobile Menu + Members Badge */}
-          <div className="flex items-center gap-2">
-            <SidebarTrigger className="-ml-2" />
-            <SynoraAiButton onClick={() => setIsCopilotOpen(true)} className="fixed bottom-6 right-6 z-50 shadow-lg" />
+        <header className="shrink-0 border-b border-sidebar-border [background:var(--sidebar)] text-sidebar-foreground">
+          {/* Top row: trigger + (desktop search) + actions */}
+          <div className="flex h-14 items-center justify-between gap-2 px-4">
+            {/* Left: Sidebar trigger */}
+            <div className="flex items-center gap-2 shrink-0">
+              <SidebarTrigger className="-ml-2" />
+            </div>
+
+            {/* Center: Search (desktop only) */}
+            <div className="hidden md:flex flex-1 items-center justify-center max-w-2xl mx-auto px-4">
+              <HeaderSearch />
+            </div>
+
+            {/* Right: Notifications, Theme, User Menu */}
+            <div className="flex items-center gap-3 shrink-0">
+              <NotificationBell tenantSlug={tenantSlug} />
+              <ThemeMenu />
+              <UserMenu />
+            </div>
           </div>
 
-          {/* Center: Search component */}
-          <div className="flex-1 flex items-center justify-center max-w-2xl mx-auto px-4">
+          {/* Bottom row: Search (mobile only) */}
+          <div className="md:hidden px-4 pb-3">
             <HeaderSearch />
           </div>
 
-          {/* Right: Notifications, Theme, User Menu */}
-          <div className="flex items-center gap-3 shrink-0">
-            <NotificationBell tenantSlug={tenantSlug} />
-            <ThemeMenu />
-            <UserMenu />
-          </div>
+          {/* Floating AI button */}
+          <SynoraAiButton onClick={() => setIsCopilotOpen(true)} className="fixed bottom-6 right-6 z-50 shadow-lg" />
         </header>
 
         {/* Fixed viewport for the routed page — the page itself owns its scroll area */}
