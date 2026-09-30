@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, lazy, Suspense } from "react";
 import { Link, useParams } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -7,8 +7,13 @@ import { Badge } from "@/components/ui/badge";
 import { Calendar, Clock, Video, Plus, ArrowRight, VideoOff } from "lucide-react";
 import { useCalendarEvents, useCalendarHolidays } from "@/features/calendar/hooks/useCalendar";
 import { decorateGoogleHolidays } from "@/features/calendar/utils/festivals";
-import { EventDialog } from "@/features/calendar/components/EventDialog";
 import { format, parseISO } from "date-fns";
+
+const EventDialog = lazy(() =>
+  import("@/features/calendar/components/EventDialog").then((m) => ({
+    default: m.EventDialog,
+  }))
+);
 
 export function CalendarUpcomingWidget() {
   const { tenantSlug = "acme" } = useParams();
@@ -194,10 +199,14 @@ export function CalendarUpcomingWidget() {
         </CardContent>
       </Card>
 
-      <EventDialog
-        open={newEventOpen}
-        onOpenChange={setNewEventOpen}
-      />
+      {newEventOpen && (
+        <Suspense fallback={null}>
+          <EventDialog
+            open={newEventOpen}
+            onOpenChange={setNewEventOpen}
+          />
+        </Suspense>
+      )}
     </>
   );
 }

@@ -1,7 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { useParams } from "react-router-dom";
 import { DashboardRole } from "../types/dashboard.types";
-import { useCurrentUser } from "@/features/auth/hooks/useCurrentUsers";
 import { dashboardApi } from "../apis/dashboard.api";
 
 export function formatCurrency(amount: number): string {
@@ -12,9 +11,8 @@ export function formatCurrency(amount: number): string {
   }).format(amount);
 }
 
-export function useDashboardData(role: DashboardRole) {
+export function useDashboardData(role: DashboardRole, currentUser?: any) {
   const { tenantSlug = "" } = useParams<{ tenantSlug: string }>();
-  const currentUser = useCurrentUser();
 
   const { data, isLoading, isError } = useQuery({
     queryKey: ["dashboard-overview", role, tenantSlug],

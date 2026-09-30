@@ -1,5 +1,4 @@
 import axios, { AxiosError } from "axios";
-import { toast } from "sonner";
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL||"https://crm-platform-backend-91af.onrender.com/api";
 // const BASE_URL = "http://localhost:5000/api";
@@ -48,7 +47,7 @@ api.interceptors.response.use(
   (res) => res,
   async (error: AxiosError<{ message?: string; error?: string }>) => {
     if (!error.response) {
-      if (typeof window !== "undefined") toast.error("Network error");
+      if (typeof window !== "undefined") console.error("[API Network Error]:", error.message);
       return Promise.reject(error);
     }
 
@@ -102,7 +101,7 @@ api.interceptors.response.use(
         isRefreshing = false;
       }
     } else if (status >= 500) {
-      if (typeof window !== "undefined") toast.error(msg || "Server error");
+      if (typeof window !== "undefined") console.error("[API Server Error]:", msg || "Server error");
     } else if (status === 403) {
       onForbidden(msg || "You don't have permission to view this page.", originalRequest?.url);
     }

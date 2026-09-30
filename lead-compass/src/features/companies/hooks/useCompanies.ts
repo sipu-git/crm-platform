@@ -3,12 +3,10 @@ import { companiesApi } from "../apis/companies.api";
 import { companiesKeys } from "../keys/companies.keys";
 import { CreateCompany, UpdateCompany } from "../types/companies.types";
 
-const cache = {
+let cache = {
     staleTime: 1000 * 60,
-    refetchInterval: 500,
-    refetchIntervalInBackground: true,
-};
-
+    gcTime: 5 * 60_000,
+}
 export function useCompanies() {
     return useQuery({
         queryKey: companiesKeys.lists(),

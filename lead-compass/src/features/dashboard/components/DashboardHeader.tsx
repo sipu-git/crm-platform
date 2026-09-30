@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   ShieldCheck,
@@ -31,7 +30,6 @@ export function DashboardHeader({
   isLoading?: boolean;
 }) {
   const currentMeta = ROLE_LABELS[activeRole] || ROLE_LABELS.ADMIN;
-  const [isCopilotOpen, setIsCopilotOpen] = useState(false);
 
   return (
     <div className="flex flex-col gap-4 border-b border-border/70 bg-card/60 backdrop-blur-md px-6 py-4.5 sm:flex-row sm:items-center sm:justify-between">

@@ -4,21 +4,11 @@ import type {
   DashboardWidgetConfig,
   DashboardRole,
 } from "@/features/dashboard/types/dashboard.types";
+/* Eagerly-loaded above-the-fold widgets */
+import { KpiGridWidget } from "./widgets/KpiGridWidget";
+import { RevenueChartWidget } from "./widgets/RevenueChartWidget";
 
-/* Lazy-loaded widgets */
-
-const KpiGridWidget = lazy(() =>
-  import("@/features/dashboard/components/widgets/KpiGridWidget").then((module) => ({
-    default: module.KpiGridWidget,
-  }))
-);
-
-const RevenueChartWidget = lazy(() =>
-  import("@/features/dashboard/components/widgets/RevenueChartWidget").then((module) => ({
-    default: module.RevenueChartWidget,
-  }))
-);
-
+/* Lazy-loaded below-the-fold widgets */
 const PipelineFunnelWidget = lazy(() =>
   import("@/features/dashboard/components/widgets/PipelineFunnelWidget").then((module) => ({
     default: module.PipelineFunnelWidget,
@@ -73,12 +63,26 @@ const CalendarUpcomingWidget = lazy(() =>
   }))
 );
 
-function WidgetLoadingSkeleton() {
+const WIDGET_MIN_HEIGHTS: Record<string, string> = {
+  kpi_grid: "min-h-[140px]",
+  revenue_chart: "min-h-[380px]",
+  pipeline_funnel: "min-h-[380px]",
+  leaderboard: "min-h-[350px]",
+  calendar_upcoming: "min-h-[350px]",
+  task_queue: "min-h-[350px]",
+  activity_feed: "min-h-[350px]",
+  invoices_table: "min-h-[350px]",
+  alerts: "min-h-[260px]",
+  quick_actions: "min-h-[180px]",
+  new_leads: "min-h-[320px]",
+};
+
+function WidgetLoadingSkeleton({ type }: { type?: string }) {
+  const minHeightClass = (type && WIDGET_MIN_HEIGHTS[type]) || "min-h-[260px]";
   return (
-    <div className="min-h-[220px] w-full rounded-xl border bg-card animate-pulse" />
+    <div className={`${minHeightClass} w-full rounded-xl border bg-card/60 animate-pulse`} />
   );
 }
-
 
 export function WidgetRenderer({
   widget,
@@ -208,7 +212,7 @@ export function WidgetRenderer({
   };
 
   return (
-    <Suspense fallback={<WidgetLoadingSkeleton />}>
+    <Suspense fallback={<WidgetLoadingSkeleton type={widget.type} />}>
       {renderWidgetContent()}
     </Suspense>
   );

@@ -28,6 +28,19 @@ const COL_SPAN_CLASSES: Record<number, string> = {
   12: "col-span-12",
 };
 
+const WIDGET_MIN_HEIGHTS: Record<string, string> = {
+  kpi_grid: "min-h-[140px]",
+  revenue_chart: "min-h-[380px]",
+  pipeline_funnel: "min-h-[380px]",
+  leaderboard: "min-h-[350px]",
+  calendar_upcoming: "min-h-[350px]",
+  task_queue: "min-h-[350px]",
+  activity_feed: "min-h-[350px]",
+  invoices_table: "min-h-[350px]",
+  alerts: "min-h-[260px]",
+  quick_actions: "min-h-[180px]",
+  new_leads: "min-h-[320px]",
+};
 
 function LazyDashboardWidget({
   widget,
@@ -76,10 +89,10 @@ function LazyDashboardWidget({
     return () => observer.disconnect();
   }, [priority]);
 
-
   const colSpanClass =
     COL_SPAN_CLASSES[widget.colSpan] || "col-span-12";
-
+  const minHeightClass =
+    WIDGET_MIN_HEIGHTS[widget.type] || "min-h-[260px]";
 
   return (
     <div
@@ -94,12 +107,11 @@ function LazyDashboardWidget({
           isLoading={isLoading}
         />
       ) : (
-        <div className="min-h-[220px] w-full rounded-xl border bg-card" />
+        <div className={`${minHeightClass} w-full rounded-xl border bg-card/60 animate-pulse`} />
       )}
     </div>
   );
 }
-
 
 export function DashboardPage() {
   const queryClient = useQueryClient();
@@ -112,14 +124,18 @@ export function DashboardPage() {
     return <ClientDashboardPage />;
   }
 
-  const dashboardData = useDashboardData(activeRole);
+  const dashboardData = useDashboardData(activeRole, currentUser);
   const handleRefresh = useCallback(() => {
+    // Invalidate dashboard overview data
+    queryClient.invalidateQueries({ queryKey: ["dashboard-overview"] });
+    // Invalidate calendar data for upcoming events widget
+    queryClient.invalidateQueries({ queryKey: ["calendar"] });
+    // Invalidate domain entities
     queryClient.invalidateQueries({ queryKey: dealsKeys.all });
     queryClient.invalidateQueries({ queryKey: leadsKeys.all });
     queryClient.invalidateQueries({ queryKey: activitiesKeys.all });
     queryClient.invalidateQueries({ queryKey: invoicesKeys.all });
   }, [queryClient]);
-
 
   const widgets = useMemo(() => {
     return (
@@ -127,7 +143,6 @@ export function DashboardPage() {
       ROLE_DASHBOARD_CONFIG.ADMIN
     );
   }, [activeRole]);
-
 
   return (
     <div className="min-h-screen bg-background/95">
@@ -147,7 +162,7 @@ export function DashboardPage() {
               role={activeRole}
               data={dashboardData}
               isLoading={dashboardData.isLoading}
-              priority={index < 1}
+              priority={index < 3}
             />
           ))}
         </div>
