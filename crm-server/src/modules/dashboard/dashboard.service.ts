@@ -10,28 +10,12 @@ function formatCurrency(amount: number): string {
 }
 
 export const dashboardService = {
-    async getOverview(tenantId: string, userId: string, role: string, tenantSlug: string = '') {
-        const isSalesRep = role === 'SALES_REP';
+    // ==========================================
+    // 1. KPI METRICS & ALERTS
+    // ==========================================
+    async getKpis(tenantId: string, userId: string, role: string, tenantSlug: string = '') {
+        const metricsData = await dashboardRepository.getMetrics(tenantId, userId, role);
 
-        const [
-            metricsData,
-            revenueData,
-            funnelData,
-            leaderboardData,
-            rawTasks,
-            recentItems,
-        ] = await Promise.all([
-            dashboardRepository.getMetrics(tenantId, userId, role),
-            dashboardRepository.getRevenueTrend(tenantId),
-            dashboardRepository.getPipelineFunnel(tenantId),
-            dashboardRepository.getLeaderboard(tenantId),
-            dashboardRepository.getTaskQueue(tenantId, userId, isSalesRep),
-            dashboardRepository.getRecentItems(tenantId, userId, isSalesRep),
-        ]);
-
-        // ==========================================
-        // 1. KPI METRICS FOR EACH ROLE
-        // ==========================================
         const kpiMetrics = {
             ADMIN: [
                 {
@@ -197,9 +181,58 @@ export const dashboardService = {
             ],
         };
 
-        // ==========================================
-        // 2. REVENUE TREND (12 Month Rollup)
-        // ==========================================
+        // Dynamic Alerts
+        const dynamicAlerts: any[] = [];
+        if (metricsData.overdueInvoicesCount > 0) {
+            dynamicAlerts.push({
+                id: 'alert-overdue-invoices',
+                title: `${metricsData.overdueInvoicesCount} Invoices Overdue (${formatCurrency(metricsData.totalOverdueVal)})`,
+                description: 'Unpaid accounts have passed their payment due date. Follow-up required.',
+                severity: 'critical',
+                timestamp: 'Immediate',
+                actionLabel: 'View Invoices',
+                actionUrl: `/${tenantSlug}/invoices`,
+                count: metricsData.overdueInvoicesCount,
+            });
+        }
+
+        const highValDeals = metricsData.allDeals.filter(
+            (d) => !d.pipeline?.is_won && !d.pipeline?.is_lost && Number(d.amount || 0) >= 500000
+        );
+        if (highValDeals.length > 0) {
+            dynamicAlerts.push({
+                id: 'alert-high-val-deals',
+                title: `${highValDeals.length} High-Value Deals in Open Pipeline`,
+                description: 'Opportunities over ₹5L currently active in negotiation/proposals.',
+                severity: 'warning',
+                timestamp: 'Active',
+                actionLabel: 'Inspect Deals',
+                actionUrl: `/${tenantSlug}/deals`,
+                count: highValDeals.length,
+            });
+        }
+
+        const alerts = {
+            ADMIN: dynamicAlerts,
+            MANAGER: dynamicAlerts.filter((a) => a.id !== 'alert-overdue-invoices' || dynamicAlerts.length <= 1),
+            SALES_REP: dynamicAlerts.filter((a) => a.id === 'alert-high-val-deals'),
+            FINANCE: dynamicAlerts.filter((a) => a.id === 'alert-overdue-invoices'),
+        };
+
+        const activeRole = (role as 'ADMIN' | 'MANAGER' | 'SALES_REP' | 'FINANCE') || 'ADMIN';
+
+        return {
+            metrics: kpiMetrics[activeRole] || kpiMetrics.ADMIN,
+            alerts: alerts[activeRole] || alerts.ADMIN,
+        };
+    },
+
+    // ==========================================
+    // 2. REVENUE TREND (12 Month Rollup)
+    // ==========================================
+    async getRevenue(tenantId: string) {
+        const revenueData = await dashboardRepository.getRevenueTrend(tenantId);
+
         const monthMap = new Map<string, { revenue: number; collected: number }>();
         for (let i = 11; i >= 0; i--) {
             const d = subMonths(new Date(), i);
@@ -250,9 +283,15 @@ export const dashboardService = {
             });
         });
 
-        // ==========================================
-        // 3. PIPELINE FUNNEL STAGES
-        // ==========================================
+        return { revenueTrend };
+    },
+
+    // ==========================================
+    // 3. PIPELINE FUNNEL STAGES
+    // ==========================================
+    async getPipeline(tenantId: string) {
+        const funnelData = await dashboardRepository.getPipelineFunnel(tenantId);
+
         const stageMap = new Map<string, { count: number; value: number }>();
         funnelData.deals.forEach((d) => {
             const stageName = d.pipeline?.name || 'Open';
@@ -277,9 +316,15 @@ export const dashboardService = {
             });
         });
 
-        // ==========================================
-        // 4. LEADERBOARD
-        // ==========================================
+        return { pipelineFunnel };
+    },
+
+    // ==========================================
+    // 4. LEADERBOARD
+    // ==========================================
+    async getLeaderboard(tenantId: string) {
+        const leaderboardData = await dashboardRepository.getLeaderboard(tenantId);
+
         const repMap = new Map<string, { name: string; email: string; role: string; revenue: number; wonCount: number; totalCount: number }>();
         leaderboardData.users.forEach((u) => {
             repMap.set(u.id, {
@@ -343,9 +388,16 @@ export const dashboardService = {
             r.rank = i + 1;
         });
 
-        // ==========================================
-        // 5. TASK QUEUE
-        // ==========================================
+        return { leaderboard };
+    },
+
+    // ==========================================
+    // 5. TASK QUEUE
+    // ==========================================
+    async getTasks(tenantId: string, userId: string, role: string) {
+        const isSalesRep = role === 'SALES_REP';
+        const rawTasks = await dashboardRepository.getTaskQueue(tenantId, userId, isSalesRep);
+
         const now = new Date();
         const taskQueue = rawTasks.map((a) => {
             let dueLabel: 'Overdue' | 'Today' | 'Tomorrow' | 'Upcoming' = 'Upcoming';
@@ -382,59 +434,46 @@ export const dashboardService = {
             };
         });
 
-        // ==========================================
-        // 6. DYNAMIC ALERTS
-        // ==========================================
-        const dynamicAlerts: any[] = [];
-        if (metricsData.overdueInvoicesCount > 0) {
-            dynamicAlerts.push({
-                id: 'alert-overdue-invoices',
-                title: `${metricsData.overdueInvoicesCount} Invoices Overdue (${formatCurrency(metricsData.totalOverdueVal)})`,
-                description: 'Unpaid accounts have passed their payment due date. Follow-up required.',
-                severity: 'critical',
-                timestamp: 'Immediate',
-                actionLabel: 'View Invoices',
-                actionUrl: `/${tenantSlug}/invoices`,
-                count: metricsData.overdueInvoicesCount,
-            });
-        }
+        return { taskQueue };
+    },
 
-        const highValDeals = metricsData.allDeals.filter(
-            (d) => !d.pipeline?.is_won && !d.pipeline?.is_lost && Number(d.amount || 0) >= 500000
-        );
-        if (highValDeals.length > 0) {
-            dynamicAlerts.push({
-                id: 'alert-high-val-deals',
-                title: `${highValDeals.length} High-Value Deals in Open Pipeline`,
-                description: 'Opportunities over ₹5L currently active in negotiation/proposals.',
-                severity: 'warning',
-                timestamp: 'Active',
-                actionLabel: 'Inspect Deals',
-                actionUrl: `/${tenantSlug}/deals`,
-                count: highValDeals.length,
-            });
-        }
-
-        const alerts = {
-            ADMIN: dynamicAlerts,
-            MANAGER: dynamicAlerts.filter((a) => a.id !== 'alert-overdue-invoices' || dynamicAlerts.length <= 1),
-            SALES_REP: dynamicAlerts.filter((a) => a.id === 'alert-high-val-deals'),
-            FINANCE: dynamicAlerts.filter((a) => a.id === 'alert-overdue-invoices'),
-        };
-
-        const activeRole = (role as 'ADMIN' | 'MANAGER' | 'SALES_REP' | 'FINANCE') || 'ADMIN';
+    // ==========================================
+    // 6. RECENT ITEMS (Activities, Invoices, Leads)
+    // ==========================================
+    async getRecent(tenantId: string, userId: string, role: string) {
+        const isSalesRep = role === 'SALES_REP';
+        const recentItems = await dashboardRepository.getRecentItems(tenantId, userId, isSalesRep);
 
         return {
-            metrics: kpiMetrics[activeRole] || kpiMetrics.ADMIN,
-            revenueTrend,
-            pipelineFunnel,
-            leaderboard,
-            taskQueue,
-            alerts: alerts[activeRole] || alerts.ADMIN,
             activities: recentItems.activities,
             invoices: recentItems.invoices,
             leads: recentItems.leads,
         };
     },
-};
 
+    // ==========================================
+    // 7. COMPOSITE OVERVIEW (Backward Compatibility)
+    // ==========================================
+    async getOverview(tenantId: string, userId: string, role: string, tenantSlug: string = '') {
+        const [kpiRes, revRes, pipeRes, leadRes, taskRes, recentRes] = await Promise.all([
+            this.getKpis(tenantId, userId, role, tenantSlug),
+            this.getRevenue(tenantId),
+            this.getPipeline(tenantId),
+            this.getLeaderboard(tenantId),
+            this.getTasks(tenantId, userId, role),
+            this.getRecent(tenantId, userId, role),
+        ]);
+
+        return {
+            metrics: kpiRes.metrics,
+            alerts: kpiRes.alerts,
+            revenueTrend: revRes.revenueTrend,
+            pipelineFunnel: pipeRes.pipelineFunnel,
+            leaderboard: leadRes.leaderboard,
+            taskQueue: taskRes.taskQueue,
+            activities: recentRes.activities,
+            invoices: recentRes.invoices,
+            leads: recentRes.leads,
+        };
+    },
+};
