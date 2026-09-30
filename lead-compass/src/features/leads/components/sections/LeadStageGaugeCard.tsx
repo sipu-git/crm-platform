@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { PieChart, Pie, Cell, Tooltip } from "recharts";
+import { SVGGaugeChart } from "@/components/charts/SVGGaugeChart";
 import { Gauge, Check, AlertCircle } from "lucide-react";
 import { LeadStatus } from "@/features/leads/types/lead.types";
 import { STATUS_META, PIPELINE_STAGES } from "@/features/leads/components/status-meta";
@@ -10,19 +10,11 @@ interface LeadStageGaugeCardProps {
   onStatusChange?: (newStatus: LeadStatus) => void;
 }
 
-interface GaugeSlice {
-  name: string;
-  status: LeadStatus;
-  value: number;
-  color: string;
-  description: string;
-}
-
-const GAUGE_SECTORS: GaugeSlice[] = [
-  { name: "New", status: "NEW", value: 25, color: "#3B82F6", description: "Initial contact received" },
-  { name: "Contacted", status: "CONTRACTED", value: 25, color: "#F59E0B", description: "In active conversation" },
-  { name: "Qualified", status: "QUALIFIED", value: 25, color: "#10B981", description: "Fit confirmed & ready to convert" },
-  { name: "Converted", status: "CONVERTED", value: 25, color: "#6366F1", description: "Converted into a deal" },
+const GAUGE_SECTORS = [
+  { name: "New", status: "NEW" as LeadStatus, value: 25, color: "#3B82F6", description: "Initial contact received" },
+  { name: "Contacted", status: "CONTRACTED" as LeadStatus, value: 25, color: "#F59E0B", description: "In active conversation" },
+  { name: "Qualified", status: "QUALIFIED" as LeadStatus, value: 25, color: "#10B981", description: "Fit confirmed & ready to convert" },
+  { name: "Converted", status: "CONVERTED" as LeadStatus, value: 25, color: "#6366F1", description: "Converted into a deal" },
 ];
 
 function getNeedleAngle(status: LeadStatus): number {
@@ -49,25 +41,16 @@ export function LeadStageGaugeCard({ status, saving, onStatusChange }: LeadStage
 
   const needleAngle = useMemo(() => getNeedleAngle(status), [status]);
 
-  // Dimensions for Recharts Pie Chart & Needle
-  const cx = 140;
-  const cy = 130;
-  const iR = 60;
-  const oR = 95;
+  const activeIndex = useMemo(() => {
+    return GAUGE_SECTORS.findIndex((s) => s.status === status);
+  }, [status]);
 
-  // Calculate Needle SVG coordinates
-  const RADIAN = Math.PI / 180;
-  const rad = needleAngle * RADIAN;
-  const length = iR + (oR - iR) * 0.75;
-  const r = 6;
-
-  const xp = cx + length * Math.cos(rad);
-  const yp = cy - length * Math.sin(rad);
-
-  const x1 = cx + r * Math.sin(rad);
-  const y1 = cy + r * Math.cos(rad);
-  const x2 = cx - r * Math.sin(rad);
-  const y2 = cy - r * Math.cos(rad);
+  const handleSectorClick = useMemo(() => {
+    if (!onStatusChange || saving) return undefined;
+    return (_sector: any, index: number) => {
+      onStatusChange(GAUGE_SECTORS[index].status);
+    };
+  }, [onStatusChange, saving]);
 
   return (
     <div className="rounded-xl border border-border bg-card p-5 shadow-xs transition-all">
@@ -96,74 +79,21 @@ export function LeadStageGaugeCard({ status, saving, onStatusChange }: LeadStage
         </span>
       </div>
 
-      {/* Pie Chart with Needle Gauge Section */}
+      {/* SVG Gauge Chart — replaces Recharts PieChart */}
       <div className="flex flex-col items-center justify-center pt-4 pb-1">
         <div className="relative flex items-center justify-center">
-          <PieChart width={280} height={150}>
-            <Pie
-              data={GAUGE_SECTORS}
-              cx={cx}
-              cy={cy}
-              startAngle={180}
-              endAngle={0}
-              innerRadius={iR}
-              outerRadius={oR}
-              paddingAngle={3}
-              dataKey="value"
-              stroke="none"
-            >
-              {GAUGE_SECTORS.map((entry) => {
-                const isActive = status === entry.status;
-                return (
-                  <Cell
-                    key={entry.status}
-                    fill={entry.color}
-                    opacity={isDisqualified ? 0.4 : isActive ? 1 : 0.6}
-                    className="transition-opacity duration-300 cursor-pointer"
-                    onClick={() => !saving && onStatusChange?.(entry.status)}
-                  />
-                );
-              })}
-            </Pie>
-
-            {/* Custom Tooltip */}
-            <Tooltip
-              content={({ active, payload }) => {
-                if (active && payload && payload.length) {
-                  const data = payload[0].payload as GaugeSlice;
-                  return (
-                    <div className="rounded-lg border border-border bg-popover px-3 py-2 text-xs shadow-md">
-                      <p className="font-semibold text-foreground flex items-center gap-1.5">
-                        <span className="h-2 w-2 rounded-full" style={{ backgroundColor: data.color }} />
-                        {data.name}
-                      </p>
-                      <p className="text-muted-foreground mt-0.5">{data.description}</p>
-                    </div>
-                  );
-                }
-                return null;
-              }}
-            />
-
-            {/* Needle SVG Overlay */}
-            <g className="transition-all duration-500 ease-out pointer-events-none">
-              {/* Needle Shadow */}
-              <path
-                d={`M ${x1} ${y1 + 2} L ${xp} ${yp + 2} L ${x2} ${y2 + 2} Z`}
-                fill="rgba(0, 0, 0, 0.15)"
-              />
-              {/* Needle Body */}
-              <path
-                d={`M ${x1} ${y1} L ${xp} ${yp} L ${x2} ${y2} Z`}
-                fill={isDisqualified ? "#EF4444" : "#1E293B"}
-                stroke="#FFFFFF"
-                strokeWidth={1.5}
-              />
-              {/* Central Pivot */}
-              <circle cx={cx} cy={cy} r={r + 2} fill={isDisqualified ? "#EF4444" : "#1E293B"} stroke="#FFFFFF" strokeWidth={2} />
-              <circle cx={cx} cy={cy} r={r - 2} fill="#38BDF8" />
-            </g>
-          </PieChart>
+          <SVGGaugeChart
+            sectors={GAUGE_SECTORS}
+            activeIndex={activeIndex}
+            needleAngle={needleAngle}
+            outerRadius={95}
+            innerRadius={60}
+            width={280}
+            height={150}
+            onSectorClick={handleSectorClick}
+            needleColor={isDisqualified ? "#EF4444" : "#1E293B"}
+            isDisabled={isDisqualified}
+          />
         </div>
 
         {/* Center Subtext */}
@@ -211,4 +141,3 @@ export function LeadStageGaugeCard({ status, saving, onStatusChange }: LeadStage
     </div>
   );
 }
-

@@ -1,20 +1,46 @@
-import { useState, memo } from "react";
+import { useState, useMemo, memo, lazy, Suspense } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
-import {
-  AreaChart,
-  Area,
-  Line,
-  CartesianGrid,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from "recharts";
 import { TrendingUp, Inbox } from "lucide-react";
 import type { RevenueDataPoint, WidgetScope } from "@/features/dashboard/types/dashboard.types";
 import { formatCurrency } from "@/features/dashboard/hooks/useDashboardData";
+
+// Lazy-load the heavy canvas chart (lightweight-charts) so it doesn't block LCP
+const LightweightAreaChart = lazy(() =>
+  import("@/components/charts/LightweightAreaChart").then((m) => ({
+    default: m.LightweightAreaChart,
+  }))
+);
+
+/** Convert period strings (e.g. "Jan 2025", "2024-01", "Jan") to strictly ascending YYYY-MM-DD date strings for lightweight-charts */
+function periodToTime(period: string, index: number, totalCount: number = 12): string {
+  if (/^\d{4}-\d{2}-\d{2}$/.test(period)) {
+    return period;
+  }
+  if (/^\d{4}-\d{2}$/.test(period)) {
+    return `${period}-01`;
+  }
+
+  // Parse explicit month and year from string e.g. "Jan 2025" or "Jan '25"
+  const yearMatch = period.match(/\b(20\d{2}|\d{2})\b/);
+  const monthNames = ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"];
+  const mIndex = monthNames.findIndex((m) => period.toLowerCase().includes(m));
+
+  if (mIndex !== -1 && yearMatch) {
+    const rawY = parseInt(yearMatch[1], 10);
+    const fullY = rawY < 100 ? 2000 + rawY : rawY;
+    const mStr = String(mIndex + 1).padStart(2, "0");
+    return `${fullY}-${mStr}-01`;
+  }
+
+  // Fallback: Rolling 12-month window ending in current month
+  const now = new Date();
+  const targetDate = new Date(now.getFullYear(), now.getMonth() - (totalCount - 1 - index), 1);
+  const yStr = targetDate.getFullYear();
+  const mStr = String(targetDate.getMonth() + 1).padStart(2, "0");
+  return `${yStr}-${mStr}-01`;
+}
 
 export const RevenueChartWidget = memo(function RevenueChartWidget({
   data = [],
@@ -107,73 +133,11 @@ export const RevenueChartWidget = memo(function RevenueChartWidget({
       </CardHeader>
 
       <CardContent className="pt-3">
-        <div className="h-72 w-full">
-          <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={filteredData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
-              <defs>
-                <linearGradient id="revenueGradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="var(--primary)" stopOpacity={0.35} />
-                  <stop offset="95%" stopColor="var(--primary)" stopOpacity={0.0} />
-                </linearGradient>
-                <linearGradient id="collectedGradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#10B981" stopOpacity={0.3} />
-                  <stop offset="95%" stopColor="#10B981" stopOpacity={0.0} />
-                </linearGradient>
-              </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" opacity={0.6} />
-              <XAxis
-                dataKey="period"
-                stroke="var(--muted-foreground)"
-                fontSize={11}
-                tickLine={false}
-              />
-              <YAxis
-                stroke="var(--muted-foreground)"
-                fontSize={11}
-                tickLine={false}
-                tickFormatter={(value: number) => `₹${(value / 100000).toFixed(1)}L`}
-                width={65}
-              />
-              <Tooltip
-                contentStyle={{
-                  background: "var(--popover)",
-                  borderColor: "var(--border)",
-                  borderRadius: "10px",
-                  fontSize: "12px",
-                  boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
-                }}
-                formatter={(value: any, name: any) => [
-                  formatCurrency(Number(value)),
-                  name === "revenue"
-                    ? "Invoiced / Revenue"
-                    : name === "collected"
-                    ? "Cash Collected"
-                    : "Target Goal",
-                ]}
-                labelStyle={{ fontWeight: "bold", color: "var(--foreground)" }}
-              />
-              <Area
-                type="monotone"
-                dataKey={mode === "cashflow" ? "collected" : "revenue"}
-                stroke="var(--primary)"
-                strokeWidth={2.5}
-                fill="url(#revenueGradient)"
-                name="revenue"
-              />
-              {showTargetLine && (
-                <Line
-                  type="monotone"
-                  dataKey="target"
-                  stroke="#F59E0B"
-                  strokeWidth={2}
-                  strokeDasharray="4 4"
-                  dot={false}
-                  name="target"
-                />
-              )}
-            </AreaChart>
-          </ResponsiveContainer>
-        </div>
+        <RevenueChart
+          filteredData={filteredData}
+          mode={mode}
+          showTargetLine={showTargetLine}
+        />
 
         <div className="flex items-center justify-center gap-6 pt-3 text-xs text-muted-foreground">
           <div className="flex items-center gap-2">
@@ -189,5 +153,80 @@ export const RevenueChartWidget = memo(function RevenueChartWidget({
         </div>
       </CardContent>
     </Card>
+  );
+});
+
+/** Inner component that lazy-loads the canvas chart */
+const RevenueChart = memo(function RevenueChart({
+  filteredData,
+  mode,
+  showTargetLine,
+}: {
+  filteredData: RevenueDataPoint[];
+  mode: "standard" | "cashflow";
+  showTargetLine: boolean;
+}) {
+  const { series, lineOverlays } = useMemo(() => {
+    const areaData = filteredData.map((d, i) => ({
+      time: periodToTime(d.period, i, filteredData.length),
+      value: mode === "cashflow" ? (d.collected ?? d.revenue) : d.revenue,
+    }));
+
+    const areaSeries = [
+      {
+        data: areaData,
+        color: "hsl(221, 83%, 53%)",
+        topColor: "hsla(221, 83%, 53%, 0.35)",
+        bottomColor: "hsla(221, 83%, 53%, 0)",
+        lineWidth: 2 as const,
+      },
+    ];
+
+    const overlays = showTargetLine
+      ? [
+          {
+            data: filteredData.map((d, i) => ({
+              time: periodToTime(d.period, i, filteredData.length),
+              value: d.target,
+            })),
+            color: "#F59E0B",
+            lineWidth: 2 as const,
+            lineStyle: "dashed" as const,
+          },
+        ]
+      : [];
+
+    return { series: areaSeries, lineOverlays: overlays };
+  }, [filteredData, mode, showTargetLine]);
+
+  const currencyFormatter = useMemo(
+    () => (value: number) => formatCurrency(value),
+    [],
+  );
+
+  const yAxisFormatter = useMemo(
+    () => (value: number) => {
+      const absVal = Math.abs(value);
+      if (absVal < 0.01) return "₹0";
+      if (absVal >= 10000000) return `₹${(value / 10000000).toFixed(2)} Cr`;
+      if (absVal >= 100000) return `₹${(value / 100000).toFixed(0)} L`;
+      if (absVal >= 1000) return `₹${(value / 1000).toFixed(0)}k`;
+      return `₹${Math.round(value)}`;
+    },
+    [],
+  );
+
+  return (
+    <div className="h-72 w-full">
+      <Suspense fallback={<Skeleton className="h-72 w-full rounded-lg" />}>
+        <LightweightAreaChart
+          series={series}
+          lineOverlays={lineOverlays}
+          height={288}
+          yAxisFormatter={yAxisFormatter}
+          tooltipFormatter={currencyFormatter}
+        />
+      </Suspense>
+    </div>
   );
 });

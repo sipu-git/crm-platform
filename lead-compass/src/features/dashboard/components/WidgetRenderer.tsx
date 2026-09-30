@@ -101,7 +101,7 @@ export function WidgetRenderer({
         return (
           <KpiGridWidget
             metrics={data.metrics}
-            isLoading={isLoading}
+            isLoading={data.kpisLoading ?? isLoading}
             scope={widget.props.scope}
           />
         );
@@ -110,7 +110,7 @@ export function WidgetRenderer({
         return (
           <RevenueChartWidget
             data={data.revenueTrend}
-            isLoading={isLoading}
+            isLoading={data.revenueLoading ?? isLoading}
             scope={widget.props.scope}
             title={widget.title}
             subtitle={widget.subtitle}
@@ -123,7 +123,7 @@ export function WidgetRenderer({
         return (
           <PipelineFunnelWidget
             stages={data.pipelineFunnel}
-            isLoading={isLoading}
+            isLoading={data.pipelineLoading ?? isLoading}
             scope={widget.props.scope}
           />
         );
@@ -132,7 +132,7 @@ export function WidgetRenderer({
         return (
           <LeaderboardWidget
             reps={data.leaderboard}
-            isLoading={isLoading}
+            isLoading={data.leaderboardLoading ?? isLoading}
             scope={widget.props.scope}
             showQuota={widget.props.showQuota}
           />
@@ -142,7 +142,7 @@ export function WidgetRenderer({
         return (
           <ActivityFeedWidget
             activities={data.activities}
-            isLoading={isLoading}
+            isLoading={data.recentLoading ?? isLoading}
             scope={widget.props.scope}
             limit={widget.props.limit}
           />
@@ -152,7 +152,7 @@ export function WidgetRenderer({
         return (
           <TaskQueueWidget
             tasks={data.taskQueue}
-            isLoading={isLoading}
+            isLoading={data.tasksLoading ?? isLoading}
             scope={widget.props.scope}
             showAssignee={widget.props.showAssignee}
           />
@@ -162,7 +162,7 @@ export function WidgetRenderer({
         return (
           <AlertBannerWidget
             alerts={data.alerts}
-            isLoading={isLoading}
+            isLoading={data.kpisLoading ?? isLoading}
             scope={widget.props.scope}
             title={widget.title}
             subtitle={widget.subtitle}
@@ -183,7 +183,7 @@ export function WidgetRenderer({
         return (
           <InvoicesTableWidget
             invoices={data.invoices}
-            isLoading={isLoading}
+            isLoading={data.recentLoading ?? isLoading}
             scope={widget.props.scope}
             title={widget.title}
             subtitle={widget.subtitle}
@@ -195,7 +195,7 @@ export function WidgetRenderer({
         return (
           <NewLeadsWidget
             leads={data.leads}
-            isLoading={isLoading}
+            isLoading={data.recentLoading ?? isLoading}
             scope={widget.props.scope}
             title={widget.title}
             subtitle={widget.subtitle}

@@ -1,4 +1,4 @@
-import { KpiMetric } from "@/features/dashboard/dashboard.types";
+import { KpiMetric } from "@/features/dashboard/types/dashboard.types";
 import type { Enquiry, EnquiryStatus } from "@/features/enquiries/types/enquiry.types";
 
 export interface EnquiriesPageProps {

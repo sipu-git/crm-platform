@@ -24,5 +24,52 @@ export const dashboardApi = {
       })
     );
   },
-};
 
+  async getKpis(role?: DashboardRole, tenantSlug?: string): Promise<{ metrics: KpiMetric[]; alerts: AlertItem[] }> {
+    return payload(
+      await api.get<Envelope<{ metrics: KpiMetric[]; alerts: AlertItem[] }>>("/dashboard/kpis", {
+        params: { role, tenantSlug },
+      })
+    );
+  },
+
+  async getRevenue(tenantSlug?: string): Promise<{ revenueTrend: RevenueDataPoint[] }> {
+    return payload(
+      await api.get<Envelope<{ revenueTrend: RevenueDataPoint[] }>>("/dashboard/revenue", {
+        params: { tenantSlug },
+      })
+    );
+  },
+
+  async getPipeline(tenantSlug?: string): Promise<{ pipelineFunnel: FunnelStage[] }> {
+    return payload(
+      await api.get<Envelope<{ pipelineFunnel: FunnelStage[] }>>("/dashboard/pipeline", {
+        params: { tenantSlug },
+      })
+    );
+  },
+
+  async getLeaderboard(tenantSlug?: string): Promise<{ leaderboard: LeaderboardRep[] }> {
+    return payload(
+      await api.get<Envelope<{ leaderboard: LeaderboardRep[] }>>("/dashboard/leaderboard", {
+        params: { tenantSlug },
+      })
+    );
+  },
+
+  async getTasks(role?: DashboardRole, tenantSlug?: string): Promise<{ taskQueue: TaskItem[] }> {
+    return payload(
+      await api.get<Envelope<{ taskQueue: TaskItem[] }>>("/dashboard/tasks", {
+        params: { role, tenantSlug },
+      })
+    );
+  },
+
+  async getRecent(role?: DashboardRole, tenantSlug?: string): Promise<{ activities: any[]; invoices: any[]; leads: any[] }> {
+    return payload(
+      await api.get<Envelope<{ activities: any[]; invoices: any[]; leads: any[] }>>("/dashboard/recent", {
+        params: { role, tenantSlug },
+      })
+    );
+  },
+};

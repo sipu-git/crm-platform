@@ -126,7 +126,8 @@ export function DashboardPage() {
 
   const dashboardData = useDashboardData(activeRole, currentUser);
   const handleRefresh = useCallback(() => {
-    // Invalidate dashboard overview data
+    // Invalidate all split dashboard queries
+    queryClient.invalidateQueries({ queryKey: ["dashboard"] });
     queryClient.invalidateQueries({ queryKey: ["dashboard-overview"] });
     // Invalidate calendar data for upcoming events widget
     queryClient.invalidateQueries({ queryKey: ["calendar"] });
