@@ -66,7 +66,7 @@ export const aiController = {
     if (!prompt) throw ApiError.badRequest("prompt is required");
     if (!req.auth) throw ApiError.unauthorized("Not authenticated");
 
-    const result = await aiService.runCopilotCommand(prompt, req.auth.tenantId);
+    const result = await aiService.runCopilotCommand(prompt, req.auth.tenantId)
     return res.status(200).json(successResponse("AI Co-Pilot response generated!", result));
   },
 };
