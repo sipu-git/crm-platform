@@ -5,16 +5,17 @@ import { useUsers, useUserMutations } from "@/features/users/hooks/useUsers";
 import { PageHeader } from "@/components/ui-kit";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Search, Users as UsersIcon } from "lucide-react";
+import { Search, Users as UsersIcon, Mail } from "lucide-react";
 import { FormAlert, useFormAlert } from "@/components/ui/form-alert";
 import { Role, ROLE_OPTIONS } from "@/features/users/types";
-import { TeamInvitationsList } from "@/features/users/components/TeamInvitationsList";
 import { TeamInviteMemberDialog } from "@/features/users/components/TeamInviteMemberDialog";
 import { TeamChangeRoleDialog } from "@/features/users/components/TeamChangeRoleDialog";
 import { TeamRemoveMemberDialog } from "@/features/users/components/TeamRemoveMemberDialog";
 import { ROLE_DOT, DEFAULT_ROLE_DOT } from "@/features/users/components/TeamStyles";
 import React from "react";
 import { TeamMembersTable } from "@/features/users/components/TeamMembersTable";
+import { TeamInvitationsDrawer } from "../components/TeamInvitationsList";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 export default function TeamPage() {
   const { can } = usePermission();
@@ -34,6 +35,7 @@ export default function TeamPage() {
     newRole: Role;
   } | null>(null);
   const [pendingRemove, setPendingRemove] = React.useState<any | null>(null);
+  const [isInvitationsOpen, setIsInvitationsOpen] = React.useState(false);
 
   const canManage = can("users:manage");
   const { alert, showSuccess, showError, dismiss } = useFormAlert();
@@ -76,10 +78,13 @@ export default function TeamPage() {
     let current = items;
     if (roleFilter !== "ALL") current = current.filter(u => u.role === roleFilter);
     const q = query.trim().toLowerCase();
-    if (q) current = current.filter(u => (u.full_name || u.email).toLowerCase().includes(q) || u.email.toLowerCase().includes(q));
+    if (q)
+      current = current.filter(
+        u => (u.full_name || u.email).toLowerCase().includes(q) || u.email.toLowerCase().includes(q)
+      );
     return [...current].sort((a, b) => {
-      const aVal = sortField === "name" ? (a.full_name || a.email) : a.role;
-      const bVal = sortField === "name" ? (b.full_name || b.email) : b.role;
+      const aVal = sortField === "name" ? a.full_name || a.email : a.role;
+      const bVal = sortField === "name" ? b.full_name || b.email : b.role;
       const cmp = aVal.localeCompare(bVal);
       return sortDir === "asc" ? cmp : -cmp;
     });
@@ -102,10 +107,14 @@ export default function TeamPage() {
   }
 
   const isInitialLoad = isLoading && items.length === 0;
+  const chipBase =
+    "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium transition-colors";
+  const chipActive = "border-foreground/20 bg-foreground/5 text-foreground";
+  const chipIdle = "border-transparent text-muted-foreground hover:bg-muted/60";
 
   return (
     <ProtectedRoute resource="users">
-      <section className="space-y-8">
+      <section className="space-y-6">
         <PageHeader
           title="Team Members"
           description="Manage who has access to this workspace and their role."
@@ -117,91 +126,117 @@ export default function TeamPage() {
             )
           }
         />
-        <div className="px-6 pb-6 space-y-8">
+
+        <div className="px-6 pb-6 space-y-4">
           {/* Inline alert for mutation feedback */}
           <FormAlert alert={alert} onDismiss={dismiss} />
 
-          {canManage && (
-            <div className="rounded-md bg-card p-5 shadow-xs">
-              <TeamInvitationsList />
-            </div>
-          )}
-          {!isInitialLoad && items.length > 0 && (
-            <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-              <div className="relative w-full lg:max-w-3xl">
-                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                <Input
-                  value={query}
-                  onChange={e => setQuery(e.target.value)}
-                  placeholder="Search by name or email..."
-                  className="pl-9 bg-background shadow-sm"
-                />
+          {/* Single card holding every feature of the page */}
+          <Card className="overflow-hidden shadow-xs">
+            <CardHeader className="flex flex-col gap-3 border-b sm:flex-row sm:items-center sm:justify-between">
+              <div className="space-y-1">
+                <CardTitle className="text-base">
+                  Members
+                  {!isInitialLoad && (
+                    <span className="ml-2 text-sm font-normal text-muted-foreground">{items.length}</span>
+                  )}
+                </CardTitle>
+                <CardDescription>Search, filter and manage roles for your workspace.</CardDescription>
               </div>
-              <div className="flex flex-wrap items-center gap-1.5">
-                <button
-                  type="button"
-                  onClick={() => setRoleFilter("ALL")}
-                  className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium transition-colors ${
-                    roleFilter === "ALL"
-                      ? "border-foreground/20 bg-foreground/5 text-foreground"
-                      : "border-transparent text-muted-foreground hover:bg-muted/60"
-                  }`}
+              {canManage && (
+                <Button
+                  variant="outline"
+                  onClick={() => setIsInvitationsOpen(true)}
+                  className="w-full sm:w-auto"
                 >
-                  All <span className="text-muted-foreground">{items.length}</span>
-                </button>
-                {ROLE_OPTIONS.map(r =>
-                  roleCounts[r] > 0 && (
+                  <Mail className="mr-2 h-4 w-4" /> Pending Invitations
+                </Button>
+              )}
+            </CardHeader>
+
+            <CardContent className="space-y-4 pt-6">
+              {/* Toolbar: search + role filters */}
+              {!isInitialLoad && items.length > 0 && (
+                <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                  <div className="relative w-full lg:max-w-md">
+                    <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                    <Input
+                      value={query}
+                      onChange={e => setQuery(e.target.value)}
+                      placeholder="Search by name or email..."
+                      className="pl-9 bg-background shadow-sm"
+                    />
+                  </div>
+
+                  <div className="flex flex-wrap items-center gap-1.5">
                     <button
-                      key={r}
                       type="button"
-                      onClick={() => setRoleFilter(roleFilter === r ? "ALL" : r)}
-                      className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium transition-colors ${
-                        roleFilter === r
-                          ? "border-foreground/20 bg-foreground/5 text-foreground"
-                          : "border-transparent text-muted-foreground hover:bg-muted/60"
-                      }`}
+                      onClick={() => setRoleFilter("ALL")}
+                      className={`${chipBase} ${roleFilter === "ALL" ? chipActive : chipIdle}`}
                     >
-                      <span className={`h-1.5 w-1.5 rounded-full ${ROLE_DOT[r] ?? DEFAULT_ROLE_DOT}`} />
-                      {r}
-                      <span className="text-muted-foreground">{roleCounts[r]}</span>
+                      All <span className="text-muted-foreground">{items.length}</span>
                     </button>
-                  )
-                )}
-              </div>
-            </div>
-          )}
-          <TeamMembersTable
-            items={items}
-            filteredItems={filteredItems}
-            isInitialLoad={isInitialLoad}
-            currentUserId={currentUserId}
-            canManage={canManage}
-            query={query}
-            roleFilter={roleFilter}
-            sortField={sortField}
-            sortDir={sortDir}
-            onInvite={() => setInviteOpen(true)}
-            onSort={handleSort}
-            onChangeRole={(user, newRole) => setPendingChange({ user, newRole })}
-            onRemove={user => setPendingRemove(user)}
-            onClearFilters={() => {
-              setQuery("");
-              setRoleFilter("ALL");
-            }}
-          />
+                    {ROLE_OPTIONS.map(
+                      r =>
+                        roleCounts[r] > 0 && (
+                          <button
+                            key={r}
+                            type="button"
+                            onClick={() => setRoleFilter(roleFilter === r ? "ALL" : r)}
+                            className={`${chipBase} ${roleFilter === r ? chipActive : chipIdle}`}
+                          >
+                            <span className={`h-1.5 w-1.5 rounded-full ${ROLE_DOT[r] ?? DEFAULT_ROLE_DOT}`} />
+                            {r}
+                            <span className="text-muted-foreground">{roleCounts[r]}</span>
+                          </button>
+                        )
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Table */}
+              <TeamMembersTable
+                items={items}
+                filteredItems={filteredItems}
+                isInitialLoad={isInitialLoad}
+                currentUserId={currentUserId}
+                canManage={canManage}
+                query={query}
+                roleFilter={roleFilter}
+                sortField={sortField}
+                sortDir={sortDir}
+                onInvite={() => setInviteOpen(true)}
+                onSort={handleSort}
+                onChangeRole={(user, newRole) => setPendingChange({ user, newRole })}
+                onRemove={user => setPendingRemove(user)}
+                onClearFilters={() => {
+                  setQuery("");
+                  setRoleFilter("ALL");
+                }}
+              />
+            </CardContent>
+          </Card>
+
+          {/* Dialogs / drawer stay outside the card (they render in portals) */}
           <TeamInviteMemberDialog open={inviteOpen} onOpenChange={setInviteOpen} />
           <TeamChangeRoleDialog
             open={!!pendingChange}
             pendingChange={pendingChange}
-            onOpenChange={isOpen => { if (!isOpen) setPendingChange(null); }}
+            onOpenChange={isOpen => {
+              if (!isOpen) setPendingChange(null);
+            }}
             onConfirm={confirmRoleChange}
           />
           <TeamRemoveMemberDialog
             open={!!pendingRemove}
             pendingRemove={pendingRemove}
-            onOpenChange={isOpen => { if (!isOpen) setPendingRemove(null); }}
+            onOpenChange={isOpen => {
+              if (!isOpen) setPendingRemove(null);
+            }}
             onConfirm={confirmRemoveUser}
           />
+          <TeamInvitationsDrawer open={isInvitationsOpen} onOpenChange={setIsInvitationsOpen} />
         </div>
       </section>
     </ProtectedRoute>

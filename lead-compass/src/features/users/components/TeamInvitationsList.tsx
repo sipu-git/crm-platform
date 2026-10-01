@@ -1,14 +1,17 @@
-import React, { useCallback, useEffect, useRef, useState } from "react";
-import {Mail,Phone,RotateCcw,Trash2,Pencil,Clock,Loader2,SendHorizonal,InboxIcon} from "lucide-react";
+import React, { memo, useCallback, useEffect, useState } from "react";
+import { Mail, Phone, Trash2, Pencil, Clock, Loader2, SendHorizonal, InboxIcon, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
-import {AlertDialog,AlertDialogAction,AlertDialogCancel,AlertDialogContent,AlertDialogDescription,
-  AlertDialogFooter,AlertDialogHeader,AlertDialogTitle} from "@/components/ui/alert-dialog";
-import {Dialog,DialogContent,DialogDescription,DialogFooter,DialogHeader,DialogTitle} from "@/components/ui/dialog";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription,
+  AlertDialogFooter, AlertDialogHeader, AlertDialogTitle
+} from "@/components/ui/alert-dialog";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Drawer, DrawerClose, DrawerContent, DrawerDescription, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {Select,SelectContent,SelectItem,SelectTrigger,SelectValue} from "@/components/ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useInvites, useUserMutations } from "@/features/users/hooks/useUsers";
 import type { Invite, Role } from "@/features/users/types";
 import { ROLE_OPTIONS } from "@/features/users/types";
@@ -22,20 +25,28 @@ import {
 } from "@/features/users/components/TeamStyles";
 import { inviteUserSchema } from "@/features/users/validation";
 import { FormAlert, useFormAlert } from "@/components/ui/form-alert";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
+const DAY_MS = 86_400_000;
+
 function relativeDate(iso?: string) {
   if (!iso) return "";
-  const diff = Date.now() - new Date(iso).getTime();
-  const days = Math.floor(diff / 86_400_000);
-  if (days === 0) return "Today";
+  const date = new Date(iso);
+  const days = Math.floor((Date.now() - date.getTime()) / DAY_MS);
+  if (days <= 0) return "Today";
   if (days === 1) return "Yesterday";
   if (days < 7) return `${days} days ago`;
   if (days < 30) return `${Math.floor(days / 7)}w ago`;
-  return new Date(iso).toLocaleDateString(undefined, { month: "short", day: "numeric" });
+  return date.toLocaleDateString(undefined, { month: "short", day: "numeric" });
 }
 
+// ─── Edit dialog ────────────────────────────────────────────────────────────
+
+type EditForm = { full_name: string; email: string; mobile: string; role: Role };
+
+const EMPTY_FORM: EditForm = { full_name: "", email: "", mobile: "", role: "SALES_REP" };
 
 type EditDialogProps = {
   invite: Invite | null;
@@ -44,32 +55,26 @@ type EditDialogProps = {
 
 function EditInviteDialog({ invite, onOpenChange }: EditDialogProps) {
   const { invite: inviteMutation } = useUserMutations();
-  const open = !!invite;
   const { alert, showSuccess, showError, dismiss } = useFormAlert();
-
-  const [form, setForm] = useState({
-    full_name: "",
-    email: "",
-    mobile: "",
-    role: "SALES_REP" as Role,
-  });
+  const [form, setForm] = useState<EditForm>(EMPTY_FORM);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  // Pre-fill form whenever the selected invite changes
+  // Pre-fill whenever a different invite is selected
   useEffect(() => {
-    if (invite) {
-      setForm({
-        full_name: invite.full_name ?? "",
-        email: invite.email,
-        mobile: invite.mobile ?? "",
-        role: invite.role,
-      });
-      setErrors({});
-      dismiss();
-      inviteMutation.reset();
-    }
+    if (!invite) return;
+    setForm({
+      full_name: invite.full_name ?? "",
+      email: invite.email,
+      mobile: invite.mobile ?? "",
+      role: invite.role,
+    });
+    setErrors({});
+    dismiss();
+    inviteMutation.reset();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [invite?.id]);
 
+  // Close shortly after success, surface errors
   useEffect(() => {
     if (inviteMutation.isSuccess) {
       showSuccess("Invitation updated & resent");
@@ -79,11 +84,12 @@ function EditInviteDialog({ invite, onOpenChange }: EditDialogProps) {
     if (inviteMutation.isError) {
       showError(inviteMutation.error?.message ?? "Failed to update invitation");
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [inviteMutation.isSuccess, inviteMutation.isError]);
 
-  const handleChange = (name: string, value: string) => {
+  const handleChange = (name: keyof EditForm, value: string) => {
     setForm((prev) => ({ ...prev, [name]: value }));
-    setErrors((prev) => ({ ...prev, [name]: "" }));
+    setErrors((prev) => (prev[name] ? { ...prev, [name]: "" } : prev));
     dismiss();
   };
 
@@ -93,18 +99,24 @@ function EditInviteDialog({ invite, onOpenChange }: EditDialogProps) {
     const result = inviteUserSchema.safeParse(form);
     if (!result.success) {
       const fieldErrors: Record<string, string> = {};
-      result.error.errors.forEach((err) => {
-        const key = err.path[0] as string;
-        fieldErrors[key] = err.message;
-      });
+      for (const issue of result.error.issues) {
+        const key = String(issue.path[0]);
+        fieldErrors[key] ??= issue.message;
+      }
       setErrors(fieldErrors);
       return;
     }
     inviteMutation.mutate(form);
   };
 
+  const textFields = [
+    { name: "full_name", label: "Full name", placeholder: "John Doe", type: "text" },
+    { name: "email", label: "Email", placeholder: "john@example.com", type: "email" },
+    { name: "mobile", label: "Mobile", placeholder: "1234567890", type: "text" },
+  ] as const;
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={!!invite} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Edit invitation</DialogTitle>
@@ -114,43 +126,23 @@ function EditInviteDialog({ invite, onOpenChange }: EditDialogProps) {
         </DialogHeader>
         <FormAlert alert={alert} onDismiss={dismiss} />
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="edit_full_name">Full name</Label>
-            <Input
-              id="edit_full_name"
-              placeholder="John Doe"
-              value={form.full_name}
-              onChange={(e) => handleChange("full_name", e.target.value)}
-            />
-            {errors.full_name && <p className="text-sm text-destructive">{errors.full_name}</p>}
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="edit_email">Email</Label>
-            <Input
-              id="edit_email"
-              type="email"
-              placeholder="john@example.com"
-              value={form.email}
-              onChange={(e) => handleChange("email", e.target.value)}
-            />
-            {errors.email && <p className="text-sm text-destructive">{errors.email}</p>}
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="edit_mobile">Mobile</Label>
-            <Input
-              id="edit_mobile"
-              placeholder="1234567890"
-              value={form.mobile}
-              onChange={(e) => handleChange("mobile", e.target.value)}
-            />
-            {errors.mobile && <p className="text-sm text-destructive">{errors.mobile}</p>}
-          </div>
+          {textFields.map(({ name, label, placeholder, type }) => (
+            <div key={name} className="space-y-2">
+              <Label htmlFor={`edit_${name}`}>{label}</Label>
+              <Input
+                id={`edit_${name}`}
+                type={type}
+                placeholder={placeholder}
+                value={form[name]}
+                onChange={(e) => handleChange(name, e.target.value)}
+              />
+              {errors[name] && <p className="text-sm text-destructive">{errors[name]}</p>}
+            </div>
+          ))}
+
           <div className="space-y-2">
             <Label>Role</Label>
-            <Select
-              value={form.role}
-              onValueChange={(role) => handleChange("role", role)}
-            >
+            <Select value={form.role} onValueChange={(role) => handleChange("role", role)}>
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
@@ -167,6 +159,7 @@ function EditInviteDialog({ invite, onOpenChange }: EditDialogProps) {
             </Select>
             {errors.role && <p className="text-sm text-destructive">{errors.role}</p>}
           </div>
+
           <DialogFooter>
             <Button
               type="button"
@@ -193,20 +186,20 @@ function EditInviteDialog({ invite, onOpenChange }: EditDialogProps) {
   );
 }
 
-// ─── Skeleton Card ──────────────────────────────────────────────────────────
+// ─── Skeleton ───────────────────────────────────────────────────────────────
 
 function InvitationCardSkeleton() {
   return (
-    <div className="rounded-xl border bg-card p-5 space-y-3 shadow-sm">
+    <div className="space-y-3 rounded-xl border bg-card p-4 shadow-sm">
       <div className="flex items-start gap-3">
-        <Skeleton className="h-10 w-10 rounded-full shrink-0" />
+        <Skeleton className="h-10 w-10 shrink-0 rounded-full" />
         <div className="flex-1 space-y-2">
-          <Skeleton className="h-4 w-40" />
-          <Skeleton className="h-3 w-52" />
+          <Skeleton className="h-4 w-36" />
+          <Skeleton className="h-3 w-48" />
         </div>
-        <Skeleton className="h-6 w-20 rounded-full" />
+        <Skeleton className="h-6 w-16 rounded-full" />
       </div>
-      <div className="flex gap-2 pt-1">
+      <div className="flex justify-end gap-2">
         <Skeleton className="h-8 w-16 rounded-md" />
         <Skeleton className="h-8 w-20 rounded-md" />
         <Skeleton className="h-8 w-16 rounded-md" />
@@ -215,47 +208,48 @@ function InvitationCardSkeleton() {
   );
 }
 
-// ─── Single Invitation Card ─────────────────────────────────────────────────
+// ─── Invitation card (memoized) ─────────────────────────────────────────────
 
 type CardProps = {
   invite: Invite;
+  isResending: boolean;
   onEdit: (invite: Invite) => void;
   onResend: (inviteId: string) => void;
   onRevoke: (invite: Invite) => void;
-  resendingId: string | null;
 };
 
-function InvitationCard({ invite, onEdit, onResend, onRevoke, resendingId }: CardProps) {
+const InvitationCard = memo(function InvitationCard({
+  invite,
+  isResending,
+  onEdit,
+  onResend,
+  onRevoke,
+}: CardProps) {
   const displayName = invite.full_name?.trim() || invite.email.split("@")[0];
-  const avatarCls = avatarStyle(displayName);
   const ringCls = ROLE_RING[invite.role] ?? DEFAULT_ROLE_RING;
-  const isResending = resendingId === invite.id;
 
   return (
-    <div className="group rounded-xl border bg-card shadow-sm hover:shadow-md transition-shadow duration-200 overflow-hidden">
-      {/* Amber top stripe to signal pending */}
+    <div className="overflow-hidden rounded-xl border bg-card shadow-sm">
+      {/* Amber stripe signals "pending" */}
       <div className="h-1 w-full bg-gradient-to-r from-amber-400/60 via-amber-500/40 to-transparent" />
 
-      <div className="p-5 space-y-4">
-        {/* Header row */}
-        <div className="flex items-start gap-3.5">
-          {/* Avatar */}
+      <div className="space-y-3 p-4">
+        <div className="flex items-start gap-3">
           <Avatar className={`h-10 w-10 shrink-0 ring-2 ring-offset-2 ring-offset-card ${ringCls}`}>
-            <AvatarFallback className={`text-xs font-semibold ${avatarCls}`}>
+            <AvatarFallback className={`text-xs font-semibold ${avatarStyle(displayName)}`}>
               {initials(displayName)}
             </AvatarFallback>
           </Avatar>
 
-          {/* Name + contact */}
-          <div className="flex-1 min-w-0">
-            <p className="font-semibold text-sm leading-snug truncate">{displayName}</p>
-            <div className="mt-1 space-y-0.5">
-              <span className="flex items-center gap-1.5 text-xs text-muted-foreground truncate">
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-sm font-semibold leading-snug">{displayName}</p>
+            <div className="mt-1 space-y-0.5 text-xs text-muted-foreground">
+              <span className="flex items-center gap-1.5">
                 <Mail className="h-3.5 w-3.5 shrink-0" />
-                {invite.email}
+                <span className="truncate">{invite.email}</span>
               </span>
               {invite.mobile && (
-                <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                <span className="flex items-center gap-1.5">
                   <Phone className="h-3.5 w-3.5 shrink-0" />
                   {invite.mobile}
                 </span>
@@ -263,21 +257,16 @@ function InvitationCard({ invite, onEdit, onResend, onRevoke, resendingId }: Car
             </div>
           </div>
 
-          {/* Role badge */}
           <RoleBadge role={invite.role} />
         </div>
 
-        {/* Footer row – meta + actions */}
-        <div className="flex items-center justify-between gap-2 flex-wrap">
-          {/* Invited date */}
+        <div className="flex flex-wrap items-center justify-between gap-2">
           <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
             <Clock className="h-3.5 w-3.5 shrink-0 text-amber-500" />
             Invited {relativeDate(invite.createdAt)}
           </span>
 
-          {/* Action buttons */}
           <div className="flex items-center gap-1.5">
-            {/* Edit */}
             <Button
               size="sm"
               variant="ghost"
@@ -287,8 +276,6 @@ function InvitationCard({ invite, onEdit, onResend, onRevoke, resendingId }: Car
               <Pencil className="h-3.5 w-3.5" />
               Edit
             </Button>
-
-            {/* Resend */}
             <Button
               size="sm"
               variant="outline"
@@ -303,8 +290,6 @@ function InvitationCard({ invite, onEdit, onResend, onRevoke, resendingId }: Car
               )}
               {isResending ? "Sending…" : "Resend"}
             </Button>
-
-            {/* Revoke */}
             <Button
               size="sm"
               variant="ghost"
@@ -319,177 +304,165 @@ function InvitationCard({ invite, onEdit, onResend, onRevoke, resendingId }: Car
       </div>
     </div>
   );
-}
+});
 
-// ─── Main Component ─────────────────────────────────────────────────────────
+// ─── List panel (lives inside the drawer) ───────────────────────────────────
 
 const PAGE_SIZE = 10;
-const SCROLL_THROTTLE_MS = 300;
 
-export function TeamInvitationsList() {
+type PanelProps = {
+  /** Tells the parent drawer whether a nested dialog is open, so outside-clicks don't close the drawer. */
+  onModalChange: (open: boolean) => void;
+};
+
+function InvitationsPanel({ onModalChange }: PanelProps) {
   const { data: allInvites = [], isLoading } = useInvites();
   const { resendInvite, revokeInvite } = useUserMutations();
-
+  const { alert, showSuccess, showError, dismiss } = useFormAlert();
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const [editTarget, setEditTarget] = useState<Invite | null>(null);
   const [revokeTarget, setRevokeTarget] = useState<Invite | null>(null);
-  const [resendingId, setResendingId] = useState<string | null>(null);
-  const { alert, showSuccess, showError, dismiss } = useFormAlert();
+  // State-based refs so the observer re-attaches once the elements mount
+  const [scrollEl, setScrollEl] = useState<HTMLDivElement | null>(null);
+  const [sentinelEl, setSentinelEl] = useState<HTMLDivElement | null>(null);
+  const total = allInvites.length;
+  const hasMore = visibleCount < total;
 
-  // ── Infinite scroll with throttle ────────────────────────────────────────
-  const loaderRef = useRef<HTMLDivElement | null>(null);
-  const throttleTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  const loadMore = useCallback(() => {
-    setVisibleCount((prev) => Math.min(prev + PAGE_SIZE, allInvites.length));
-  }, [allInvites.length]);
-
-  const throttledLoadMore = useCallback(() => {
-    if (throttleTimer.current) return;
-    throttleTimer.current = setTimeout(() => {
-      loadMore();
-      throttleTimer.current = null;
-    }, SCROLL_THROTTLE_MS);
-  }, [loadMore]);
+  // Report nested-dialog state to the drawer
+  const modalOpen = !!editTarget || !!revokeTarget;
+  useEffect(() => {
+    onModalChange(modalOpen);
+  }, [modalOpen, onModalChange]);
+  useEffect(() => () => onModalChange(false), [onModalChange]);
 
   useEffect(() => {
-    const el = loaderRef.current;
-    if (!el) return;
+    if (!scrollEl || !sentinelEl || !hasMore) return;
     const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting && visibleCount < allInvites.length) {
-          throttledLoadMore();
-        }
+      ([entry]) => {
+        if (entry.isIntersecting) setVisibleCount((c) => c + PAGE_SIZE);
       },
-      { threshold: 0.1 }
+      { root: scrollEl, rootMargin: "120px" }
     );
-    observer.observe(el);
-    return () => {
-      observer.disconnect();
-      if (throttleTimer.current) clearTimeout(throttleTimer.current);
-    };
-  }, [throttledLoadMore, visibleCount, allInvites.length]);
+    observer.observe(sentinelEl);
+    return () => observer.disconnect();
+  }, [scrollEl, sentinelEl, hasMore, visibleCount]);
 
-  // Reset visible count when data refreshes
-  useEffect(() => {
-    setVisibleCount(PAGE_SIZE);
-  }, [allInvites.length]);
-
-  // ── Handlers ──────────────────────────────────────────────────────────────
-
-  const handleResend = (inviteId: string) => {
-    setResendingId(inviteId);
-    dismiss();
-    resendInvite.mutate(inviteId, {
-      onSuccess: () => {
-        showSuccess("Invitation resent successfully");
-        setResendingId(null);
-      },
-      onError: (err: any) => {
-        showError(err?.message ?? "Failed to resend invitation");
-        setResendingId(null);
-      },
-    });
-  };
+  // ── Handlers (stable so memoized cards don't re-render) ──
+  const handleResend = useCallback(
+    (inviteId: string) => {
+      dismiss();
+      resendInvite.mutate(inviteId, {
+        onSuccess: () => showSuccess("Invitation resent successfully"),
+        onError: (err: any) => showError(err?.message ?? "Failed to resend invitation"),
+      });
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [resendInvite.mutate]
+  );
 
   const handleRevokeConfirm = () => {
     if (!revokeTarget) return;
+    const { id, email } = revokeTarget;
     dismiss();
-    revokeInvite.mutate(revokeTarget.id, {
-      onSuccess: () => {
-        showSuccess(`Invitation to ${revokeTarget.email} revoked`);
-        setRevokeTarget(null);
-      },
-      onError: (err: any) => {
-        showError(err?.message ?? "Failed to revoke invitation");
-        setRevokeTarget(null);
-      },
+    revokeInvite.mutate(id, {
+      onSuccess: () => showSuccess(`Invitation to ${email} revoked`),
+      onError: (err: any) => showError(err?.message ?? "Failed to revoke invitation"),
+      onSettled: () => setRevokeTarget(null),
     });
   };
 
-  const visibleInvites = allInvites.slice(0, visibleCount);
-  const hasMore = visibleCount < allInvites.length;
+  const resendingId = resendInvite.isPending ? (resendInvite.variables as string) : null;
 
-  // ── Render ────────────────────────────────────────────────────────────────
-
+  // NOTE: no nested <Drawer> here. The parent <Drawer> owns open state, so
+  // <DrawerClose> below now closes the real drawer.
   return (
     <>
-      {/* Section header */}
-      <div className="flex items-center justify-between mb-4">
-        <div>
-          <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+      <DrawerHeader className="space-y-1 border-b px-5 py-4 text-left">
+        <div className="flex items-center justify-between">
+          <DrawerTitle className="flex items-center gap-2 text-base">
             <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-amber-500/15 text-amber-600 dark:text-amber-400">
               <Clock className="h-3 w-3" />
             </span>
-            Pending Invitations
-          </h3>
-          {!isLoading && allInvites.length > 0 && (
-            <p className="text-xs text-muted-foreground mt-0.5 ml-7">
-              {allInvites.length} invite{allInvites.length !== 1 ? "s" : ""} awaiting response
+            Pending invitations
+          </DrawerTitle>
+          <DrawerClose asChild>
+            <button
+              type="button"
+              aria-label="Close"
+              className="rounded-lg p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+            >
+              <X className="h-5 w-5" />
+            </button>
+          </DrawerClose>
+        </div>
+        <DrawerDescription>
+          {isLoading
+            ? "Loading…"
+            : total > 0
+              ? `${total} invite${total !== 1 ? "s" : ""} awaiting response`
+              : "Nothing waiting on a response"}
+        </DrawerDescription>
+      </DrawerHeader>
+
+      <div
+        ref={setScrollEl}
+        data-vaul-no-drag
+        className="min-h-0 flex-1 overflow-y-auto px-5 py-4"
+      >
+        <FormAlert alert={alert} onDismiss={dismiss} className="mb-4" />
+
+        {isLoading && (
+          <div className="flex flex-col gap-3">
+            {Array.from({ length: 3 }, (_, i) => (
+              <InvitationCardSkeleton key={i} />
+            ))}
+          </div>
+        )}
+
+        {!isLoading && total === 0 && (
+          <div className="flex flex-col items-center justify-center rounded-xl border border-dashed bg-muted/30 py-12 text-center">
+            <InboxIcon className="mb-3 h-10 w-10 text-muted-foreground/40" />
+            <p className="text-sm font-medium text-muted-foreground">No pending invitations</p>
+            <p className="mt-1 text-xs text-muted-foreground/70">
+              Invitations you send will appear here until accepted.
             </p>
+          </div>
+        )}
+
+        {!isLoading && total > 0 && (
+          <div className="flex flex-col gap-3">
+            {allInvites.slice(0, visibleCount).map((invite) => (
+              <InvitationCard
+                key={invite.id}
+                invite={invite}
+                isResending={resendingId === invite.id}
+                onEdit={setEditTarget}
+                onResend={handleResend}
+                onRevoke={setRevokeTarget}
+              />
+            ))}
+          </div>
+        )}
+
+        {/* Infinite-scroll sentinel */}
+        <div ref={setSentinelEl} className="flex h-8 items-center justify-center">
+          {hasMore && (
+            <span className="flex items-center gap-2 text-xs text-muted-foreground">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Loading more…
+            </span>
           )}
         </div>
       </div>
 
-      {/* Inline alert for invitation actions */}
-      <FormAlert alert={alert} onDismiss={dismiss} className="mb-4" />
-
-      {/* Skeleton state */}
-      {isLoading && (
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-          {Array.from({ length: 3 }).map((_, i) => (
-            <InvitationCardSkeleton key={i} />
-          ))}
-        </div>
-      )}
-
-      {/* Empty state */}
-      {!isLoading && allInvites.length === 0 && (
-        <div className="flex flex-col items-center justify-center rounded-xl border border-dashed bg-muted/30 py-12 text-center">
-          <InboxIcon className="h-10 w-10 text-muted-foreground/40 mb-3" />
-          <p className="text-sm font-medium text-muted-foreground">No pending invitations</p>
-          <p className="text-xs text-muted-foreground/70 mt-1">
-            Invitations you send will appear here until accepted.
-          </p>
-        </div>
-      )}
-
-      {/* Cards grid */}
-      {!isLoading && visibleInvites.length > 0 && (
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-          {visibleInvites.map((invite) => (
-            <InvitationCard
-              key={invite.id}
-              invite={invite}
-              onEdit={setEditTarget}
-              onResend={handleResend}
-              onRevoke={setRevokeTarget}
-              resendingId={resendingId}
-            />
-          ))}
-        </div>
-      )}
-
-      {/* Infinite scroll sentinel */}
-      <div ref={loaderRef} className="flex justify-center py-4">
-        {hasMore && (
-          <span className="flex items-center gap-2 text-xs text-muted-foreground">
-            <Loader2 className="h-4 w-4 animate-spin" />
-            Loading more…
-          </span>
-        )}
-      </div>
-
-      {/* Edit dialog */}
       <EditInviteDialog
         invite={editTarget}
-        onOpenChange={(open) => { if (!open) setEditTarget(null); }}
+        onOpenChange={(open) => !open && setEditTarget(null)}
       />
 
-      {/* Revoke confirmation */}
       <AlertDialog
         open={!!revokeTarget}
-        onOpenChange={(open) => { if (!open) setRevokeTarget(null); }}
+        onOpenChange={(open) => !open && !revokeInvite.isPending && setRevokeTarget(null)}
       >
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -500,9 +473,13 @@ export function TeamInvitationsList() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel disabled={revokeInvite.isPending}>Cancel</AlertDialogCancel>
             <AlertDialogAction
-              onClick={handleRevokeConfirm}
+              disabled={revokeInvite.isPending}
+              onClick={(e) => {
+                e.preventDefault(); // keep dialog open to show the loading state
+                handleRevokeConfirm();
+              }}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
               {revokeInvite.isPending ? (
@@ -518,5 +495,57 @@ export function TeamInvitationsList() {
         </AlertDialogContent>
       </AlertDialog>
     </>
+  );
+}
+
+type DrawerProps = {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+};
+
+/** Responsive drawer: right side on desktop, bottom sheet on mobile. The panel unmounts on close, so scroll/pagination state resets. */
+export function TeamInvitationsDrawer({ open, onOpenChange }: DrawerProps) {
+  const isMobile = useIsMobile();
+  const [modalOpen, setModalOpen] = useState(false);
+
+  // Don't let clicks/Escape on the nested edit/revoke dialogs dismiss the drawer
+  const guard = (e: Event) => {
+    if (modalOpen) e.preventDefault();
+  };
+
+  return (
+    <Drawer
+      open={open}
+      onOpenChange={onOpenChange}
+      direction={isMobile ? "bottom" : "right"}
+    >
+      <DrawerContent
+        onInteractOutside={guard}
+        onEscapeKeyDown={guard}
+        className={
+          isMobile
+            ? "flex max-h-[90vh] flex-col gap-0 p-0"
+            : "inset-y-0 right-0 left-auto mt-0 flex h-full w-[min(92vw,28rem)] flex-col gap-0 rounded-l-[10px] rounded-t-none border-l p-0"
+        }
+      >
+        <InvitationsPanel onModalChange={setModalOpen} />
+      </DrawerContent>
+    </Drawer>
+  );
+}
+
+/** Optional trigger button with a live pending count. */
+export function PendingInvitesButton({ onClick }: { onClick: () => void }) {
+  const { data = [] } = useInvites();
+  return (
+    <Button variant="outline" size="sm" className="gap-2" onClick={onClick}>
+      <Clock className="h-4 w-4 text-amber-500" />
+      Pending invites
+      {data.length > 0 && (
+        <span className="rounded-full bg-amber-500/15 px-1.5 text-xs font-medium text-amber-700 dark:text-amber-400">
+          {data.length}
+        </span>
+      )}
+    </Button>
   );
 }
