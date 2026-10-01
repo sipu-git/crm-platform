@@ -6,12 +6,14 @@ import { NotificationBell } from "./Header/NotificationBell";
 import { HeaderSearch } from "./Header/DebouceSearch";
 import { ThemeMenu } from "./Header/ThemeMenu";
 import { UserMenu } from "./Header/UserMenu";
+import { useNavigate } from "react-router-dom";
 import { AICopilotModal } from "@/features/ai/components/AICopilotModal";
 import {
   BarChart3, Users, Kanban, FileText, Bell, Settings,
   ContactRound, ListTodo, ShieldCheck, Building2,
   Users2, FolderKanban, ReceiptText, UserRound,
-  Building, Calendar,Sparkles,
+  Building, Calendar, Sparkles,
+  LogOut,
 } from "lucide-react";
 
 import {
@@ -28,8 +30,10 @@ import {
   SidebarRail,
   SidebarInset,
   SidebarTrigger,
+  SidebarFooter,
 } from "@/components/ui/sidebar";
 import { RainbowButton } from "./ui/rainbow-button";
+import { useLogout } from "@/features/auth/hooks/useAuth";
 
 const NAV_GROUPS = [
   {
@@ -102,9 +106,17 @@ const AppSidebar = React.memo(function AppSidebar({ slug }: { slug: string }) {
     }).filter(group => group.items.length > 0);
   }, [groups, canSeeModule]);
 
+  let navigate = useNavigate();
+  const { mutateAsync: logout, isPending: isLoggingOut } = useLogout();
+
+  const handleSignOut = async () => {
+    await logout();
+    navigate("/login");
+  };
+
   return (
-    <Sidebar collapsible="icon" className="">
-      <SidebarHeader>
+    <Sidebar collapsible="icon" className="border-slate-800">
+      <SidebarHeader className="mb-3 border-b border-slate-800 px-4 py-4 [background:var(--sidebar)] text-sidebar-foreground">
         <div className="flex items-center gap-2 pt-1">
           <div className="flex h-8 w-8 shrink-0 items-center justify-center">
             <img src="/favicon.ico" alt="Clearview CRM" className="h-7 w-7 object-contain" />
@@ -143,7 +155,24 @@ const AppSidebar = React.memo(function AppSidebar({ slug }: { slug: string }) {
             </SidebarGroupContent>
           </SidebarGroup>
         ))}
+
       </SidebarContent>
+      <SidebarFooter className="border-t border-slate-800">
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <SidebarMenuButton
+              tooltip="Sign Out"
+              onClick={handleSignOut}
+              disabled={isLoggingOut}
+              className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+            >
+              <LogOut />
+              <span>{isLoggingOut ? "Signing out…" : "Sign Out"}</span>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        </SidebarMenu>
+      </SidebarFooter>
+
       <SidebarRail />
     </Sidebar>
   );
@@ -182,8 +211,8 @@ export function AppShell({ tenantSlug }: { tenantSlug: string }) {
             <HeaderSearch />
           </div>
           {/* Floating AI button */}
-          <RainbowButton onClick={() => setIsCopilotOpen(true)} 
-          className="fixed bottom-12 right-10 z-50 dark:text-slate-800 text-slate-300"><Sparkles/></RainbowButton>
+          <RainbowButton onClick={() => setIsCopilotOpen(true)}
+            className="fixed bottom-12 right-10 z-50 dark:text-slate-800 text-slate-300"><Sparkles /></RainbowButton>
         </header>
 
         {/* Fixed viewport for the routed page — the page itself owns its scroll area */}
