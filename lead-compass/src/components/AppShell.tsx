@@ -7,13 +7,11 @@ import { HeaderSearch } from "./Header/DebouceSearch";
 import { ThemeMenu } from "./Header/ThemeMenu";
 import { UserMenu } from "./Header/UserMenu";
 import { AICopilotModal } from "@/features/ai/components/AICopilotModal";
-import { SynoraAiButton } from "./SynoraAiButton";
-import { cn } from "@/lib/utils";
 import {
   BarChart3, Users, Kanban, FileText, Bell, Settings,
   ContactRound, ListTodo, ShieldCheck, Building2,
   Users2, FolderKanban, ReceiptText, UserRound,
-  Building, Calendar,
+  Building, Calendar,Sparkles,
 } from "lucide-react";
 
 import {
@@ -31,6 +29,7 @@ import {
   SidebarInset,
   SidebarTrigger,
 } from "@/components/ui/sidebar";
+import { RainbowButton } from "./ui/rainbow-button";
 
 const NAV_GROUPS = [
   {
@@ -182,9 +181,9 @@ export function AppShell({ tenantSlug }: { tenantSlug: string }) {
           <div className="md:hidden px-4 pb-3">
             <HeaderSearch />
           </div>
-
           {/* Floating AI button */}
-          <SynoraAiButton onClick={() => setIsCopilotOpen(true)} className="fixed bottom-6 right-6 z-50 shadow-lg" />
+          <RainbowButton onClick={() => setIsCopilotOpen(true)} 
+          className="fixed bottom-12 right-6 z-50 dark:text-slate-800 text-slate-300"><Sparkles/> Ask Synora AI</RainbowButton>
         </header>
 
         {/* Fixed viewport for the routed page — the page itself owns its scroll area */}
