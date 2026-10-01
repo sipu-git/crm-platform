@@ -183,7 +183,7 @@ export function AppShell({ tenantSlug }: { tenantSlug: string }) {
           </div>
           {/* Floating AI button */}
           <RainbowButton onClick={() => setIsCopilotOpen(true)} 
-          className="fixed bottom-12 right-6 z-50 dark:text-slate-800 text-slate-300"><Sparkles/> Ask Synora AI</RainbowButton>
+          className="fixed bottom-12 right-10 z-50 dark:text-slate-800 text-slate-300"><Sparkles/></RainbowButton>
         </header>
 
         {/* Fixed viewport for the routed page — the page itself owns its scroll area */}

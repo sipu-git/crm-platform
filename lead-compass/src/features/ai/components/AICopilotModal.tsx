@@ -62,8 +62,8 @@ export const AICopilotModal: React.FC<AICopilotModalProps> = ({ isOpen, onClose 
               <Sparkles className="h-5 w-5" />
             </div>
             <div>
-              <DrawerTitle className="text-sm font-semibold text-white">Clearview AI Co-Pilot</DrawerTitle>
-              <p className="text-xs text-slate-400">Powered by AWS Bedrock</p>
+              <DrawerTitle className="text-sm font-semibold text-white">Synora AI</DrawerTitle>
+              <p className="text-xs text-slate-400">Powered by ClearView CRM</p>
             </div>
           </div>
           <DrawerClose asChild>
