@@ -115,15 +115,15 @@ const AppSidebar = React.memo(function AppSidebar({ slug }: { slug: string }) {
   };
 
   return (
-    <Sidebar collapsible="icon" className="border-slate-800">
-      <SidebarHeader className="mb-3 border-b border-slate-800 px-4 py-4 [background:var(--sidebar)] text-sidebar-foreground">
+    <Sidebar collapsible="icon" className="border-r border-border-sidebar-border">
+      <SidebarHeader className="mb-3 border-b dark:border-slate-800 border-border-sidebar-border px-4 py-4 text-sidebar-foreground" >
         <div className="flex items-center gap-2 pt-1">
           <div className="flex h-8 w-8 shrink-0 items-center justify-center">
             <img src="/favicon.ico" alt="Clearview CRM" className="h-7 w-7 object-contain" />
           </div>
           <div className="grid flex-1 text-left text-sm leading-tight group-data-[collapsible=icon]:hidden">
-            <span className="truncate font-semibold text-sidebar-foreground">Clearview CRM</span>
-            <span className="truncate text-xs text-sidebar-foreground/60">{slug}</span>
+            <span className="truncate font-semibold text-primary">Clearview CRM</span>
+            <span className="truncate text-xs text-secondary-foreground">{slug}</span>
           </div>
         </div>
       </SidebarHeader>
@@ -141,7 +141,7 @@ const AppSidebar = React.memo(function AppSidebar({ slug }: { slug: string }) {
                     ? "My activities"
                     : n.label;
                   return (
-                    <SidebarMenuItem key={n.to}>
+                    <SidebarMenuItem key={n.to} className="text-muted-foreground font-semibold">
                       <SidebarMenuButton asChild isActive={active} tooltip={label}>
                         <Link to={to}>
                           <Icon />
@@ -157,7 +157,7 @@ const AppSidebar = React.memo(function AppSidebar({ slug }: { slug: string }) {
         ))}
 
       </SidebarContent>
-      <SidebarFooter className="border-t border-slate-800">
+      <SidebarFooter className="border-t border-border-sidebar-border">
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton
@@ -185,12 +185,12 @@ export function AppShell({ tenantSlug }: { tenantSlug: string }) {
     <SidebarProvider>
       <AppSidebar slug={tenantSlug} />
       <SidebarInset className="flex flex-col h-screen overflow-hidden">
-        <header className="shrink-0 border-b border-sidebar-border [background:var(--sidebar)] text-sidebar-foreground">
+        <header className="shrink-0 border-b border-border-sidebar-border [background:var(--sidebar)] text-sidebar-foreground">
           {/* Top row: trigger + (desktop search) + actions */}
           <div className="flex h-14 items-center justify-between gap-2 px-4">
             {/* Left: Sidebar trigger */}
             <div className="flex items-center gap-2 shrink-0">
-              <SidebarTrigger className="-ml-2" />
+              <SidebarTrigger className="-ml-1 text-primary font-bold" />
             </div>
 
             {/* Center: Search (desktop only) */}

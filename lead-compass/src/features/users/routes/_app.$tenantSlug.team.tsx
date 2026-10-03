@@ -145,7 +145,7 @@ export default function TeamPage() {
               </div>
               {canManage && (
                 <Button
-                  variant="outline"
+                  variant="default"
                   onClick={() => setIsInvitationsOpen(true)}
                   className="w-full sm:w-auto"
                 >
