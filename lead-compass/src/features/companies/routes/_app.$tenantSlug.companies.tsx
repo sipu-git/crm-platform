@@ -104,6 +104,7 @@ export function CompaniesPage() {
                     <th className="px-3 py-2 font-medium">Industry</th>
                     <th className="px-3 py-2 font-medium">Size</th>
                     <th className="px-3 py-2 font-medium">Status</th>
+                    <th className="px-3 py-2 font-medium">Source</th>
                     <th className="px-3 py-2 font-medium">Location</th>
                     <th className="px-3 py-2 font-medium">Website</th>
                     <th className="px-3 py-2 font-medium">Total leads</th>
@@ -144,6 +145,10 @@ export function CompaniesPage() {
                         ) : (
                           "—"
                         )}
+                      </td>
+
+                      <td className="px-3 py-3 text-muted-foreground">
+                        {company.source || "—"}
                       </td>
 
                       <td className="px-3 py-3 text-muted-foreground">

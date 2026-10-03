@@ -8,8 +8,8 @@ export interface Assignee {
     department: string | null;
     userId: string | null;
     email: string | null;
-    created_at: string;
-    updated_at: string;
+    created_at?: string;
+    updated_at?: string;
     leads?: Array<{ id: string }>;
 }
 

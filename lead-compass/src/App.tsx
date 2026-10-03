@@ -17,7 +17,6 @@ import { InvoicesPage } from "@/features/invoices/routes/_app.$tenantSlug.invoic
 import { InvoiceDetail } from "@/features/invoices/routes/_app.$tenantSlug.invoices.$invoiceId";
 import { NotificationsPage } from "@/features/notifications/routes/_app.$tenantSlug.notifications";
 import { AuditPage } from "@/features/audit/routes/_app.$tenantSlug.audit";
-// import { SettingsPage } from "@/routes/_app.$tenantSlug.settings";
 import { LeadDetailPage } from "@/features/leads/routes/_app.$tenantSlug.lead.$leadId";
 import Communications from "@/features/communications/routes/_app.$tenantSlug.communications.$leadId";
 import { CompanyDetailPage } from "./features/companies/routes/_app.$tenantSlug.company.$companyId";
@@ -39,6 +38,7 @@ import { SignupWizard } from "@/features/auth/components/SignupWizard";
 import { CompaniesPage } from "./features/companies/routes/_app.$tenantSlug.companies";
 import PrivacyPOlicy from "./pages/PrivacyPolicy";
 import TermsOfService from "./pages/TermsOfService";
+import SettingsPage from "./routes/_app.$tenantSlug.settings";
 
 function RequireAuth() {
   const { tenantSlug = "acme" } = useParams();
@@ -105,7 +105,7 @@ export function App() {
       <Route path="teams" element={<ProtectedRoute resource="users"><TeamPage /></ProtectedRoute>} />
       <Route path="notifications" element={<ProtectedRoute resource="notifications"><NotificationsPage /></ProtectedRoute>} />
       <Route path="audit" element={<ProtectedRoute resource="audit"><AuditPage /></ProtectedRoute>} />
-      {/* <Route path="settings" element={<InternalRoute><SettingsPage /></InternalRoute>} /> */}
+      <Route path="settings" element={<SettingsPage />} />
     </Route>
     <Route path="*" element={<Navigate to="/" replace />} />
   </Routes>;

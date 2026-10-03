@@ -36,23 +36,39 @@ export interface Lead {
   id: string;
   tenant_id: string;
   company_name: string;
-  first_name: string;
-  designation: string;
-  companyId?: string;
+  first_name?: string;
+  last_name?: string | null;
+  designation?: string | null;
+  companyId?: string | null;
   project_name: string;
   project_type?: string;
-  contactId?: string;
+  contactId?: string | null;
+  assigned_to?: string | null;
   // owner_name: string;
   source: Source;
   status: LeadStatus;
   company?: Company | null;
   contact?: Contact | null;
   created_by: string;
-  email: string;
-  phone: string;
+  email?: string | null;
+  phone?: string | null;
   created_At?: string;
   updated_at?: string;
   assignee?: Assignee | null;
+}
+
+export interface LeadListMeta {
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+  hasNextPage: boolean;
+  hasPrevPage: boolean;
+}
+
+export interface LeadListResponse {
+  data: Lead[];
+  meta?: LeadListMeta;
 }
 
 // Mirrors backend createLeadSchema exactly — what the create form submits

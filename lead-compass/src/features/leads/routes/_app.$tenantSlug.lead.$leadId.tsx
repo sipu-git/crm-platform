@@ -55,7 +55,7 @@ export function LeadDetailPage() {
   const timeInStage = useMemo(() => {
     if (!lead) return null;
     const entered = lead.status_history?.filter((h) => h.status === lead.status).slice(-1)[0]?.changed_At
-      ?? lead.updated_At ?? lead.created_At;
+      ?? lead.updated_at ?? lead.updated_At ?? lead.created_At;
     if (!entered) return null;
     return formatDistanceToNow(new Date(entered), { addSuffix: false });
   }, [lead]);

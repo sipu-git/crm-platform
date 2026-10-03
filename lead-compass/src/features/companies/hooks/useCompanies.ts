@@ -11,6 +11,7 @@ export function useCompanies() {
     return useQuery({
         queryKey: companiesKeys.lists(),
         queryFn: companiesApi.list,
+        select: (response) => response.data,
         ...cache,
     });
 }

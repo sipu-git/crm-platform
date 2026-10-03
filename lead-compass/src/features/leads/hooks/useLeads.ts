@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient, keepPreviousData } from "@tanstack/react-query";
 import { leadsKeys } from "../keys/leads.keys";
 import { leadsApi } from "../apis/leads.api";
-import { CreateLeadInput, Lead, LeadStatus, UpdateLeadInput } from "../types/lead.types";
+import { CreateLeadInput, Lead, LeadListResponse, LeadStatus, UpdateLeadInput } from "../types/lead.types";
 
 let caching = {
     staleTime: 1000 * 60,
@@ -12,6 +12,7 @@ export function useLeads(filters?: Record<string, unknown>) {
     return useQuery({
         queryKey: filters ? leadsKeys.list(filters) : leadsKeys.lists(),
         queryFn: () => leadsApi.getAll(filters),
+        select: (response: LeadListResponse) => response.data,
         placeholderData: keepPreviousData,
         ...caching
         // refetchInterval: 10000, 

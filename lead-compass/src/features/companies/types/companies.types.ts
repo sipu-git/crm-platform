@@ -36,8 +36,24 @@ export interface Company {
   source?: string | null;
   tags?: string[];
   custom_fields?: Record<string, unknown> | null;
+  owner_id?: string | null;
   created_at?: string;
+  updated_at?: string;
   _count?: { leads: number };
+}
+
+export interface CompanyListMeta {
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+  hasNextPage: boolean;
+  hasPrevPage: boolean;
+}
+
+export interface CompanyListResponse {
+  data: Company[];
+  meta?: CompanyListMeta;
 }
 
 // Mirrors createCompanySchema (zod) — required fields match schema, optional fields dropped rather than nullable

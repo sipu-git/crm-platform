@@ -109,6 +109,8 @@ export function LeadsPage() {
                     <th className="px-3 py-2 font-medium">Email</th>
                     <th className="px-3 py-2 font-medium">Phone</th>
                     <th className="px-3 py-2 font-medium">Project</th>
+                    <th className="px-3 py-2 font-medium">Project type</th>
+                    <th className="px-3 py-2 font-medium">Assignee</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y">
@@ -119,10 +121,10 @@ export function LeadsPage() {
                       onClick={() => navigate(`/${tenantSlug}/lead/${l.id}`)}
                     >
                       <td className="px-3 py-2 font-medium">
-                        {l.contact?.first_name} {l.contact?.last_name}
+                        {[l.contact?.first_name, l.contact?.last_name].filter(Boolean).join(" ") || "—"}
                       </td>
                       <td className="px-3 py-2 text-muted-foreground">{l.company_name}</td>
-                      <td className="px-3 py-2 text-muted-foreground">{l.contact?.designation}</td>
+                      <td className="px-3 py-2 text-muted-foreground">{l.contact?.designation || "—"}</td>
                       <td className="px-3 py-2 capitalize text-muted-foreground">
                         {l.source.toLowerCase()}
                       </td>
@@ -137,9 +139,11 @@ export function LeadsPage() {
                           {l.status.toLowerCase()}
                         </span>
                       </td>
-                      <td className="px-3 py-2 text-muted-foreground">{l.contact?.email}</td>
-                      <td className="px-3 py-2 text-muted-foreground">{l.contact?.phone}</td>
-                      <td className="px-3 py-2 text-muted-foreground">{l.project_name}</td>
+                      <td className="px-3 py-2 text-muted-foreground">{l.contact?.email || "—"}</td>
+                      <td className="px-3 py-2 text-muted-foreground">{l.contact?.phone || "—"}</td>
+                      <td className="px-3 py-2 text-muted-foreground">{l.project_name || "—"}</td>
+                      <td className="px-3 py-2 capitalize text-muted-foreground">{l.project_type?.replaceAll("_", " ") || "—"}</td>
+                      <td className="px-3 py-2 text-muted-foreground">{l.assignee?.full_name || "Unassigned"}</td>
                     </tr>
                   ))}
                 </tbody>
