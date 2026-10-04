@@ -195,7 +195,7 @@ function DataSection({
   );
 }
 
-export function CompanyDetailPage() {
+export default function CompanyDetailPage() {
   const { tenantSlug = "", companyId } = useParams<{ tenantSlug?: string; companyId: string }>();
   const navigate = useNavigate();
   const { data: company, isLoading: loading } = useCompanyById(companyId ?? "");
@@ -302,5 +302,3 @@ export function CompanyDetailPage() {
     </div>
   );
 }
-
-export default CompanyDetailPage;

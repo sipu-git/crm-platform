@@ -13,7 +13,7 @@ import { FormAlert } from "@/components/ui-form-alert";
 
 const EMPTY_FORM: LoginFormValues = { email: "", password: "" };
 
-export function LoginPage() {
+export default function LoginPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 

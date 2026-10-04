@@ -25,6 +25,7 @@ interface ActivityFormDialogProps {
     companyId: string;
     activity?: Activity | null;
     defaultAssigneeId?: string | null;
+    defaultType?: ActivityType;
 }
 
 type FormStatus = { type: "success" | "error"; message: string } | null;
@@ -71,7 +72,7 @@ function activityToFormValues(activity?: Activity | null): ActivityFormValues {
 }
 
 export function ActivityFormDialog({
-    open, onOpenChange, dealId, contactId, companyId, activity, defaultAssigneeId
+    open, onOpenChange, dealId, contactId, companyId, activity, defaultAssigneeId, defaultType
 }: ActivityFormDialogProps) {
     const { create: createActivity, update: updateActivity } = useActivityMutation();
     const { data: assignees = [], isLoading: loadingAssignees } = useAssignment();
@@ -93,11 +94,14 @@ export function ActivityFormDialog({
     useEffect(() => {
         if (!open) return;
         // dispatch(fetchAssignees());
-        setValues(activityToFormValues(activity));
+        setValues(activity ? activityToFormValues(activity) : {
+            ...ACTIVITY_FORM_DEFAULTS,
+            ...(defaultType ? { type: defaultType } : {}),
+        });
         setErrors({});
         setTouched({});
         setStatus(null);
-    }, [open, activity]);
+    }, [open, activity, defaultType]);
 
     const updateField = <K extends keyof ActivityFormValues>(field: K, value: ActivityFormValues[K]) => {
         setValues((prev) => ({ ...prev, [field]: value }));

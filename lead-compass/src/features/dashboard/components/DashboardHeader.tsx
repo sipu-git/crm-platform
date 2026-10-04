@@ -20,12 +20,10 @@ const ROLE_ICONS: Record<DashboardRole, React.ReactNode> = {
 
 export function DashboardHeader({
   activeRole,
-  userName = "Team Member",
   onRefresh,
   isLoading,
 }: {
   activeRole: DashboardRole;
-  userName?: string;
   onRefresh?: () => void;
   isLoading?: boolean;
 }) {
@@ -37,7 +35,7 @@ export function DashboardHeader({
       <div className="space-y-1">
         <div className="flex items-center gap-2.5">
           <h1 className="text-xl font-bold tracking-tight text-foreground font-sans">
-            Welcome back, {userName.split(" ")[0]}
+            Analytics dashboard
           </h1>
           <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/20 bg-primary/10 px-2.5 py-0.5 text-xs font-semibold text-primary">
             {ROLE_ICONS[activeRole]}

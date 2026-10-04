@@ -23,7 +23,7 @@ import { LeadDetailHeader } from "@/features/leads/components/LeadDetailHeader";
 import { AssignLeadDialog } from "@/features/leads/components/AssignLeadModal";
 import { DeleteLeadDialog } from "@/features/leads/components/DeleteLeadDialog";
 
-export function LeadDetailPage() {
+export default function LeadDetailPage() {
   const { tenantSlug = "", leadId } = useParams<{ tenantSlug: string; leadId: string }>();
   const { data: rawLead, isLoading: loading, isError, error } = useLead(leadId);
   const lead = rawLead as LeadWithActivity | null | undefined;
@@ -178,5 +178,3 @@ export function LeadDetailPage() {
     </TooltipProvider>
   );
 }
-
-export default LeadDetailPage;

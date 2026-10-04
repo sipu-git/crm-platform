@@ -8,9 +8,9 @@ import { leadsKeys } from "@/features/leads/keys/leads.keys";
 import { dealsKeys } from "@/features/deals/keys/deals.keys";
 import { activitiesKeys } from "@/features/activities/keys/activities.keys";
 import { invoicesKeys } from "@/features/invoices/keys/invoices.keys";
-import { ClientDashboardPage } from "./_app.$tenantSlug.client-dashboard";
 import { useCurrentUser } from "@/features/auth/hooks/useCurrentUsers";
 import { WidgetRenderer } from "@/features/dashboard/components/WidgetRenderer";
+import ClientDashboardPage from "./_app.$tenantSlug.client-dashboard";
 
 
 const COL_SPAN_CLASSES: Record<number, string> = {
@@ -113,7 +113,7 @@ function LazyDashboardWidget({
   );
 }
 
-export function DashboardPage() {
+export default function DashboardPage() {
   const queryClient = useQueryClient();
 
   const currentUser = useCurrentUser();
@@ -149,7 +149,6 @@ export function DashboardPage() {
     <div className="min-h-screen bg-background/95">
       <DashboardHeader
         activeRole={activeRole}
-        userName={currentUser?.user?.name || "Team Member"}
         onRefresh={handleRefresh}
         isLoading={dashboardData.isLoading}
       />
@@ -171,5 +170,3 @@ export function DashboardPage() {
     </div>
   );
 }
-
-export default DashboardPage;

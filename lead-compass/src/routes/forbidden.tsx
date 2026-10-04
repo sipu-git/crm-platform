@@ -1,6 +1,6 @@
 import { Link, useLocation } from "react-router-dom";
 
-export function ForbiddenPage() {
+export default function ForbiddenPage() {
     const location = useLocation();
     const message = typeof location.state?.message === "string"
         ? location.state.message

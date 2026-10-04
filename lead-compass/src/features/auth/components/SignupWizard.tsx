@@ -22,7 +22,7 @@ const STEPS_LIST = [
   { step: 8, title: 'CREATE' },
 ];
 
-export const SignupWizard: React.FC = () => {
+export default function SignupWizard() {
   const {
     currentStep,
     formData,
@@ -84,25 +84,22 @@ export const SignupWizard: React.FC = () => {
                     onClick={() => {
                       if (s.step < currentStep) goToStep(s.step);
                     }}
-                    className={`flex flex-col items-center gap-1.5 cursor-pointer transition-all duration-200 ${
-                      s.step < currentStep ? 'hover:opacity-80' : 'cursor-default'
-                    }`}
+                    className={`flex flex-col items-center gap-1.5 cursor-pointer transition-all duration-200 ${s.step < currentStep ? 'hover:opacity-80' : 'cursor-default'
+                      }`}
                   >
                     <div
-                      className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all duration-300 ${
-                        isCompleted
+                      className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all duration-300 ${isCompleted
                           ? 'bg-emerald-500/20 border border-emerald-500/50 text-emerald-400'
                           : isCurrent
-                          ? 'bg-gradient-to-tr from-indigo-600 to-purple-600 text-white shadow-[0_0_15px_rgba(99,102,241,0.5)] ring-4 ring-indigo-500/20 scale-105'
-                          : 'bg-slate-900/60 border border-slate-700/60 text-slate-400'
-                      }`}
+                            ? 'bg-gradient-to-tr from-indigo-600 to-purple-600 text-white shadow-[0_0_15px_rgba(99,102,241,0.5)] ring-4 ring-indigo-500/20 scale-105'
+                            : 'bg-slate-900/60 border border-slate-700/60 text-slate-400'
+                        }`}
                     >
                       {isCompleted ? <Check className="h-4 w-4 stroke-[3]" /> : s.step}
                     </div>
                     <span
-                      className={`text-[10px] font-bold tracking-wider hidden md:block transition-colors duration-200 ${
-                        isCurrent ? 'text-white' : isCompleted ? 'text-slate-300' : 'text-slate-500'
-                      }`}
+                      className={`text-[10px] font-bold tracking-wider hidden md:block transition-colors duration-200 ${isCurrent ? 'text-white' : isCompleted ? 'text-slate-300' : 'text-slate-500'
+                        }`}
                     >
                       {s.title}
                     </span>
@@ -110,9 +107,8 @@ export const SignupWizard: React.FC = () => {
 
                   {idx < STEPS_LIST.length - 1 && (
                     <div
-                      className={`flex-1 h-[2px] mx-1 sm:mx-2 transition-all duration-500 ${
-                        s.step < currentStep ? 'bg-indigo-500/70' : 'bg-slate-800'
-                      }`}
+                      className={`flex-1 h-[2px] mx-1 sm:mx-2 transition-all duration-500 ${s.step < currentStep ? 'bg-indigo-500/70' : 'bg-slate-800'
+                        }`}
                     />
                   )}
                 </React.Fragment>

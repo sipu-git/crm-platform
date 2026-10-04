@@ -20,7 +20,7 @@ interface InviteDetails {
   expires_at: string;
 }
 
-export function AcceptInvitePage() {
+export default function AcceptInvitePage() {
   const [params] = useSearchParams();
   const navigate = useNavigate();
   const token = params.get("token") ?? "";

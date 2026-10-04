@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus } from "lucide-react";
 import { LEAD_STATUSES, LEAD_STATUS_COLORS } from "@/features/leads/types/lead.types";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useLeads, useSearchLeads } from "@/features/leads/hooks/useLeads";
 import { useAuthPayload } from "@/features/auth/hooks/useAuthPayload";
 import SearchLead from "@/features/leads/components/SearchLead";
@@ -20,15 +20,25 @@ function useDebouncedValue(value: string, delayMs: number) {
   return debounced;
 }
 
-export function LeadsPage() {
+export default function LeadsPage() {
   const { tenantSlug = "" } = useParams();
   const [q, setQ] = useState("");
   const debouncedQuery = useDebouncedValue(q.trim(), 300);
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [createOpen, setCreateOpen] = useState(false);
+  const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
   const auth = useAuthPayload()
   const isSalesRep = auth?.user.role === "SALES_REP";
+
+  useEffect(() => {
+    if (searchParams.get("create") !== "1") return;
+    setCreateOpen(true);
+    setSearchParams((previous) => {
+      previous.delete("create");
+      return previous;
+    }, { replace: true });
+  }, [searchParams, setSearchParams]);
 
   const isSearching = debouncedQuery.length > 0;
 

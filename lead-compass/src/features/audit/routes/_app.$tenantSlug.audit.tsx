@@ -1,7 +1,7 @@
 import { PageHeader, EmptyState, TableSkeleton } from "@/components/ui-kit";
 import { useAuditLogs } from "@/features/audit/hooks/useAuditLogs";
 
-export function AuditPage() {
+export default function AuditPage() {
   const { data: logs = [], isLoading, isError, error, refetch } = useAuditLogs();
 
   return (

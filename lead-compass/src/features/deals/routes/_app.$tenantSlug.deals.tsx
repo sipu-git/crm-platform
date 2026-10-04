@@ -19,7 +19,7 @@ function fmtDate(dateStr: string) {
   return new Date(dateStr).toLocaleDateString(undefined, { month: "short", day: "numeric" });
 }
 
-export function DealsPage() {
+export default function DealsPage() {
   const { tenantSlug = "" } = useParams();
   const { data: deals = [], isLoading: dealsLoading, isError: dealsError } = useDeals();
   const { data: board = [], isLoading: boardLoading, isError: boardError } = useDealBoard();

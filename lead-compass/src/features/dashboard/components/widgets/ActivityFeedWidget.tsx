@@ -28,11 +28,13 @@ export const ActivityFeedWidget = memo(function ActivityFeedWidget({
   isLoading,
   scope,
   limit = 8,
+  title = "Activity Stream",
 }: {
   activities?: ActivityItem[];
   isLoading?: boolean;
   scope?: WidgetScope;
   limit?: number;
+  title?: string;
 }) {
   if (isLoading) {
     return (
@@ -62,7 +64,7 @@ export const ActivityFeedWidget = memo(function ActivityFeedWidget({
         <CardHeader className="pb-3 flex flex-row items-start justify-between">
           <div className="space-y-1">
             <div className="flex items-center gap-2">
-              <CardTitle className="text-base font-semibold">Activity Stream</CardTitle>
+              <CardTitle className="text-base font-semibold">{title}</CardTitle>
               <span className="text-[10px] font-semibold uppercase px-1.5 py-0.5 rounded bg-muted text-muted-foreground border border-border">
                 {scope === "own" ? "My Activity" : scope === "team" ? "Team Feed" : "Org Stream"}
               </span>
@@ -91,7 +93,7 @@ export const ActivityFeedWidget = memo(function ActivityFeedWidget({
       <CardHeader className="pb-3 flex flex-row items-start justify-between">
         <div className="space-y-1">
           <div className="flex items-center gap-2">
-            <CardTitle className="text-base font-semibold">Activity Stream</CardTitle>
+            <CardTitle className="text-base font-semibold">{title}</CardTitle>
             <span className="text-[10px] font-semibold uppercase px-1.5 py-0.5 rounded bg-muted text-muted-foreground border border-border">
               {scope === "own" ? "My Activity" : scope === "team" ? "Team Feed" : "Org Stream"}
             </span>

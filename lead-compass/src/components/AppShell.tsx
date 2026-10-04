@@ -12,7 +12,7 @@ import {
   BarChart3, Users, Kanban, FileText, Bell, Settings,
   ContactRound, ListTodo, ShieldCheck, Building2,
   Users2, FolderKanban, ReceiptText, UserRound,
-  Building, Calendar, Sparkles,
+  Building, Calendar, Sparkles, House,
   LogOut,
 } from "lucide-react";
 
@@ -39,7 +39,8 @@ const NAV_GROUPS = [
   {
     label: "Overview",
     items: [
-      { to: "dashboard", label: "Dashboard", icon: BarChart3, resource: null },
+      { to: "home", label: "Home", icon: House, resource: null },
+      { to: "dashboard", label: "Analytics dashboard", icon: BarChart3, resource: null },
     ],
   },
   {
@@ -75,7 +76,7 @@ const NAV_GROUPS = [
 const CLIENT_NAV_GROUPS = [
   {
     label: "Overview",
-    items: [{ to: "dashboard", label: "Workspace", icon: BarChart3, resource: null }],
+    items: [{ to: "home", label: "Workspace", icon: House, resource: null }],
   },
   {
     label: "My account",
@@ -178,8 +179,43 @@ const AppSidebar = React.memo(function AppSidebar({ slug }: { slug: string }) {
   );
 });
 
-export function AppShell({ tenantSlug }: { tenantSlug: string }) {
+export default function AppShell({ tenantSlug }: { tenantSlug: string }) {
   const [isCopilotOpen, setIsCopilotOpen] = useState(false);
+  const [aiPrompt, setAiPrompt] = useState("");
+  const location = useLocation();
+  const auth = useAuthPayload();
+  const showGlobalSearch = !(location.pathname === `/${tenantSlug}/home` && auth?.user.role !== "CLIENT");
+
+  React.useEffect(() => {
+    const segments = location.pathname.split("/").filter(Boolean);
+    if (segments[0] !== tenantSlug) return;
+    const [kind, id] = segments.slice(1);
+    if (!(kind === "lead" || kind === "deals" || kind === "invoices") || !id || id === "new") return;
+
+    const storageKey = `crm.home.recent.${tenantSlug}`;
+    try {
+      const previous = JSON.parse(localStorage.getItem(storageKey) || "[]") as Array<{ href: string; kind: string; id: string }>;
+      const next = [
+        { href: location.pathname, kind: kind === "lead" ? "lead" : kind === "deals" ? "deal" : "invoice", id },
+        ...previous.filter((record) => record.href !== location.pathname),
+      ].slice(0, 8);
+      localStorage.setItem(storageKey, JSON.stringify(next));
+    } catch {
+      localStorage.setItem(storageKey, JSON.stringify([
+        { href: location.pathname, kind: kind === "lead" ? "lead" : kind === "deals" ? "deal" : "invoice", id },
+      ]));
+    }
+  }, [location.pathname, tenantSlug]);
+
+  React.useEffect(() => {
+    const handleOpenAssistant = (event: Event) => {
+      const prompt = (event as CustomEvent<{ prompt?: string }>).detail?.prompt ?? "";
+      setAiPrompt(prompt);
+      setIsCopilotOpen(true);
+    };
+    window.addEventListener("crm:open-ai", handleOpenAssistant);
+    return () => window.removeEventListener("crm:open-ai", handleOpenAssistant);
+  }, []);
 
   return (
     <SidebarProvider>
@@ -194,9 +230,9 @@ export function AppShell({ tenantSlug }: { tenantSlug: string }) {
             </div>
 
             {/* Center: Search (desktop only) */}
-            <div className="hidden md:flex flex-1 items-center justify-center max-w-2xl mx-auto px-4">
+            {showGlobalSearch && <div className="hidden md:flex flex-1 items-center justify-center max-w-2xl mx-auto px-4">
               <HeaderSearch />
-            </div>
+            </div>}
 
             {/* Right: Notifications, Theme, User Menu */}
             <div className="flex items-center gap-3 shrink-0">
@@ -207,9 +243,9 @@ export function AppShell({ tenantSlug }: { tenantSlug: string }) {
           </div>
 
           {/* Bottom row: Search (mobile only) */}
-          <div className="md:hidden px-4 pb-3">
+          {showGlobalSearch && <div className="md:hidden px-4 pb-3">
             <HeaderSearch />
-          </div>
+          </div>}
           {/* Floating AI button */}
           <RainbowButton onClick={() => setIsCopilotOpen(true)}
             className="fixed bottom-12 right-10 z-50 dark:text-slate-800 text-slate-300"><Sparkles /></RainbowButton>
@@ -229,6 +265,7 @@ export function AppShell({ tenantSlug }: { tenantSlug: string }) {
         <AICopilotModal
           isOpen={isCopilotOpen}
           onClose={() => setIsCopilotOpen(false)}
+          initialPrompt={aiPrompt}
         />
       </SidebarInset>
     </SidebarProvider>

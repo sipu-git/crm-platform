@@ -9,7 +9,7 @@ import { Check, Trash2, X } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { toast } from "sonner";
 
-export function NotificationsPage() {
+export default function NotificationsPage() {
   const { tenantSlug = "" } = useParams();
   const dispatch = useAppDispatch();
   const items = useAppSelector(notificationsSelectors.selectAll);

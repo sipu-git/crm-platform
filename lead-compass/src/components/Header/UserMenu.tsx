@@ -39,7 +39,7 @@ export function UserMenu() {
                     className="h-auto items-center gap-2 px-2 py-0.5"
                 >
                     <Avatar className="h-9 w-9 shrink-0">
-                        <AvatarFallback className="bg-[hsla(264,97%,15%,1)] text-xs font-medium text-primary hover:hover:bg-warning-foreground">
+                        <AvatarFallback className="bg-[hsla(264,97%,15%,1)] text-xs font-medium dark:text-primary text-secondary hover:hover:bg-warning-foreground">
                             {isLoading ? "…" : initials}
                         </AvatarFallback>
                     </Avatar>

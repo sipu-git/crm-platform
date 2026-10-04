@@ -50,20 +50,6 @@ export function useDashboardData(role: DashboardRole, currentUser?: any) {
     ...CACHE_CONFIG,
   });
 
-  // 5. Tasks Queue
-  const tasksQuery = useQuery({
-    queryKey: ["dashboard", "tasks", role, tenantSlug],
-    queryFn: () => dashboardApi.getTasks(role, tenantSlug),
-    ...CACHE_CONFIG,
-  });
-
-  // 6. Recent Items (Activities, Invoices, Leads)
-  const recentQuery = useQuery({
-    queryKey: ["dashboard", "recent", role, tenantSlug],
-    queryFn: () => dashboardApi.getRecent(role, tenantSlug),
-    ...CACHE_CONFIG,
-  });
-
   // Overall loading indicator reflects top-fold KPI availability
   const isLoading = kpisQuery.isLoading;
   const isError = kpisQuery.isError;
@@ -77,17 +63,11 @@ export function useDashboardData(role: DashboardRole, currentUser?: any) {
     revenueLoading: revenueQuery.isLoading,
     pipelineLoading: pipelineQuery.isLoading,
     leaderboardLoading: leaderboardQuery.isLoading,
-    tasksLoading: tasksQuery.isLoading,
-    recentLoading: recentQuery.isLoading,
-    // Granular data slices
+    // Granular analytics data slices
     metrics: kpisQuery.data?.metrics || [],
     alerts: kpisQuery.data?.alerts || [],
     revenueTrend: revenueQuery.data?.revenueTrend || [],
     pipelineFunnel: pipelineQuery.data?.pipelineFunnel || [],
     leaderboard: leaderboardQuery.data?.leaderboard || [],
-    taskQueue: tasksQuery.data?.taskQueue || [],
-    activities: recentQuery.data?.activities || [],
-    invoices: recentQuery.data?.invoices || [],
-    leads: recentQuery.data?.leads || [],
   };
 }

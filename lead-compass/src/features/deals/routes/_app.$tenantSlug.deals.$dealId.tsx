@@ -30,7 +30,7 @@ import { formatCurrency } from "@/lib/currency";
 
 const fmt = formatCurrency;
 
-export function DealDetail() {
+export default function DealDetail() {
   const { tenantSlug = "", dealId = "" } = useParams();
   const dispatch = useAppDispatch();
   const { data: deal, isLoading: loading, isError } = useDealById(dealId);

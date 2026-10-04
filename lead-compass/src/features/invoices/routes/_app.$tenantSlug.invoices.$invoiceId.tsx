@@ -59,7 +59,7 @@ const EMPTY_LINE: CreateInvoiceLineItemInput = {
   sac_code: "",
 };
 
-export function InvoiceDetail() {
+export default function InvoiceDetail() {
   const { tenantSlug = "", invoiceId = "" } = useParams();
   const navigate = useNavigate();
   const { data: invoice, isLoading: loading, isError } = useInvoiceById(invoiceId);

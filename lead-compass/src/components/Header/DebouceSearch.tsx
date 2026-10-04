@@ -19,7 +19,7 @@ const MIN_QUERY_LENGTH = 3;
 
 type FilterTab = "all" | "leads" | "deals" | "invoices";
 
-export function HeaderSearch() {
+export function HeaderSearch({ className }: { className?: string } = {}) {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
   const { tenantSlug = "" } = useParams();
@@ -124,7 +124,7 @@ export function HeaderSearch() {
   const hasAnyResults = totalCount > 0;
 
   return (
-    <div ref={containerRef} className="relative w-full max-w-lg">
+    <div ref={containerRef} className={cn("relative w-full max-w-lg", className)}>
       <div className="relative">
         {/* <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2" /> */}
         <Input

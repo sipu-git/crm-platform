@@ -12,7 +12,7 @@ import {
 import { formatFullName } from "@/hooks/use-format";
 import { useNavigate, useParams } from "react-router-dom";
 
-export function ContactsPage() {
+export default function ContactsPage() {
   const { data: contacts = [], isLoading: loading, isError } = useContacts();
   const { delete: deleteContact } = useContactMutation();
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);

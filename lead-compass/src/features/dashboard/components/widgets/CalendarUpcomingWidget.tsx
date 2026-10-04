@@ -15,7 +15,13 @@ const EventDialog = lazy(() =>
   }))
 );
 
-export function CalendarUpcomingWidget() {
+export function CalendarUpcomingWidget({
+  title = "Upcoming Meetings",
+  todayOnly = false,
+}: {
+  title?: string;
+  todayOnly?: boolean;
+}) {
   const { tenantSlug = "acme" } = useParams();
   const [newEventOpen, setNewEventOpen] = useState(false);
 
@@ -25,10 +31,16 @@ export function CalendarUpcomingWidget() {
     const startOfToday = new Date();
     startOfToday.setHours(0, 0, 0, 0);
 
-    return {
+    const filters: { timeMin: string; timeMax?: string } = {
       timeMin: startOfToday.toISOString(),
     };
-  }, []);
+    if (todayOnly) {
+      const endOfToday = new Date(startOfToday);
+      endOfToday.setDate(endOfToday.getDate() + 1);
+      filters.timeMax = endOfToday.toISOString();
+    }
+    return filters;
+  }, [todayOnly]);
 
   const { data: events = [], isLoading: eventsLoading } = useCalendarEvents(filters, {
     staleTime: 5 * 60 * 1000,
@@ -81,7 +93,7 @@ export function CalendarUpcomingWidget() {
         <CardHeader className="pb-3 flex flex-row items-start justify-between">
           <div className="space-y-1">
             <div className="flex items-center gap-2">
-              <CardTitle className="text-base font-semibold">Upcoming Meetings</CardTitle>
+              <CardTitle className="text-base font-semibold">{title}</CardTitle>
               {upcomingEvents.length > 0 && (
                 <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20 text-[10px]">
                   {upcomingEvents.length} Scheduled
@@ -89,7 +101,7 @@ export function CalendarUpcomingWidget() {
               )}
             </div>
             <CardDescription className="text-xs">
-              Synchronized Google Calendar meetings & video calls
+              {todayOnly ? "Your calendar for today" : "Synchronized Google Calendar meetings & video calls"}
             </CardDescription>
           </div>
           <div className="flex items-center gap-1.5">
@@ -210,4 +222,3 @@ export function CalendarUpcomingWidget() {
     </>
   );
 }
-

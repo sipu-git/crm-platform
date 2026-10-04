@@ -17,7 +17,7 @@ function daysUntil(dateStr: string) {
   return diff;
 }
 
-export function ClientDashboardPage() {
+export default function ClientDashboardPage() {
   const { tenantSlug = "" } = useParams();
   const invoices = useInvoices();
   const projects = useClientProjects();

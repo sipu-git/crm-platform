@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Sparkles, Send, Loader2, X, Command } from "lucide-react";
 import { useCopilotMutation } from "../hooks/useAi";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerClose } from "@/components/ui/drawer";
@@ -7,14 +7,19 @@ import { useIsMobile } from "@/hooks/use-mobile";
 interface AICopilotModalProps {
   isOpen: boolean;
   onClose: () => void;
+  initialPrompt?: string;
 }
 
-export const AICopilotModal: React.FC<AICopilotModalProps> = ({ isOpen, onClose }) => {
+export const AICopilotModal: React.FC<AICopilotModalProps> = ({ isOpen, onClose, initialPrompt = "" }) => {
   const [prompt, setPrompt] = useState("");
   const [messages, setMessages] = useState<Array<{ role: "user" | "assistant"; text: string; action?: string }>>([]);
 
   const copilotMutation = useCopilotMutation();
   const isMobile = useIsMobile();
+
+  useEffect(() => {
+    if (isOpen) setPrompt(initialPrompt);
+  }, [isOpen, initialPrompt]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();

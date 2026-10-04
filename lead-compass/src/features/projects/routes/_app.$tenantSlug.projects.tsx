@@ -18,7 +18,7 @@ const statusColors: Record<string, string> = {
   CANCELLED: "bg-red-500/10 text-red-500 border-red-500/20",
 };
 
-export function ProjectsPage() {
+export default function ProjectsPage() {
   const auth = useAuthPayload()
   const isClient = auth?.user.role === "CLIENT";
   const ownProjects = useClientProjects(undefined, isClient);

@@ -138,7 +138,7 @@ function useRecentlyChanged(items: Activity[]) {
 
     return flash;
 }
-export function ActivitiesPage() {
+export default function ActivitiesPage() {
     const auth = useAuthPayload();
     const { tenantSlug = "" } = useParams();
     const isSaleRep = auth?.user.role === "SALES_REP";

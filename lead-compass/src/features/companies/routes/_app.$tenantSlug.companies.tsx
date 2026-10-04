@@ -14,7 +14,7 @@ const statusVariant: Record<string, string> = {
   PROSPECT: "bg-amber-100 text-amber-700 border-amber-200",
 };
 
-export function CompaniesPage() {
+export default function CompaniesPage() {
   const { data: companies = [], isLoading: loading, isError } = useCompanies();
   const [query, setQuery] = useState("");
   const [industry, setIndustry] = useState("all");

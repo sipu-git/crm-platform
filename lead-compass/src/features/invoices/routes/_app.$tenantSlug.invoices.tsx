@@ -1,5 +1,6 @@
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useInvoices } from "@/features/invoices/hooks/useInvoices";
+import { useState } from "react";
 import { PageHeader, TableSkeleton, EmptyState } from "@/components/ui-kit";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
@@ -16,13 +17,15 @@ const STATUS: Record<InvoiceStatus, string> = {
 import { formatCurrency } from "@/lib/currency";
 import { useAuthPayload } from "@/features/auth/hooks/useAuthPayload";
 import { InvoiceStatus } from "@/features/invoices/types/invoices.type";
+import { InvoiceCreateDialog } from "@/features/invoices/components/InvoiceCreateDialog";
 
 const fmt = (n: number, _currency?: string) => formatCurrency(n);
 
-export function InvoicesPage() {
+export default function InvoicesPage() {
   const navigate = useNavigate();
   const { data: invoices = [], isLoading: loading, isError } = useInvoices();
   const { tenantSlug = "" } = useParams();
+  const [createOpen, setCreateOpen] = useState(false);
   const auth = useAuthPayload()
   const isClient = auth?.user.role === "CLIENT";
 
@@ -32,7 +35,7 @@ export function InvoicesPage() {
         title="Invoices"
         description={isClient ? "Review invoices and payment status for your projects." : "Send, track, and get paid."}
         actions={
-          !isClient ? <Button onClick={() => navigate(`/${tenantSlug}/invoices/new`)}>
+          !isClient ? <Button onClick={() => setCreateOpen(true)}>
             <Plus className="mr-2 h-4 w-4" /> New invoice
           </Button> : undefined
         }
@@ -92,6 +95,11 @@ export function InvoicesPage() {
           </div>
         )}
       </div>
+      {!isClient && <InvoiceCreateDialog
+        open={createOpen}
+        onOpenChange={setCreateOpen}
+        onCreated={(invoice) => navigate(`/${tenantSlug}/invoices/${invoice.id}`)}
+      />}
     </div>
   );
 }
