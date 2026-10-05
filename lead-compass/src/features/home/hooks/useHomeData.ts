@@ -3,6 +3,13 @@ import { useParams } from "react-router-dom";
 import type { DashboardRole } from "@/features/dashboard/types/dashboard.types";
 import { dashboardApi } from "@/features/dashboard/apis/dashboard.api";
 import type { HomeActivityItem, HomeLeadRecord } from "@/features/home/types";
+import type { TaskItem } from "@/features/dashboard/types/dashboard.types";
+import type { Invoice } from "@/features/invoices/types/invoices.type";
+
+const EMPTY_TASKS: TaskItem[] = [];
+const EMPTY_ACTIVITIES: HomeActivityItem[] = [];
+const EMPTY_INVOICES: Invoice[] = [];
+const EMPTY_LEADS: HomeLeadRecord[] = [];
 
 const HOME_CACHE = {
   staleTime: 1000 * 60,
@@ -29,9 +36,9 @@ export function useHomeData(role: DashboardRole) {
 
   return {
     isLoading: tasks.isLoading || recent.isLoading,
-    tasks: tasks.data?.taskQueue ?? [],
-    activities: (recent.data?.activities ?? []) as HomeActivityItem[],
-    invoices: recent.data?.invoices ?? [],
-    leads: (recent.data?.leads ?? []) as HomeLeadRecord[],
+    tasks: tasks.data?.taskQueue ?? EMPTY_TASKS,
+    activities: (recent.data?.activities ?? EMPTY_ACTIVITIES) as HomeActivityItem[],
+    invoices: recent.data?.invoices ?? EMPTY_INVOICES,
+    leads: (recent.data?.leads ?? EMPTY_LEADS) as HomeLeadRecord[],
   };
 }

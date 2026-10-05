@@ -31,7 +31,7 @@ const emptyForm: CreateAssigneeForm = {
     department: "",
 };
 
-export function AssignLeadDialog({ open, onOpenChange, leadId, currentAssignee }: AssignLeadDialogProps) {
+export default function AssignLeadDialog({ open, onOpenChange, leadId, currentAssignee }: AssignLeadDialogProps) {
     const { data: users = [], isLoading: loadingSalesReps, isError: assigneesError } = useUsers();
     const salesRepUsers = users.filter((u) => (u as any).role === "SALES_REP");
 

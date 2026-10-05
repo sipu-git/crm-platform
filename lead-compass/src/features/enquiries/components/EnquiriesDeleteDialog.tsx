@@ -15,7 +15,7 @@ interface EnquiriesDeleteDialogProps {
   onConfirm: () => void;
 }
 
-export function EnquiriesDeleteDialog({ open, onOpenChange, onConfirm }: EnquiriesDeleteDialogProps) {
+export default function EnquiriesDeleteDialog({ open, onOpenChange, onConfirm }: EnquiriesDeleteDialogProps) {
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
       <AlertDialogContent>

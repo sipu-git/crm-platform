@@ -21,7 +21,7 @@ interface EnquiriesTableProps {
   onDeleteRequest: (id: string) => void;
 }
 
-export function EnquiriesTable({
+export default function EnquiriesTable({
   enquiries,
   isLoading,
   isPending,

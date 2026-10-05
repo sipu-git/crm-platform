@@ -24,7 +24,7 @@ interface CalendarMonthViewProps {
 
 const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
-export function CalendarMonthView({
+export default function CalendarMonthView({
   currentDate,
   events,
   onSelectEvent,

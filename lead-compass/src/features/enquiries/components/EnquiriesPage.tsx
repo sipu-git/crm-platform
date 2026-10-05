@@ -1,22 +1,40 @@
-import React, { lazy, Suspense, useMemo } from "react";
-import { EnquiriesPageProps } from "@/features/enquiries/utils/enquiries.constants";
-import { EnquiriesCharts } from "@/features/enquiries/components/EnquiriesCharts";
+import { lazy, Suspense, useMemo } from "react";
+import type { EnquiriesPageProps } from "@/features/enquiries/utils/enquiries.constants";
 import { EnquiriesToolbar } from "@/features/enquiries/components/EnquiriesToolbar";
-import { EnquiriesTable } from "@/features/enquiries/components/EnquiriesTable";
-import { EnquiriesDeleteDialog } from "@/features/enquiries/components/EnquiriesDeleteDialog";
 import { PageHeader } from "@/components/ui-kit";
+import EnquiriesPageSkeleton from "@/features/enquiries/components/EnquiriesPageSkeleton";
+
+const EnquiriesTable = lazy(() => import("./EnquiriesTable"));
+
+const EnquiriesCharts = lazy(() => import("./EnquiriesCharts"));
+
+const DeleteEnquiryDialog = lazy(() => import("./EnquiriesDeleteDialog"));
 
 const KpiGridWidgets = lazy(() =>
   import("@/features/dashboard/components/widgets/KpiGridWidget").then((module) => ({
     default: module.KpiGridWidget,
-  }))
+  })),
 );
 
-export function EnquiriesPage(data: EnquiriesPageProps) {
+function KpiSkeleton() {
+  return <div className="h-32 animate-pulse rounded-2xl border bg-muted/40" />;
+}
+
+function ChartsSkeleton() {
+  return <div className="h-80 animate-pulse rounded-2xl border bg-muted/40" />;
+}
+
+function TableSkeleton() {
+  return <div className="h-96 animate-pulse rounded-2xl border bg-muted/40" />;
+}
+
+export default function EnquiriesPage(data: EnquiriesPageProps) {
   const visible = useMemo(() => {
     const q = data.query.trim().toLowerCase();
+
     return data.enquiries.filter((row) => {
       const matchesStatus = data.status === "ALL" || row.enquiryStatus === data.status;
+
       const matchesSearch =
         !q ||
         [row.first_name, row.last_name, row.email, row.company_name, row.source]
@@ -24,6 +42,7 @@ export function EnquiriesPage(data: EnquiriesPageProps) {
           .join(" ")
           .toLowerCase()
           .includes(q);
+
       return matchesStatus && matchesSearch;
     });
   }, [data.enquiries, data.query, data.status]);
@@ -35,10 +54,15 @@ export function EnquiriesPage(data: EnquiriesPageProps) {
       <div className="flex min-h-screen items-center justify-center p-8">
         <div className="text-center">
           <span className="mx-auto mb-3 h-8 w-8 text-destructive">!</span>
+
           <p className="text-sm font-medium text-destructive">Unable to load enquiries.</p>
         </div>
       </div>
     );
+  }
+
+  if (data.isLoading) {
+    return <EnquiriesPageSkeleton />;
   }
 
   return (
@@ -47,18 +71,15 @@ export function EnquiriesPage(data: EnquiriesPageProps) {
         title="Customer enquiries"
         description="Review incoming demand signals and route the right prospects for approval."
       />
+
       <div className="space-y-4 p-6">
-        <Suspense
-          fallback={
-            <div className="h-32 animate-pulse rounded-2xl border bg-muted/40" />
-          }
-        >
-          <KpiGridWidgets
-            metrics={data.kpiMetrics}
-            isLoading={data.isLoading}
-          />
+        <Suspense fallback={<KpiSkeleton />}>
+          <KpiGridWidgets metrics={data.kpiMetrics} isLoading={data.isLoading} />
         </Suspense>
-        <EnquiriesCharts statusChartData={data.statusChartData} trendData={data.trendData} />
+
+        <Suspense fallback={<ChartsSkeleton />}>
+          <EnquiriesCharts statusChartData={data.statusChartData} trendData={data.trendData} />
+        </Suspense>
 
         <section className="rounded-2xl border bg-card shadow-sm">
           <EnquiriesToolbar
@@ -70,22 +91,28 @@ export function EnquiriesPage(data: EnquiriesPageProps) {
             onStatusChange={data.onStatusChange}
           />
 
-          <EnquiriesTable
-            enquiries={visible}
-            isLoading={data.isLoading}
-            isPending={data.isPending}
-            onApprove={data.onApprove}
-            onReject={data.onReject}
-            onDeleteRequest={data.onDeleteRequest}
-          />
+          <Suspense fallback={<TableSkeleton />}>
+            <EnquiriesTable
+              enquiries={visible}
+              isLoading={data.isLoading}
+              isPending={data.isPending}
+              onApprove={data.onApprove}
+              onReject={data.onReject}
+              onDeleteRequest={data.onDeleteRequest}
+            />
+          </Suspense>
         </section>
       </div>
 
-      <EnquiriesDeleteDialog
-        open={!!data.pendingDeleteId}
-        onOpenChange={(open) => data.onDeleteDialogOpenChange(open)}
-        onConfirm={data.onDeleteConfirm}
-      />
+      {data.pendingDeleteId && (
+        <Suspense fallback={null}>
+          <DeleteEnquiryDialog
+            open={true}
+            onOpenChange={data.onDeleteDialogOpenChange}
+            onConfirm={data.onDeleteConfirm}
+          />
+        </Suspense>
+      )}
     </div>
   );
 }

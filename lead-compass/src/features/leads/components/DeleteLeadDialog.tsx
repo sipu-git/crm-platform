@@ -3,7 +3,7 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
-export function DeleteLeadDialog({
+export default function DeleteLeadDialog({
   open, onOpenChange, fullName, isDeleting, onConfirm,
 }: {
   open: boolean;

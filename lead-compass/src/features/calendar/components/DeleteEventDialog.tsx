@@ -18,7 +18,7 @@ interface DeleteEventDialogProps {
   eventToDelete: CalendarEvent | null;
 }
 
-export function DeleteEventDialog({
+export default function DeleteEventDialog({
   open,
   onOpenChange,
   eventToDelete,

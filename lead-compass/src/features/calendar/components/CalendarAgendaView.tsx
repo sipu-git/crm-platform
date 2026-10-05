@@ -21,7 +21,7 @@ interface CalendarAgendaViewProps {
   onDeleteEvent: (event: CalendarEvent) => void;
 }
 
-export function CalendarAgendaView({
+export default function CalendarAgendaView({
   events,
   onSelectEvent,
   onDeleteEvent,

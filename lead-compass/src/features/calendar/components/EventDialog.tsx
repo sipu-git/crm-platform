@@ -24,7 +24,7 @@ interface EventDialogProps {
   initialDate?: Date | null;
 }
 
-export function EventDialog({
+export default function EventDialog({
   open,
   onOpenChange,
   eventToEdit,

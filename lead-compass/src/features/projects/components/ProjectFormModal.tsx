@@ -12,7 +12,7 @@ interface ProjectFormModalProps {
   onOpenChange: (open: boolean) => void;
 }
 
-export function ProjectFormModal({ open, onOpenChange }: ProjectFormModalProps) {
+export default function ProjectFormModal({ open, onOpenChange }: ProjectFormModalProps) {
   const { create } = useProjectMutation();
   const { alert, showError, showSuccess, dismiss } = useFormAlert();
 

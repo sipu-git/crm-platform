@@ -27,6 +27,7 @@ import { toast } from "sonner";
 import { ActivityTab } from "@/features/activities/components/ActivityTabs";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { formatCurrency } from "@/lib/currency";
+import { DealHealthPanel } from "@/features/deals/components/DealHealthPanel";
 
 const fmt = formatCurrency;
 
@@ -293,18 +294,37 @@ export default function DealDetail() {
               </CardContent>
             </Card>
 
-            <Card>
-              <CardHeader><CardTitle className="text-sm font-medium">Notes</CardTitle></CardHeader>
-              <CardContent className="space-y-3">
-                <p className="text-sm text-muted-foreground">
-                  Add a note to record next steps, decision-makers, or blockers.
-                </p>
-                <p className="rounded-md bg-muted/40 p-2 text-xs text-muted-foreground">
-                  💡 Notes stay with the deal so anyone on the team can catch up without digging through
-                  the Activity tab.
-                </p>
-              </CardContent>
-            </Card>
+            <div className="space-y-4">
+              <Card>
+                <CardHeader><CardTitle className="text-sm font-medium">Notes</CardTitle></CardHeader>
+                <CardContent className="space-y-3">
+                  <p className="text-sm text-muted-foreground">
+                    Add a note to record next steps, decision-makers, or blockers.
+                  </p>
+                  <p className="rounded-md bg-muted/40 p-2 text-xs text-muted-foreground">
+                    💡 Notes stay with the deal so anyone on the team can catch up without digging through
+                    the Activity tab.
+                  </p>
+                </CardContent>
+              </Card>
+
+              <DealHealthPanel
+                dealName={deal.title}
+                stage={deal.pipeline?.name ?? "Unknown"}
+                amount={deal.amount}
+                daysInStage={
+                  deal.updated_at
+                    ? Math.max(1, Math.floor((Date.now() - new Date(deal.updated_at).getTime()) / (1000 * 60 * 60 * 24)))
+                    : 1
+                }
+                hasOverdueInvoice={invoices.some((inv) => inv.status === "OVERDUE")}
+                lastActivityDaysAgo={
+                  deal.updated_at
+                    ? Math.max(1, Math.floor((Date.now() - new Date(deal.updated_at).getTime()) / (1000 * 60 * 60 * 24)))
+                    : 1
+                }
+              />
+            </div>
           </TabsContent>
 
           <TabsContent value="activity" className="mt-0">

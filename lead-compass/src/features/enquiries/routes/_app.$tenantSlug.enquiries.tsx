@@ -1,12 +1,19 @@
 import { useMemo, useState } from "react";
 import type { EnquiryStatus } from "@/features/enquiries/types/enquiry.types";
-import {useEnquiries,useApproveEnquiry,useRejectEnquiry,useDeleteEnquiry} from "@/features/enquiries/hooks/useEnquiries";
+import {
+  useEnquiries,
+  useApproveEnquiry,
+  useRejectEnquiry,
+  useDeleteEnquiry,
+} from "@/features/enquiries/hooks/useEnquiries";
 import { useAuthPayload } from "@/features/auth/hooks/useAuthPayload";
 import { toast } from "sonner";
 import { STATUS_META, STATUS_ORDER } from "@/features/enquiries/utils/enquiries.constants";
 import type { KpiMetric } from "@/features/dashboard/types/dashboard.types";
-import { EnquiriesPage } from "@/features/enquiries/components/EnquiriesPage";
+import { lazy, Suspense } from "react";
+import EnquiriesPageSkeleton from "@/features/enquiries/components/EnquiriesPageSkeleton";
 
+const EnquiriesPage = lazy(() => import("@/features/enquiries/components/EnquiriesPage"));
 function countInWindow(
   rows: { created_at: string; enquiryStatus: EnquiryStatus }[],
   daysAgoStart: number,
@@ -82,11 +89,12 @@ export default function EnquiriesRoutePage() {
   }, [enquiries, total]);
 
   const statusChartData = useMemo(
-    () => STATUS_ORDER.map((s) => ({
-      status: STATUS_META[s].label,
-      count: enquiries.filter((e) => e.enquiryStatus === s).length,
-      fill: STATUS_META[s].chart,
-    })),
+    () =>
+      STATUS_ORDER.map((s) => ({
+        status: STATUS_META[s].label,
+        count: enquiries.filter((e) => e.enquiryStatus === s).length,
+        fill: STATUS_META[s].chart,
+      })),
     [enquiries],
   );
 
@@ -151,27 +159,28 @@ export default function EnquiriesRoutePage() {
   };
 
   return (
-    <EnquiriesPage
-      enquiries={enquiries}
-      isLoading={isLoading}
-      isPending={isPending}
-      error={error}
-      onApprove={handleApprove}
-      onReject={handleReject}
-      onDeleteConfirm={confirmDelete}
-      onDeleteRequest={(id) => setPendingDeleteId(id)}
-      onSearchChange={setQuery}
-      onStatusChange={(value) => setStatus(value)}
-      query={query}
-      status={status}
-      pendingDeleteId={pendingDeleteId}
-      onDeleteDialogOpenChange={(open) => {
-        if (!open) setPendingDeleteId(null);
-      }}
-      kpiMetrics={kpiMetrics}
-      statusChartData={statusChartData}
-      trendData={trendData}
-    />
+    <Suspense fallback={<EnquiriesPageSkeleton />}>
+      <EnquiriesPage
+        enquiries={enquiries}
+        isLoading={isLoading}
+        isPending={isPending}
+        error={error}
+        onApprove={handleApprove}
+        onReject={handleReject}
+        onDeleteConfirm={confirmDelete}
+        onDeleteRequest={(id) => setPendingDeleteId(id)}
+        onSearchChange={setQuery}
+        onStatusChange={setStatus}
+        query={query}
+        status={status}
+        pendingDeleteId={pendingDeleteId}
+        onDeleteDialogOpenChange={(open) => {
+          if (!open) setPendingDeleteId(null);
+        }}
+        kpiMetrics={kpiMetrics}
+        statusChartData={statusChartData}
+        trendData={trendData}
+      />
+    </Suspense>
   );
 }
-

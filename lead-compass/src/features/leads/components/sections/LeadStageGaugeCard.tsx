@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { memo, useMemo } from "react";
 import { SVGGaugeChart } from "@/components/charts/SVGGaugeChart";
 import { Gauge, Check, AlertCircle } from "lucide-react";
 import { LeadStatus } from "@/features/leads/types/lead.types";
@@ -11,10 +11,34 @@ interface LeadStageGaugeCardProps {
 }
 
 const GAUGE_SECTORS = [
-  { name: "New", status: "NEW" as LeadStatus, value: 25, color: "#3B82F6", description: "Initial contact received" },
-  { name: "Contacted", status: "CONTRACTED" as LeadStatus, value: 25, color: "#F59E0B", description: "In active conversation" },
-  { name: "Qualified", status: "QUALIFIED" as LeadStatus, value: 25, color: "#10B981", description: "Fit confirmed & ready to convert" },
-  { name: "Converted", status: "CONVERTED" as LeadStatus, value: 25, color: "#6366F1", description: "Converted into a deal" },
+  {
+    name: "New",
+    status: "NEW" as LeadStatus,
+    value: 25,
+    color: "#3B82F6",
+    description: "Initial contact received",
+  },
+  {
+    name: "Contacted",
+    status: "CONTRACTED" as LeadStatus,
+    value: 25,
+    color: "#F59E0B",
+    description: "In active conversation",
+  },
+  {
+    name: "Qualified",
+    status: "QUALIFIED" as LeadStatus,
+    value: 25,
+    color: "#10B981",
+    description: "Fit confirmed & ready to convert",
+  },
+  {
+    name: "Converted",
+    status: "CONVERTED" as LeadStatus,
+    value: 25,
+    color: "#6366F1",
+    description: "Converted into a deal",
+  },
 ];
 
 function getNeedleAngle(status: LeadStatus): number {
@@ -34,7 +58,11 @@ function getNeedleAngle(status: LeadStatus): number {
   }
 }
 
-export function LeadStageGaugeCard({ status, saving, onStatusChange }: LeadStageGaugeCardProps) {
+export const LeadStageGaugeCard = memo(function LeadStageGaugeCard({
+  status,
+  saving,
+  onStatusChange,
+}: LeadStageGaugeCardProps) {
   const currentStageIndex = PIPELINE_STAGES.indexOf(status);
   const isDisqualified = status === "DISQUALIFIED";
   const meta = STATUS_META[status];
@@ -102,10 +130,15 @@ export function LeadStageGaugeCard({ status, saving, onStatusChange }: LeadStage
             {isDisqualified ? (
               <span className="text-destructive font-medium">Disqualified Lead</span>
             ) : (
-              <span>Stage {currentStageIndex + 1} of {PIPELINE_STAGES.length}: <strong className="text-primary">{meta?.shortLabel}</strong></span>
+              <span>
+                Stage {currentStageIndex + 1} of {PIPELINE_STAGES.length}:{" "}
+                <strong className="text-primary">{meta?.shortLabel}</strong>
+              </span>
             )}
           </p>
-          {meta?.guide && <p className="text-[11px] text-muted-foreground mt-0.5 max-w-xs">{meta.guide}</p>}
+          {meta?.guide && (
+            <p className="text-[11px] text-muted-foreground mt-0.5 max-w-xs">{meta.guide}</p>
+          )}
         </div>
       </div>
 
@@ -128,10 +161,15 @@ export function LeadStageGaugeCard({ status, saving, onStatusChange }: LeadStage
               }`}
             >
               <div className="flex items-center gap-1 mb-1">
-                <span className="h-2 w-2 rounded-full shrink-0" style={{ backgroundColor: sec.color }} />
+                <span
+                  className="h-2 w-2 rounded-full shrink-0"
+                  style={{ backgroundColor: sec.color }}
+                />
                 {isPassed && <Check className="h-3 w-3 text-emerald-500" />}
               </div>
-              <span className={`text-[11px] font-medium truncate w-full ${isActive ? "text-primary font-bold" : "text-muted-foreground"}`}>
+              <span
+                className={`text-[11px] font-medium truncate w-full ${isActive ? "text-primary font-bold" : "text-muted-foreground"}`}
+              >
                 {sec.name}
               </span>
             </button>
@@ -140,4 +178,4 @@ export function LeadStageGaugeCard({ status, saving, onStatusChange }: LeadStage
       </div>
     </div>
   );
-}
+});

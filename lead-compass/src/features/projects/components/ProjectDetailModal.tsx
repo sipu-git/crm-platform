@@ -1,5 +1,5 @@
 import { Wallet, Building2, User, Pencil, Loader2, Mail, Phone, Globe, Briefcase, Sparkles, Calendar } from "lucide-react";
-import {Dialog,DialogContent,DialogHeader,DialogTitle} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { useClientProjectById } from "@/features/projects/hooks/useClientProjects";
 import { useProjectById } from "@/features/projects/hooks/useProjects";
@@ -56,7 +56,7 @@ function Stat({
     );
 }
 
-export function ProjectDetailModal({ projectId, open, onOpenChange, onEdit }: ProjectDetailModalProps) {
+export default function ProjectDetailModal({ projectId, open, onOpenChange, onEdit }: ProjectDetailModalProps) {
     const auth = useAuthPayload()
     const admin = useProjectById(projectId ?? "");
     const isClientRole = auth?.user.role === "CLIENT";

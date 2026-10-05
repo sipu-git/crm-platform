@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { lazy, Suspense, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   ArrowRight,
@@ -19,7 +19,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { ActivityFormDialog } from "@/features/activities/components/ActivityFormModal";
 import type { Deal } from "@/features/deals/deal.types";
 import {
   Dialog,
@@ -35,6 +34,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+
+const ActivityFormDialog = lazy(() =>
+  import("@/features/activities/components/ActivityFormModal").then((module) => ({
+    default: module.ActivityFormDialog,
+  })),
+);
 
 export const QuickActionsSection = React.memo(function QuickActionsSection({
   tenantSlug,
@@ -120,9 +125,7 @@ export const QuickActionsSection = React.memo(function QuickActionsSection({
   ];
 
   const selectedLead = selectedDeal?.leads as
-    | { companyId?: string | null; company?: { id?: string } | null }
-    | null
-    | undefined;
+    { companyId?: string | null; company?: { id?: string } | null } | null | undefined;
   const selectedCompanyId = selectedLead?.companyId ?? selectedLead?.company?.id ?? "";
   const hasMoreActions = canManageContacts || canManageCompanies || canManageProjects;
 
@@ -239,18 +242,19 @@ export const QuickActionsSection = React.memo(function QuickActionsSection({
         </DialogContent>
       </Dialog>
       {selectedDeal && (
-        <ActivityFormDialog
-          open
-          onOpenChange={(open) => {
-            if (!open) setSelectedDeal(null);
-          }}
-          dealId={selectedDeal.id}
-          contactId={selectedDeal.contact_id || selectedDeal.contact?.id || ""}
-          companyId={selectedCompanyId}
-          defaultType="TASK"
-        />
+        <Suspense fallback={null}>
+          <ActivityFormDialog
+            open
+            onOpenChange={(open) => {
+              if (!open) setSelectedDeal(null);
+            }}
+            dealId={selectedDeal.id}
+            contactId={selectedDeal.contact_id || selectedDeal.contact?.id || ""}
+            companyId={selectedCompanyId}
+            defaultType="TASK"
+          />
+        </Suspense>
       )}
     </section>
   );
 });
-

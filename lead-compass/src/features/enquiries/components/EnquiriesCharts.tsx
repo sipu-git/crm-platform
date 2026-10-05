@@ -35,7 +35,7 @@ interface EnquiriesChartsProps {
   trendData: EnquiriesTrendDataPoint[];
 }
 
-export function EnquiriesCharts({ statusChartData, trendData }: EnquiriesChartsProps) {
+export default function EnquiriesCharts({ statusChartData, trendData }: EnquiriesChartsProps) {
   // Generate dynamic timestamps with distinct monthly spacing for status bar chart
   const barData = useMemo(() => {
     const today = new Date();
