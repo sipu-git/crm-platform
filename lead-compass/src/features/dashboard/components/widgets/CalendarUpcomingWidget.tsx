@@ -7,13 +7,22 @@ import { Badge } from "@/components/ui/badge";
 import { Calendar, Clock, Video, Plus, ArrowRight, VideoOff } from "lucide-react";
 import { useCalendarEvents, useCalendarHolidays } from "@/features/calendar/hooks/useCalendar";
 import { decorateGoogleHolidays } from "@/features/calendar/utils/festivals";
-import { format, parseISO } from "date-fns";
+import { format, parseISO, startOfDay, endOfDay } from "date-fns";
 
 const EventDialog = lazy(() =>
   import("@/features/calendar/components/EventDialog").then((m) => ({
     default: m.EventDialog,
   }))
 );
+
+/**
+ * Stable date key that only changes when the calendar day rolls over.
+ * This prevents query key churn on every mount/remount within the same day.
+ */
+function todayKey() {
+  const d = new Date();
+  return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+}
 
 export function CalendarUpcomingWidget({
   title = "Upcoming Meetings",
@@ -25,31 +34,39 @@ export function CalendarUpcomingWidget({
   const { tenantSlug = "acme" } = useParams();
   const [newEventOpen, setNewEventOpen] = useState(false);
 
-  // const nowIso = useMemo(() => new Date().toISOString(), []);
-
+  // Stable filters: only recompute when the actual calendar day changes,
+  // NOT on every component remount. This prevents query key changes on navigation.
+  const dayKey = useMemo(todayKey, []);
   const filters = useMemo(() => {
-    const startOfToday = new Date();
-    startOfToday.setHours(0, 0, 0, 0);
-
-    const filters: { timeMin: string; timeMax?: string } = {
-      timeMin: startOfToday.toISOString(),
+    const today = new Date();
+    const start = startOfDay(today);
+    const result: { timeMin: string; timeMax?: string } = {
+      timeMin: start.toISOString(),
     };
     if (todayOnly) {
-      const endOfToday = new Date(startOfToday);
-      endOfToday.setDate(endOfToday.getDate() + 1);
-      filters.timeMax = endOfToday.toISOString();
+      result.timeMax = endOfDay(today).toISOString();
     }
-    return filters;
-  }, [todayOnly]);
+    return result;
+    // dayKey ensures we recompute only when the date actually changes
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [todayOnly, dayKey]);
 
-  const { data: events = [], isLoading: eventsLoading } = useCalendarEvents(filters, {
+  const {
+    data: events = [],
+    isLoading: eventsLoading,
+    isFetching: eventsFetching,
+  } = useCalendarEvents(filters, {
     staleTime: 5 * 60 * 1000,
     gcTime: 30 * 60 * 1000,
     refetchOnMount: false,
     refetchOnWindowFocus: false,
   });
 
-  const { data: rawHolidays = [], isLoading: holidaysLoading } = useCalendarHolidays(filters, {
+  const {
+    data: rawHolidays = [],
+    isLoading: holidaysLoading,
+    isFetching: holidaysFetching,
+  } = useCalendarHolidays(filters, {
     staleTime: 5 * 60 * 1000,
     gcTime: 30 * 60 * 1000,
     refetchOnMount: false,
@@ -63,9 +80,12 @@ export function CalendarUpcomingWidget({
     return combined.slice(0, 4);
   }, [events, decoratedHolidays]);
 
-  const isLoading = eventsLoading || holidaysLoading;
+  // Only show skeleton on FIRST load (no cached data yet).
+  // Subsequent background refetches show stale data with no skeleton.
+  const isFirstLoad = eventsLoading || holidaysLoading;
+  const isFetching = eventsFetching || holidaysFetching;
 
-  if (isLoading) {
+  if (isFirstLoad) {
     return (
       <Card className="border border-border/70 bg-card shadow-sm h-full flex flex-col justify-between">
         <CardHeader className="pb-3">
@@ -98,6 +118,10 @@ export function CalendarUpcomingWidget({
                 <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20 text-[10px]">
                   {upcomingEvents.length} Scheduled
                 </Badge>
+              )}
+              {/* Subtle indicator when background-refreshing */}
+              {isFetching && (
+                <span className="h-1.5 w-1.5 rounded-full bg-primary/50 animate-pulse" />
               )}
             </div>
             <CardDescription className="text-xs">

@@ -45,12 +45,7 @@ function RequireAuth() {
   const { tenantSlug = "acme" } = useParams();
   const dispatch = useAppDispatch();
 
-  const {
-    data: authResult,
-    isLoading,
-    isError,
-  } = useAuth();
-
+  const {data: authResult,isLoading,isError} = useAuth();
   const user = authResult?.user;
 
   useEffect(() => {

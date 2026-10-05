@@ -230,9 +230,9 @@ export default function AppShell({ tenantSlug }: { tenantSlug: string }) {
             </div>
 
             {/* Center: Search (desktop only) */}
-            {showGlobalSearch && <div className="hidden md:flex flex-1 items-center justify-center max-w-2xl mx-auto px-4">
+            <div className="hidden md:flex flex-1 items-center justify-center max-w-2xl mx-auto px-4">
               <HeaderSearch />
-            </div>}
+            </div>
 
             {/* Right: Notifications, Theme, User Menu */}
             <div className="flex items-center gap-3 shrink-0">
@@ -242,10 +242,6 @@ export default function AppShell({ tenantSlug }: { tenantSlug: string }) {
             </div>
           </div>
 
-          {/* Bottom row: Search (mobile only) */}
-          {showGlobalSearch && <div className="md:hidden px-4 pb-3">
-            <HeaderSearch />
-          </div>}
           {/* Floating AI button */}
           <RainbowButton onClick={() => setIsCopilotOpen(true)}
             className="fixed bottom-12 right-10 z-50 dark:text-slate-800 text-slate-300"><Sparkles /></RainbowButton>

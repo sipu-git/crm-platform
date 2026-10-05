@@ -44,7 +44,7 @@ export default function LoginPage() {
 
     try {
       const res = await loginAsync(result.data);
-      navigate(`/${res.user.tenantId}/dashboard`);
+      navigate(`/${res.user.tenantId}/home`);
     } catch (err: any) {
     }
   }

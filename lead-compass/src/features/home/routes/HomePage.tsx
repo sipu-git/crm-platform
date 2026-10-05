@@ -209,52 +209,26 @@ function HomeHeader({
   );
 }
 
-function HomeSearch() {
-  return (
-    <section aria-label="Global CRM search" className="relative z-20">
-      <div className="mb-2 flex items-center gap-2 text-xs font-medium text-muted-foreground">
-        <Sparkles className="h-3.5 w-3.5 text-primary" /> Find a lead, deal, contact, or invoice
-      </div>
-      <div className="rounded-2xl border border-border/70 bg-card p-2 shadow-sm sm:p-2.5">
-        <HeaderSearch className="max-w-none" />
-      </div>
-    </section>
-  );
-}
-
 function dispatchAssistant(prompt?: string) {
   window.dispatchEvent(new CustomEvent("crm:open-ai", { detail: { prompt } }));
 }
 
-function HomeGrid({
-  tenantSlug,
-  tasks,
-  deals,
-  invoices,
-  unreadEmails,
-  gmailConnected,
-  isLoading,
-  recentRecords,
-  favoriteItems,
-  onConnectGmail,
-  showTasks,
-  showDeals,
-  showInvoices,
-}: {
-  tenantSlug: string;
-  tasks: TaskItem[];
-  deals: Deal[];
-  invoices: Invoice[];
-  unreadEmails: number | null;
-  gmailConnected: boolean;
-  isLoading: boolean;
-  recentRecords: RecentRecord[];
-  favoriteItems: HomeFavorite[];
-  onConnectGmail: () => void;
-  showTasks: boolean;
-  showDeals: boolean;
-  showInvoices: boolean;
-}) {
+function HomeGrid({ tenantSlug, tasks, deals, invoices, unreadEmails, gmailConnected, isLoading, recentRecords, favoriteItems,
+  onConnectGmail, showTasks, showDeals, showInvoices }: {
+    tenantSlug: string;
+    tasks: TaskItem[];
+    deals: Deal[];
+    invoices: Invoice[];
+    unreadEmails: number | null;
+    gmailConnected: boolean;
+    isLoading: boolean;
+    recentRecords: RecentRecord[];
+    favoriteItems: HomeFavorite[];
+    onConnectGmail: () => void;
+    showTasks: boolean;
+    showDeals: boolean;
+    showInvoices: boolean;
+  }) {
   return (
     <section aria-labelledby="home-grid-title">
       <div className="mb-3 flex items-end justify-between">
@@ -461,9 +435,6 @@ export default function HomePage() {
           isRefreshing={isRefreshing}
           primaryAction={primaryAction}
         />
-
-        <HomeSearch />
-
         <QuickActionsSection
           tenantSlug={tenantSlug}
           deals={deals}
