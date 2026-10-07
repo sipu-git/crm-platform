@@ -1,7 +1,9 @@
 import { LeadStatus, Source } from "../../../../generated/prisma/enums";
 import { PrismaClientTx } from "../../../shared/utils/prisma.types";
-import { CreateLeadInput, UpdateLeadInput } from "../validations/lead.schema";
+import { CreateLeadInput, LeadFilters, UpdateLeadInput } from "../validations/lead.schema";
 import type { AccessTokenPayload } from "../../../shared/utils/jwt";
+import {PaginationParams } from "../lead.util";
+import { Prisma } from "../../../../generated/prisma/client";
 
 function accessScope(user?: AccessTokenPayload) {
   if (!user || user.role === "ADMIN" || user.role === "MANAGER") return {};
@@ -52,23 +54,48 @@ export const leadsRepository = {
       orderBy: { created_At: "desc" },
     });
   },
-  findMany(tx: PrismaClientTx, tenantId: string, filters: any, user?: AccessTokenPayload) {
-    return tx.leads.findMany({
-      where: {
-        tenant_id: tenantId,
-        ...accessScope(user),
-        ...(filters.status ? { status: filters.status as any } : {}),
-        ...(filters.assignedTo ? { assigned_to: filters.assignedTo } : {}),
-        ...(filters.source ? { source: filters.source as any } : {}),
-      },
+
+ async findMany(tx: PrismaClientTx,tenantId: string,filters: LeadFilters,
+  user?: AccessTokenPayload,{ page = 1, limit = 8 }: PaginationParams = {}) {
+  const take = Math.min(Math.max(limit, 1), 100);
+  const currentPage = Math.max(page, 1);
+  const skip = (currentPage - 1) * take;
+
+  const where: Prisma.LeadsWhereInput = {
+    tenant_id: tenantId,
+    ...accessScope(user),
+    ...(filters.status ? { status: filters.status as any } : {}),
+    ...(filters.assignedTo ? { assigned_to: filters.assignedTo } : {}),
+    ...(filters.source ? { source: filters.source as any } : {}),
+  };
+
+  const [data, total] = await Promise.all([
+    tx.leads.findMany({
+      where,
+      skip,
+      take,
       include: {
         company: true,
         contact: true,
-        assignee: true
+        assignee: true,
       },
-      orderBy: { created_At: "desc" },
-    });
-  },
+      orderBy: [{ created_At: "desc" }, { id: "desc" }],
+    }),
+    tx.leads.count({ where }),
+  ]);
+
+  return {
+    data,
+    meta: {
+      total,
+      page: currentPage,
+      limit: take,
+      totalPages: Math.ceil(total / take),
+      hasNextPage: skip + data.length < total,
+      hasPrevPage: currentPage > 1,
+    },
+  };
+},
 
   search(tx: PrismaClientTx, tenantId: string, query: string, limit: number, user?: AccessTokenPayload) {
     return tx.leads.findMany({

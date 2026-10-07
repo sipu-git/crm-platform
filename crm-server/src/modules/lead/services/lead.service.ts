@@ -1,29 +1,31 @@
-import type { CreateLeadInput, LeadFilters, UpdateLeadInput } from '../validations/lead.schema.js';
 import { ApiError } from '../../../shared/utils/ApiError.js';
 import { eventBus } from '../../../shared/event-bus/index.js';
 import { LeadStatus } from '../../../../generated/prisma/enums.js';
 import { prisma } from '../../../../lib/prisma.js';
 import { addDays } from 'date-fns';
-import { LeadStatusOrder } from '../lead.util.js';
+import { LeadStatusOrder, PaginationParams } from '../lead.util.js';
 import { cacheQuery } from '../../../shared/redis/query.js';
 import { leadsRepository } from '../repository/lead.repository.js';
 import redisService from '../../../shared/redis/caching.js';
 import { pipelineRepository } from '../../deal/repositories/pipeline.repository.js';
 import { dealRepository } from '../../deal/repositories/deal.repository.js';
 import type { AccessTokenPayload } from '../../../shared/utils/jwt.js';
-import { userRepository } from '../../users/user.repository.js';
 import crypto from 'crypto';
 import bcrypt from 'bcrypt';
 import { sendInviteEmail } from '../../mail/services/invite-email.service.js';
 import { env } from '../../../shared/configs/env.js';
 import { getEnquiryBudgetForLead } from '../../deal/utils/enquiryBudget.util.js';
+import { LeadFilters } from '../validations/lead.schema.js';
 
 export const leadService = {
-  async list(tenantId: string, filters: LeadFilters, user: AccessTokenPayload) {
-    const redisKey = `lead-list-${tenantId}-${user.role}-${user.userId}-${JSON.stringify(filters)}`;
+  async list(tenantId: string, filters: LeadFilters, user: AccessTokenPayload, params: PaginationParams) {
+    const page = Math.max(params.page ?? 1, 1);
+    const limit = Math.min(Math.max(params.limit ?? 8, 1), 100);
+
+    const redisKey = `lead-list-${tenantId}-${user.role}-${user.userId}-${JSON.stringify(filters)}-p${page}:l${limit}`;
     return cacheQuery(redisKey, 200, async () => {
       return prisma.$transaction(async (tx) => {
-        return leadsRepository.findMany(tx, tenantId, filters, user);
+        return leadsRepository.findMany(tx, tenantId, filters, user, { page, limit });
       });
     })
   },

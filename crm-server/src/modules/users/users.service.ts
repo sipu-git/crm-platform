@@ -5,19 +5,31 @@ import crypto from 'crypto';
 import { AcceptInviteInput, InviteUserInput, UpdateRoleInput } from './users.schema.js';
 import { sendInviteEmail } from '../mail/services/invite-email.service.js';
 import { env } from '../../shared/configs/env.js';
+import { generateImageUrl } from '../../shared/utils/bucket.util.js';
 
 const USER_LIST_SELECT = {
     id: true, full_name: true, email: true, role: true,
-    mobile: true, createdAt: true,
+    mobile: true, createdAt: true, profilePic: true
 } as const;
 
 export const userService = {
     async list(tenantId: string) {
-        return prisma.user.findMany({
+        const users = await prisma.user.findMany({
             where: { tenantId },
             select: USER_LIST_SELECT,
             orderBy: { createdAt: 'asc' },
         });
+
+        return Promise.all(
+            users.map(async (u) => {
+                const profilePicUrl = u.profilePic ? await generateImageUrl(u.profilePic) : null;
+                return {
+                    ...u,
+                    profilePicUrl,
+                    profilePic: profilePicUrl || u.profilePic,
+                };
+            })
+        );
     },
 
     async listInvites(tenantId: string) {

@@ -51,5 +51,14 @@ export const signupController = {
     const result = await signupService.checkUserExists(email);
     return res.status(200).json(successResponse('User exists check complete', result));
   },
+
+  async uploadLogo(req: Request, res: Response) {
+    const file = req.file || (req.files && (req.files as any)[0]);
+    if (!file) {
+      return res.status(400).json({ success: false, message: 'Logo image file is required' });
+    }
+    const result = await signupService.uploadOnboardingLogo(file);
+    return res.status(200).json(successResponse('Logo uploaded successfully', result));
+  },
 };
 

@@ -1,5 +1,5 @@
 import { PrismaClientTx } from "../../../shared/utils/prisma.types";
-import { TENANT_SELECT } from "../profiles.util";
+import { TENANT_SELECT } from "../utils/profiles.util";
 
 export const tenantProfileRepository = {
     findById(tx: PrismaClientTx, tenantId: string) {

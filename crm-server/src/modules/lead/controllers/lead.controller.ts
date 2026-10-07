@@ -1,12 +1,12 @@
 import type { Request, Response } from 'express';
-import { leadFiltersSchema, searchLeadsQuerySchema, updateLeadStatusSchema } from '../validations/lead.schema.js';
+import { leadFiltersSchema, leadListQuerySchema, searchLeadsQuerySchema, updateLeadStatusSchema } from '../validations/lead.schema.js';
 import { leadService } from '../services/lead.service.js';
 import { successResponse } from '../../../shared/utils/ApiResponse.js';
 
 export const leadController = {
   async list(req: Request, res: Response) {
-    const filters = leadFiltersSchema.parse(req.query);
-    const result = await leadService.list(req.tenantId!, filters, req.auth!);
+    const { page, limit, ...filters } = leadListQuerySchema.parse(req.query);
+    const result = await leadService.list(req.tenantId!, filters, req.auth!, { page, limit });
     return res.status(200).json(successResponse("Leads fetched successfully!", result));
   },
 

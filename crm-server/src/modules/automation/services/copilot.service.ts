@@ -103,8 +103,7 @@ export const copilotService = {
       crmContextSummary = `
 REAL-TIME WORKSPACE DATA:
 - Total Leads: ${leadCount}
-- Recent Leads: ${recentLeads
-          .map(
+- Recent Leads: ${recentLeads.map(
             (lead) =>
               `${lead.company_name} (Status: ${lead.status}, Project: ${lead.project_name || "N/A"
               })`).join("; ") || "None"

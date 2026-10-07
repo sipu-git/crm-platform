@@ -14,39 +14,6 @@ const AUTH_USER_SELECT = {
 } as const;
 
 export const authService = {
-  async register(input: RegisterInput) {
-    const normalizedEmail = input.email.trim().toLowerCase();
-
-    const existingTenantUser = await prisma.user.findFirst({
-      where: { email: { equals: normalizedEmail, mode: 'insensitive' } },
-    });
-    if (existingTenantUser) throw ApiError.badRequest('An account with this email already exists');
-    const passwordHash = await bcrypt.hash(input.password, 10);
-
-    const { tenant, user } = await prisma.$transaction(async (tx) => {
-      const tenant = await tx.tenant.create({ data: { name: input.company_name } });
-
-      await pipelineRepository.seedDefaultStages(tx, tenant.id);
-
-      const user = await tx.user.create({
-        data: {
-          tenantId: tenant.id,
-          full_name: input.full_name,
-          company_name: input.company_name,
-          email: normalizedEmail,
-          password: passwordHash,
-          mobile: input.mobile,
-          role: 'ADMIN',
-        },
-      });
-
-      return { tenant, user };
-    });
-
-    eventBus.emit('user.registered', { userId: user.id, tenantId: tenant.id });
-    return { userId: user.id, tenantId: tenant.id };
-  },
-  
   async listUsers(tenantId: string, filters: { role?: string }) {
     const users = await prisma.$transaction(async (tx) => {
       return authRepository.findByTenant(tx, tenantId, filters);

@@ -2,6 +2,7 @@ model Tenant {
     id             String           @id @default(uuid())
     slug           String?          @unique
     name           String
+    tenant_key     String           @unique
     user           User[]
     company        Company[]
     contacts       Contacts[]

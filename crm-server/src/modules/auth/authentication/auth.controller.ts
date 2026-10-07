@@ -16,12 +16,6 @@ const getRefreshCookieOptions = (req: Request) => {
 };
 
 export const authController = {
-  async register(req: Request, res: Response) {
-    const input = registerSchema.parse(req.body);
-    const result = await authService.register(input);
-    res.status(201).json(successResponse('User created successfully', result));
-  },
-
   async login(req: Request, res: Response) {
     const input = loginSchema.parse(req.body);
     const { accessToken, refreshToken, user, permissions } = await authService.login(input);

@@ -1,5 +1,5 @@
 import { PrismaClientTx } from "../../../shared/utils/prisma.types";
-import { USER_SELECT } from "../profiles.util";
+import { USER_SELECT } from "../utils/profiles.util";
 
 export const userRepository = {
     findById(tx: PrismaClientTx, tenantId: string, userId: string) {
@@ -16,7 +16,7 @@ export const userRepository = {
         });
     },
 
-    update(tx: PrismaClientTx, userId: string, data: { full_name?: string; email?: string }) {
+    update(tx: PrismaClientTx, userId: string, data: { full_name?: string; email?: string; profilePic?: string }) {
         return tx.user.update({
             where: { id: userId },
             data,

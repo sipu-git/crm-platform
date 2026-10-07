@@ -27,6 +27,7 @@ export const completeSignupSchema = z.object({
   industry: z.string().optional(),
   company_size: z.string().optional(),
   website: z.string().optional(),
+  logo_url: z.string().optional(),
   location: z.string().optional(),
   crm_goals: z.array(z.string()).optional(),
   departments: z.array(z.string()).optional(),

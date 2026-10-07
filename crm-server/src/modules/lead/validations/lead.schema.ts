@@ -15,14 +15,18 @@ export const updateLeadStatusSchema = z.object({
 });
 
 export const leadFiltersSchema = z.object({
-  status: z.string().optional(),
-  source: z.string().optional(),
+  status: z.nativeEnum(LeadStatus).optional(),
+  source: z.nativeEnum(Source).optional(),
   assignedTo: z.string().optional(),
   search: z.string().optional(),
-  page: z.coerce.number().min(1).default(1),
-  pageSize: z.coerce.number().min(1).max(100).default(20),
 });
 
+export const paginationSchema = z.object({
+  page: z.coerce.number().int().min(1).default(1),
+  limit: z.coerce.number().int().min(1).max(100).default(20),
+});
+
+export const leadListQuerySchema = leadFiltersSchema.merge(paginationSchema);
 export const searchLeadsQuerySchema = z.object({
   query: z.string().trim().min(1, "Search query is required"),
   limit: z.coerce.number().int().positive().max(50).default(10),

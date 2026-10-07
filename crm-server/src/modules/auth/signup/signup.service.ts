@@ -13,7 +13,9 @@ import { pipelineRepository } from '../../deal/repositories/pipeline.repository.
 import { ROLE_PERMISSIONS } from '../../rbac/permissions.js';
 import { eventBus } from '../../../shared/event-bus/index.js';
 import type { CompleteSignupInput } from './signup.schema.js';
-import { RESERVED_SLUGS } from './signup.util.js';
+import { generateTenantKey, RESERVED_SLUGS } from './signup.util.js';
+import { mediaRepository } from '../../profiles/repository/media.repository.js';
+import { generateImageUrl } from '../../../shared/utils/bucket.util.js';
 
 export const signupService = {
   async sendSignupOtp(email: string): Promise<{ success: boolean; message: string }> {
@@ -115,9 +117,11 @@ export const signupService = {
         data: {
           name: input.tenant_name,
           slug: normalizedSlug,
+          tenant_key: generateTenantKey(),
           industry: input.industry,
           company_size: input.company_size,
           website: input.website,
+          logo_url: input.logo_url || null,
           custom_fields: {
             crm_goals: input.crm_goals || [],
             departments: input.departments || [],
@@ -236,6 +240,15 @@ export const signupService = {
       exists: userCount > 0,
       count: userCount,
       reason: userCount > 0 ? 'User workspace accounts already exist.' : 'No workspace accounts registered.',
+    };
+  },
+
+  async uploadOnboardingLogo(file: Express.Multer.File): Promise<{ logo_url: string; logoUrl: string | null }> {
+    const fileKey = await mediaRepository.uploadFileToS3(file, 'tenant-logo/onboarding');
+    const logoUrl = await generateImageUrl(fileKey);
+    return {
+      logo_url: fileKey,
+      logoUrl,
     };
   },
 };

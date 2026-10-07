@@ -16,6 +16,7 @@ model Company {
     state          String?
     country        String?
     postal_code    String?
+    logo_url       String?
 
     // --- Invoicing & Buyer Information ---
     gst_number      String?

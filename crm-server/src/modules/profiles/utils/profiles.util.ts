@@ -5,13 +5,16 @@ export const USER_SELECT = {
     designation: true,
     mobile:true,
     email: true,
+    profilePic: true,
     role: true,
     createdAt: true,
     updatedAt: true,
 } as const;
 
 export const TENANT_SELECT = {
+    tenant_key: true,
     name: true,
+    slug: true,
     gst_number: true,
     pan_number: true,
     address: true,

@@ -1,19 +1,44 @@
+import { Prisma } from "../../../generated/prisma/client.js";
 import { prisma } from "../../../lib/prisma.js";
 import { Role } from "../../shared/configs/role.js";
 import { PrismaClientTx } from "../../shared/utils/prisma.types.js";
+import { PaginationParams } from "./company.types.js";
 
 export const companyRepository = {
-    findManyCompanies(tx: PrismaClientTx, tenantId: string) {
-        return tx.company.findMany({
-            where: { tenant_id: tenantId },
-            include: {
-                leads: true,
-                _count: {
-                    select: { leads: true },
+    async findManyCompanies(tx: PrismaClientTx, tenantId: string, { page = 1, limit = 8, search }: PaginationParams) {
+        const take = Math.min(Math.max(limit, 1), 100);
+        const current = Math.max(page, 1);
+        const skip = (current - 1) * take;
+
+        const where: Prisma.CompanyWhereInput = {
+            tenant_id: tenantId,
+            ...(search && {
+                name: { contains: search, mode: "insensitive" },
+            }),
+        };
+        const [data, total] = await Promise.all([
+            tx.company.findMany({
+                where,
+                skip,
+                take,
+                include: {
+                    _count: { select: { leads: true } },
                 },
-            },
-            orderBy: { created_at: "desc" },
-        });
+                orderBy: [{ created_at: "desc" }, { id: "desc" }],
+            }),
+            tx.company.count({ where }),
+        ])
+        return {
+            data, meta: {
+                total,
+                page: current,
+                limit: take,
+                totalPages: Math.ceil(total / take),
+                hasNextPage: skip + data.length < total,
+                hasPrevPage: current > 1,
+            }
+        }
+
     },
     findCompany(tx: PrismaClientTx, tenantId: string, id: string) {
         return tx.company.findFirst({

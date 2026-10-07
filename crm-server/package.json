@@ -1,48 +1,97 @@
 {
-  "name": "crm-server",
-  "version": "1.0.0",
-  "type": "module",
-  "description": "",
-  "main": "index.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "tsx watch server.ts",
-    "build": "tsc && node fix-dist-import.js",
-    "start": "node dist/server.js",
-    "bootstrap:admin": "tsx scripts/bootstrap-admin.ts"
-  },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "dependencies": {
-    "@aws-sdk/client-bedrock-runtime": "^3.1141.0",
-    "@getbrevo/brevo": "^6.0.3",
-    "@prisma/adapter-pg": "^7.8.0",
-    "@prisma/client": "^7.8.0",
-    "@types/bcrypt": "^6.0.0",
-    "@types/cookie-parser": "^1.4.10",
-    "@types/cors": "^2.8.19",
-    "@types/express": "^5.0.6",
-    "@types/jsonwebtoken": "^9.0.10",
-    "axios": "^1.18.1",
-    "bcrypt": "^6.0.0",
-    "cookie-parser": "^1.4.7",
-    "date-fns": "^4.4.0",
-    "dotenv": "^17.4.2",
-    "express": "^5.2.1",
-    "firebase-admin": "^14.2.0",
-    "googleapis": "^176.0.0",
-    "helmet": "^8.3.0",
-    "jsonwebtoken": "^9.0.3",
-    "redis": "^6.2.1",
-    "socket.io": "^4.8.3",
-    "zod": "^4.4.3"
-  },
-  "devDependencies": {
-    "@types/node": "^26.1.1",
-    "@types/uuid": "^10.0.0",
-    "prisma": "^7.8.0",
-    "tsx": "^4.23.1",
-    "typescript": "^7.0.2"
-  }
+	"name": "crm-server",
+	"version": "1.0.0",
+	"type": "module",
+	"description": "",
+	"main": "index.js",
+	"scripts": {
+		"test": "echo \"Error: no test specified\" && exit 1",
+		"dev": "tsx watch server.ts",
+		"build": "tsc && node fix-dist-import.js",
+		"start": "node dist/server.js",
+		"bootstrap:admin": "tsx scripts/bootstrap-admin.ts"
+	},
+	"keywords": [],
+	"author": "",
+	"license": "ISC",
+	"dependencies": {
+		"@aws-sdk/client-bedrock-runtime": "^3.1141.0",
+		"@aws-sdk/client-s3": "^3.1146.0",
+		"@aws-sdk/s3-request-presigner": "^3.1146.0",
+		"@getbrevo/brevo": "^6.0.3",
+		"@prisma/adapter-pg": "^7.8.0",
+		"@prisma/client": "^7.8.0",
+		"@types/bcrypt": "^6.0.0",
+		"@types/cookie-parser": "^1.4.10",
+		"@types/cors": "^2.8.19",
+		"@types/express": "^5.0.6",
+		"@types/jsonwebtoken": "^9.0.10",
+		"@types/multer": "^2.3.0",
+		"axios": "^1.18.1",
+		"bcrypt": "^6.0.0",
+		"cookie-parser": "^1.4.7",
+		"date-fns": "^4.4.0",
+		"dotenv": "^17.4.2",
+		"express": "^5.2.1",
+		"firebase-admin": "^14.2.0",
+		"googleapis": "^176.0.0",
+		"helmet": "^8.3.0",
+		"jsonwebtoken": "^9.0.3",
+		"multer": "^2.4.0",
+		"redis": "^6.2.1",
+		"socket.io": "^4.8.3",
+		"zod": "^4.4.3"
+	},
+	"devDependencies": {
+		"@types/node": "^26.1.1",
+		"@types/uuid": "^10.0.0",
+		"prisma": "^7.8.0",
+		"tsx": "^4.23.1",
+		"typescript": "^7.0.2"
+	},
+	"Transform": "AWS::Serverless-2016-10-31",
+	"Resources": {
+		"Api": {
+			"Type": "AWS::Serverless::Api",
+			"Properties": {
+				"Name": {
+					"Fn::Sub": [
+						"${ResourceName} From Stack ${AWS::StackName}",
+						{
+							"ResourceName": "Api"
+						}
+					]
+				},
+				"StageName": "Prod",
+				"DefinitionBody": {
+					"openapi": "3.0",
+					"info": {},
+					"paths": {
+						"/": {
+							"get": {
+								"responses": {}
+							}
+						}
+					}
+				},
+				"EndpointConfiguration": "REGIONAL",
+				"TracingEnabled": true
+			}
+		},
+		"UserPool": {
+			"Type": "AWS::Cognito::UserPool",
+			"Properties": {
+				"AdminCreateUserConfig": {
+					"AllowAdminCreateUserOnly": false
+				},
+				"AliasAttributes": [
+					"email",
+					"preferred_username"
+				],
+				"UserPoolName": {
+					"Fn::Sub": "${AWS::StackName}-UserPool"
+				}
+			}
+		}
+	}
 }
