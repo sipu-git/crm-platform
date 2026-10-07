@@ -35,6 +35,7 @@ export const Step8CreateWorkspace: React.FC<Props> = ({ formData, resetWizard, o
         industry: formData.industry,
         company_size: formData.company_size,
         website: formData.website,
+        logo_url: formData.logo_url,
         location: formData.location,
         crm_goals: formData.crm_goals,
         departments: formData.departments,

@@ -10,12 +10,18 @@ import { useLogin } from "@/features/auth/hooks/useAuth";
 import { LoginFormValues, loginSchema, validate } from "@/features/auth/validations/auth.validation";
 import { useMutationStatus } from "@/hooks/use-mutation-status";
 import { FormAlert } from "@/components/ui-form-alert";
+import { toast } from "sonner";
+import { profilesApi } from "@/features/profiles/apis/profiles.api";
+import { profilesKeys } from "@/features/profiles/keys/profiles.keys";
+import { useAppDispatch } from "@/store/hooks";
+import { setCurrentTenant } from "@/features/tenant/slice";
 
 const EMPTY_FORM: LoginFormValues = { email: "", password: "" };
 
 export default function LoginPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const dispatch = useAppDispatch();
 
   // React‑Query login mutation
   const { mutateAsync: loginAsync, isPending, isError, isSuccess, error } = useLogin();
@@ -42,10 +48,27 @@ export default function LoginPage() {
     setFieldErrors({});
     queryClient.clear();
 
+    let signedIn = false;
     try {
-      const res = await loginAsync(result.data);
-      navigate(`/${res.user.tenantId}/home`);
+      await loginAsync(result.data);
+      signedIn = true;
+      const profile = await profilesApi.get();
+      const tenantSlug = profile.tenant.slug;
+      if (typeof tenantSlug !== "string" || tenantSlug.trim().length === 0) {
+        toast.error("Your workspace slug is missing. Please contact your administrator.");
+        return;
+      }
+      dispatch(setCurrentTenant({
+        tenantKey: profile.tenant.tenant_key,
+        slug: profile.tenant.slug,
+        name: profile.tenant.name,
+      }));
+      queryClient.setQueryData(profilesKeys.current(), profile);
+      navigate(`/${encodeURIComponent(tenantSlug)}/home`);
     } catch (err: any) {
+      if (signedIn) {
+        toast.error(err?.response?.data?.message || err?.message || "Unable to load your workspace.");
+      }
     }
   }
 

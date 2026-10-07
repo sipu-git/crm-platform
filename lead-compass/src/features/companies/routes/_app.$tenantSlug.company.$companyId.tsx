@@ -2,9 +2,10 @@ import { useParams, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import {
   Building2, Globe, Mail, Phone, MapPin, Tag, ArrowLeft,
-  FileCheck2, CreditCard, Copy, Users, ExternalLink,
+  FileCheck2, CreditCard, Copy, Users, ExternalLink, Camera,
 } from "lucide-react";
 import { useCompanyById } from "@/features/companies/hooks/useCompanies";
+import { companyApis } from "@/features/companies/company.service";
 import { companyStepMeta } from "@/features/companies/company-wizard.schma";
 import { formatCurrency, formatINR } from "@/lib/currency";
 import { Button } from "@/components/ui/button";
@@ -224,8 +225,35 @@ export default function CompanyDetailPage() {
           <ArrowLeft className="h-4 w-4" />
         </Button>
 
-        <div className="grid h-12 w-12 shrink-0 place-items-center rounded-xl bg-primary text-primary-foreground font-bold text-base shadow-sm">
-          {initials}
+        <div className="relative group shrink-0">
+          <div className="grid h-12 w-12 shrink-0 place-items-center rounded-xl overflow-hidden bg-primary/10 border border-border">
+            {company.logoUrl ? (
+              <img src={company.logoUrl} alt={company.name} className="h-full w-full object-cover" />
+            ) : (
+              <div className="grid h-full w-full place-items-center bg-primary text-primary-foreground font-bold text-base shadow-sm">
+                {initials}
+              </div>
+            )}
+          </div>
+          <label className="absolute -bottom-1 -right-1 grid h-5 w-5 cursor-pointer place-items-center rounded-full bg-primary text-primary-foreground shadow-md transition-transform hover:scale-110">
+            <Camera className="h-3 w-3" />
+            <input
+              type="file"
+              accept="image/png,image/jpeg,image/jpg,image/webp"
+              className="hidden"
+              onChange={async (e) => {
+                const file = e.target.files?.[0];
+                if (!file) return;
+                try {
+                  await companyApis.uploadLogo(company.id, file);
+                  toast.success("Company logo updated");
+                  window.location.reload();
+                } catch {
+                  toast.error("Failed to upload company logo");
+                }
+              }}
+            />
+          </label>
         </div>
 
         <div className="min-w-0 space-y-0.5">

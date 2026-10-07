@@ -2,18 +2,22 @@ import React, { useState } from "react";
 import { Link, Outlet, useLocation } from "react-router-dom";
 import { usePermission } from "@/features/auth/hooks/use-permission";
 import { useAuthPayload } from "@/features/auth/hooks/useAuthPayload";
+import { useAppSelector } from "@/store/hooks";
+import type { Profile } from "@/features/profiles/types";
 import { NotificationBell } from "./Header/NotificationBell";
 import { HeaderSearch } from "./Header/DebouceSearch";
 import { ThemeMenu } from "./Header/ThemeMenu";
 import { UserMenu } from "./Header/UserMenu";
 import { useNavigate } from "react-router-dom";
 import { AICopilotModal } from "@/features/ai/components/AICopilotModal";
+import { toast } from "sonner";
+import { useProfileMutation } from "@/features/profiles/hooks/useProfile";
 import {
   BarChart3, Users, Kanban, FileText, Bell, Settings,
   ContactRound, ListTodo, ShieldCheck, Building2,
   Users2, FolderKanban, ReceiptText, UserRound,
   Building, Calendar, Sparkles, House,
-  LogOut,
+  LogOut, Camera, Loader2,
 } from "lucide-react";
 
 import {
@@ -93,7 +97,12 @@ const CLIENT_NAV_GROUPS = [
   },
 ];
 
-const AppSidebar = React.memo(function AppSidebar({ slug }: { slug: string }) {
+const AppSidebar = React.memo(function AppSidebar({ slug, workspaceName, tenantKey, logoUrl }: {
+  slug: string;
+  workspaceName: string;
+  tenantKey: string;
+  logoUrl?: string | null;
+}) {
   const { pathname } = useLocation();
   const { canSeeModule } = usePermission();
   const auth = useAuthPayload();
@@ -115,17 +124,71 @@ const AppSidebar = React.memo(function AppSidebar({ slug }: { slug: string }) {
     navigate("/login");
   };
 
+  const { uploadLogo } = useProfileMutation();
+  const canEditLogo = role === "ADMIN" || role === "SUPER_ADMIN";
+
+  const workspaceInitials = (workspaceName || "Workspace")
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((n) => n[0])
+    .join("")
+    .toUpperCase() || "W";
+
   return (
     <Sidebar collapsible="icon" className="border-r border-border-sidebar-border">
-      <SidebarHeader className="mb-3 border-b dark:border-slate-800 border-border-sidebar-border px-4 py-4 text-sidebar-foreground" >
-        <div className="flex items-center gap-2 pt-1">
-          <div className="flex h-8 w-8 shrink-0 items-center justify-center">
-            <img src="/favicon.ico" alt="Clearview CRM" className="h-7 w-7 object-contain" />
+      <SidebarHeader className="mb-3 border-b dark:border-slate-800 border-border-sidebar-border py-4 text-sidebar-foreground" >
+        <div
+          className="grid min-w-0 grid-cols-[auto_1fr] items-center gap-x-2.5 gap-y-0 pt-1"
+          title={`${workspaceName} · /${slug} · Tenant key: ${tenantKey}`}
+        >
+          {/* ── Logo (spans both rows) ── */}
+          <div className="relative group row-span-2 shrink-0 self-center">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-primary text-primary-foreground font-bold text-xs shadow-xs border border-border">
+              {logoUrl ? (
+                <img src={logoUrl} alt={`${workspaceName} logo`} className="h-full w-full object-cover" />
+              ) : (
+                <span>{workspaceInitials}</span>
+              )}
+            </div>
+            {canEditLogo && (
+              <label
+                title="Modify Tenant Logo"
+                className="absolute -bottom-1 -right-1 grid h-4 w-4 cursor-pointer place-items-center rounded-full bg-primary text-primary-foreground shadow-md transition-transform hover:scale-110 opacity-70 group-hover:opacity-100"
+              >
+                {uploadLogo.isPending ? (
+                  <Loader2 className="h-2.5 w-2.5 animate-spin" />
+                ) : (
+                  <Camera className="h-2.5 w-2.5" />
+                )}
+                <input
+                  type="file"
+                  accept="image/png,image/jpeg,image/jpg,image/webp"
+                  className="hidden"
+                  onChange={async (e) => {
+                    const file = e.target.files?.[0];
+                    if (!file) return;
+                    try {
+                      await uploadLogo.mutateAsync(file);
+                      toast.success("Tenant workspace logo updated");
+                    } catch {
+                      toast.error("Failed to update tenant logo");
+                    }
+                  }}
+                />
+              </label>
+            )}
           </div>
-          <div className="grid flex-1 text-left text-sm leading-tight group-data-[collapsible=icon]:hidden">
-            <span className="truncate font-semibold text-primary">Clearview CRM</span>
-            <span className="truncate text-xs text-secondary-foreground">{slug}</span>
-          </div>
+
+          {/* ── Workspace name ── */}
+          <span className="truncate text-xs font-semibold text-primary leading-tight" title={workspaceName}>
+            {workspaceName}
+          </span>
+
+          {/* ── Tenant ID ── */}
+          <span className="truncate font-mono text-[10px] text-muted-foreground leading-tight" title={tenantKey}>
+            TENANT ID: {tenantKey}
+          </span>
         </div>
       </SidebarHeader>
       <SidebarContent className="scrollbar-hide">
@@ -179,20 +242,30 @@ const AppSidebar = React.memo(function AppSidebar({ slug }: { slug: string }) {
   );
 });
 
-export default function AppShell({ tenantSlug }: { tenantSlug: string }) {
+export default function AppShell({
+  tenantSlug,
+  tenant,
+}: {
+  tenantSlug: string;
+  tenant?: Profile["tenant"];
+}) {
   const [isCopilotOpen, setIsCopilotOpen] = useState(false);
   const [aiPrompt, setAiPrompt] = useState("");
   const location = useLocation();
   const auth = useAuthPayload();
-  const showGlobalSearch = !(location.pathname === `/${tenantSlug}/home` && auth?.user.role !== "CLIENT");
+  const tenantState = useAppSelector((state) => state.tenant);
+  const appSlug = tenant?.slug || auth?.tenant?.slug || tenantState.currentSlug || tenantSlug;
+  const workspaceName = tenant?.name || auth?.tenant?.name || tenantState.tenantName || "Workspace";
+  const tenantKey = tenant?.tenant_key || auth?.tenant?.tenant_key || tenantState.tenantKey || "Unavailable";
+  const showGlobalSearch = !(location.pathname === `/${appSlug}/home` && auth?.user.role !== "CLIENT");
 
   React.useEffect(() => {
     const segments = location.pathname.split("/").filter(Boolean);
-    if (segments[0] !== tenantSlug) return;
+    if (segments[0] !== appSlug) return;
     const [kind, id] = segments.slice(1);
     if (!(kind === "lead" || kind === "deals" || kind === "invoices") || !id || id === "new") return;
 
-    const storageKey = `crm.home.recent.${tenantSlug}`;
+    const storageKey = `crm.home.recent.${appSlug}`;
     try {
       const previous = JSON.parse(localStorage.getItem(storageKey) || "[]") as Array<{ href: string; kind: string; id: string }>;
       const next = [
@@ -205,7 +278,7 @@ export default function AppShell({ tenantSlug }: { tenantSlug: string }) {
         { href: location.pathname, kind: kind === "lead" ? "lead" : kind === "deals" ? "deal" : "invoice", id },
       ]));
     }
-  }, [location.pathname, tenantSlug]);
+  }, [location.pathname, appSlug]);
 
   React.useEffect(() => {
     const handleOpenAssistant = (event: Event) => {
@@ -218,8 +291,8 @@ export default function AppShell({ tenantSlug }: { tenantSlug: string }) {
   }, []);
 
   return (
-    <SidebarProvider>
-      <AppSidebar slug={tenantSlug} />
+    <SidebarProvider key={tenantKey || appSlug}>
+      <AppSidebar slug={appSlug} workspaceName={workspaceName} tenantKey={tenantKey} logoUrl={tenant?.logoUrl} />
       <SidebarInset className="flex flex-col h-screen overflow-hidden">
         <header className="shrink-0 border-b border-border-sidebar-border [background:var(--sidebar)] text-sidebar-foreground">
           {/* Top row: trigger + (desktop search) + actions */}
@@ -236,7 +309,7 @@ export default function AppShell({ tenantSlug }: { tenantSlug: string }) {
 
             {/* Right: Notifications, Theme, User Menu */}
             <div className="flex items-center gap-3 shrink-0">
-              <NotificationBell tenantSlug={tenantSlug} />
+              <NotificationBell tenantSlug={appSlug} />
               <ThemeMenu />
               <UserMenu />
             </div>

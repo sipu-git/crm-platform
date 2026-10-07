@@ -141,7 +141,7 @@ export const RevenueChartWidget = memo(function RevenueChartWidget({
 
         <div className="flex items-center justify-center gap-6 pt-3 text-xs text-muted-foreground">
           <div className="flex items-center gap-2">
-            <span className="h-2.5 w-2.5 rounded-full bg-primary" />
+            <span className="h-2.5 w-2.5 rounded-full bg-[#00a88f]" />
             <span>Actual Realized</span>
           </div>
           {showTargetLine && (
@@ -175,10 +175,12 @@ const RevenueChart = memo(function RevenueChart({
     const areaSeries = [
       {
         data: areaData,
-        color: "hsl(221, 83%, 53%)",
-        topColor: "hsla(221, 83%, 53%, 0.35)",
-        bottomColor: "hsla(221, 83%, 53%, 0)",
+        color: "#00A88F",
+        topColor: "rgba(0, 168, 143, 0.32)",
+        bottomColor: "rgba(0, 168, 143, 0)",
         lineWidth: 2 as const,
+        lastValueVisible: true,
+        priceLineVisible: false,
       },
     ];
 

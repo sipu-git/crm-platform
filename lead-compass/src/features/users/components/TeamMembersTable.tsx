@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import {
     DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
     DropdownMenuSeparator, DropdownMenuTrigger,
@@ -12,19 +12,9 @@ import {
 } from "lucide-react";
 import { ROLE_OPTIONS, Role, Invite } from "@/features/users/types";
 import {
-    ROLE_RING,
-    DEFAULT_ROLE_RING,
-    avatarStyle,
-    initials,
-    ROLE_ICONS,
-    ROLE_STYLES,
+    ROLE_RING, DEFAULT_ROLE_RING, avatarStyle, initials, ROLE_ICONS, ROLE_STYLES,
     ROLE_LABELS,
-    DEFAULT_ROLE_STYLE,
-    RoleBadge,
-    StatusBadge,
-    SortButton,
-    SortField,
-    SortDir,
+    DEFAULT_ROLE_STYLE, RoleBadge, StatusBadge, SortButton, SortField, SortDir
 } from "./TeamStyles";
 
 type Props = {
@@ -43,6 +33,20 @@ type Props = {
     onRemove: (user: Invite) => void;
     onClearFilters: () => void;
 };
+
+function resolveProfilePicUrl(rawUrl?: string | null): string | undefined {
+    if (!rawUrl || !rawUrl.trim()) return undefined;
+    const trimmed = rawUrl.trim();
+    if (
+        trimmed.startsWith("http://") ||
+        trimmed.startsWith("https://") ||
+        trimmed.startsWith("data:") ||
+        trimmed.startsWith("blob:")
+    ) {
+        return trimmed;
+    }
+    return undefined;
+}
 
 export function TeamMembersTable({
     items,
@@ -123,13 +127,13 @@ export function TeamMembersTable({
                             const hasFullName = Boolean(u.full_name?.trim());
                             const displayName = hasFullName ? u.full_name!.trim() : u.email.split("@")[0];
                             const phoneNum = (u.mobile || u.phone)?.trim();
+                            const profilePicUrl = resolveProfilePicUrl(u.profilePicUrl || u.profilePic);
                             const joinedDateStr = u.createdAt || u.createdAt;
-                            const formattedJoined = joinedDateStr
-                                ? new Date(joinedDateStr).toLocaleDateString(undefined, {
-                                      month: "short",
-                                      day: "numeric",
-                                      year: "numeric",
-                                  })
+                            const formattedJoined = joinedDateStr ? new Date(joinedDateStr).toLocaleDateString(undefined, {
+                                month: "short",
+                                day: "numeric",
+                                year: "numeric",
+                            })
                                 : null;
 
                             return (
@@ -138,6 +142,9 @@ export function TeamMembersTable({
                                     <TableCell>
                                         <div className="flex items-center gap-3 min-w-0">
                                             <Avatar className={`h-9 w-9 shrink-0 ${ROLE_RING[u.role] ?? DEFAULT_ROLE_RING}`}>
+                                                {profilePicUrl && (
+                                                    <AvatarImage src={profilePicUrl} alt={displayName} className="object-cover" />
+                                                )}
                                                 <AvatarFallback className={`text-xs font-semibold ${avatarStyle(displayName)}`}>
                                                     {initials(displayName)}
                                                 </AvatarFallback>
@@ -173,9 +180,8 @@ export function TeamMembersTable({
                                                 <DropdownMenuTrigger asChild>
                                                     <button
                                                         type="button"
-                                                        className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-semibold whitespace-nowrap transition-all hover:shadow-xs hover:scale-[1.02] active:scale-[0.98] cursor-pointer ${
-                                                            ROLE_STYLES[u.role] ?? DEFAULT_ROLE_STYLE
-                                                        }`}
+                                                        className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-semibold whitespace-nowrap transition-all hover:shadow-xs hover:scale-[1.02] active:scale-[0.98] cursor-pointer ${ROLE_STYLES[u.role] ?? DEFAULT_ROLE_STYLE
+                                                            }`}
                                                         aria-label={`Change role for ${displayName}`}
                                                     >
                                                         {ROLE_ICONS[u.role]}

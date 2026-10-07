@@ -4,10 +4,10 @@ import { profilesKeys } from "../keys/profiles.keys";
 import { TENANT_UPDATE_KEYS, USER_UPDATE_KEYS, type DeleteProfilePayload, type Profile, type UpdateProfilePayload } from "../types";
 const cache = { staleTime: 5 * 60_000, gcTime: 15 * 60_000 };
 
-export function useProfile() {
+export function useProfile(enabled = true) {
     return useQuery({
         queryKey: profilesKeys.current(),
-        queryFn: profilesApi.get, ...cache
+        queryFn: profilesApi.get, ...cache, enabled
     });
 }
 
@@ -38,6 +38,18 @@ export function useProfileMutation() {
         delete: useMutation({
             mutationFn: (value: DeleteProfilePayload) => profilesApi.delete(value),
             onSuccess: () => qc.removeQueries({ queryKey: profilesKeys.all }),
+        }),
+        uploadPicture: useMutation({
+            mutationFn: (file: File) => profilesApi.uploadPicture(file),
+            onSuccess: (res) => {
+                qc.invalidateQueries({ queryKey: profilesKeys.current() });
+            },
+        }),
+        uploadLogo: useMutation({
+            mutationFn: (file: File) => profilesApi.uploadLogo(file),
+            onSuccess: (res) => {
+                qc.invalidateQueries({ queryKey: profilesKeys.current() });
+            },
         }),
     };
 }

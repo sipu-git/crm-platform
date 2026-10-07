@@ -23,6 +23,7 @@ export interface SignupFormData {
   company_size: string;
   location: string;
   website: string;
+  logo_url?: string;
 
   // Step 4: CRM Setup
   crm_goals: string[];
@@ -44,6 +45,7 @@ export interface CompleteSignupPayload {
   industry?: string;
   company_size?: string;
   website?: string;
+  logo_url?: string;
   location?: string;
   crm_goals?: string[];
   departments?: string[];
@@ -65,4 +67,3 @@ export interface CompleteSignupResponse {
   };
   permissions: string[];
 }
-

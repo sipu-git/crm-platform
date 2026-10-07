@@ -10,6 +10,8 @@ export interface AreaSeriesConfig {
   bottomColor?: string;
   lineWidth?: 1 | 2 | 3 | 4;
   name?: string;
+  lastValueVisible?: boolean;
+  priceLineVisible?: boolean;
 }
 
 export interface LineOverlayConfig {
@@ -134,6 +136,9 @@ export const LightweightAreaChart = memo(function LightweightAreaChart({
         lineType: 2, // Curved line for aesthetic smooth trend
         topColor: s.topColor || `${s.color || "hsl(221, 83%, 53%)"}33`,
         bottomColor: s.bottomColor || `${s.color || "hsl(221, 83%, 53%)"}00`,
+        lastValueVisible: s.lastValueVisible ?? true,
+        priceLineVisible: s.priceLineVisible ?? true,
+        priceLineColor: s.color || "hsl(221, 83%, 53%)",
         crosshairMarkerVisible: true,
         crosshairMarkerRadius: 4,
         priceFormat: {

@@ -27,6 +27,8 @@ export interface Company {
   state?: string | null;
   country?: string | null;
   postal_code?: string | null;
+  logo_url?: string | null;
+  logoUrl?: string | null;
   gst_number?: string | null;
   pan_number?: string | null;
   billing_email?: string | null;

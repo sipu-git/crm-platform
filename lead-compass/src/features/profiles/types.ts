@@ -1,4 +1,4 @@
-export type TenantStatus = "ACTIVE" | "SUSPENDED" | "CANCELLED"; // adjust to match your actual TenantStatus enum values
+export type TenantStatus = "ACTIVE" | "SUSPENDED" | "CANCELLED";
 
 export interface Profile {
     user: {
@@ -8,11 +8,15 @@ export interface Profile {
         email: string;
         mobile: string;
         role: string;
+        profilePic?: string | null;
+        profilePicUrl?: string | null;
         createdAt: string;
         updatedAt: string;
     };
     tenant: {
         name: string;
+        tenant_key: string;
+        slug?: string | null;
         gst_number: string | null;
         pan_number: string | null;
         address: string | null;
@@ -22,6 +26,7 @@ export interface Profile {
         pincode: string | null;
         website: string | null;
         logo_url: string | null;
+        logoUrl?: string | null;
         industry: string | null;
         company_size: string | null;
         status: TenantStatus;
@@ -72,8 +77,7 @@ export interface ProfileState {
     deleteError: string | null;
 }
 
-export const USER_UPDATE_KEYS = ["full_name","email",  "mobile",
-] as const satisfies readonly (keyof UpdateProfilePayload & keyof Profile["user"])[];
+export const USER_UPDATE_KEYS = ["full_name", "email", "mobile"] as const satisfies readonly (keyof UpdateProfilePayload & keyof Profile["user"])[];
 
 export const TENANT_UPDATE_KEYS = [
     "name",

@@ -32,10 +32,12 @@ export function configureApi(opts: {
 api.interceptors.request.use((config) => {
   const token = getAuthToken();
   const tid = getTenantId();
+  const url = config.url ?? "";
+  const isAuthEndpoint = /\/module-auth\/auth\/(login|refresh|register)(\/|$)/.test(url);
   if (token && !config.headers.has("Authorization")) {
     config.headers.set("Authorization", `Bearer ${token}`);
   }
-  if (tid) config.headers.set("X-Tenant-Id", tid);
+  if (tid && !isAuthEndpoint) config.headers.set("X-Tenant-Id", tid);
 
   return config;
 });

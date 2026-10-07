@@ -3,12 +3,13 @@ import { Provider } from "react-redux";
 import { store, tenantReset } from "@/store";
 import { useAppSelector } from "@/store/hooks";
 import { configureApi } from "@/api/client";
-import { setCurrentTenant } from "@/features/tenant/slice";
+import { clearTenant, setCurrentTenant } from "@/features/tenant/slice";
 import { Toaster } from "@/components/ui/sonner";
 import { useNavigate } from "react-router-dom";
 import { PushNotificationManager } from "@/features/notifications/PushNotificationManager";
 import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/features/auth/hooks/useAuth";
+import type { AuthResult } from "@/features/auth/types/auth.types";
 
 function ThemeSync() {
   const theme = useAppSelector((s) => s.ui.theme);
@@ -41,13 +42,14 @@ function ApiConfigurator() {
   useEffect(() => {
     configureApi({
       getAuthToken: getCurrentToken,
-      getTenantId: () => null,
+      getTenantId: () =>
+        typeof window !== "undefined" ? localStorage.getItem("crm.tenant.tenant_key") : null,
       onUnauthorized: () => {
         if (typeof window !== "undefined") {
           localStorage.removeItem("crm.auth.token");
           localStorage.removeItem("crm.auth.refresh_token");
-          localStorage.removeItem("crm.tenant.slug");
         }
+        store.dispatch(clearTenant());
         queryClient.clear();
         navigate("/login");
       },
@@ -60,11 +62,11 @@ function ApiConfigurator() {
         }
         // keep the React‑Query auth cache in sync
         if (user && permissions) {
-          queryClient.setQueryData(["auth", "me"], {
-            accessToken: newToken,
-            user,
-            permissions,
-          });
+          queryClient.setQueryData<AuthResult>(["auth", "me"], (current) =>
+            current
+              ? { ...current, accessToken: newToken, user, permissions }
+              : current,
+          );
         }
       },
     });
@@ -84,9 +86,9 @@ export function TenantSwitchHelper({
   return null;
 }
 
-export function switchTenant(slug: string) {
+export function switchTenant(tenant: { tenantKey: string; slug?: string | null; name?: string | null }) {
   store.dispatch(tenantReset());
-  store.dispatch(setCurrentTenant(slug));
+  store.dispatch(setCurrentTenant(tenant));
 }
 
 export function AppProviders({ children }: { children: ReactNode }) {

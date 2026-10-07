@@ -4,6 +4,7 @@ import { authApi } from "../apis/auth.api";
 import { authKeys } from "../keys/auth.keys";
 
 import { useAppDispatch } from "@/store/hooks";
+import { setCurrentTenant, clearTenant } from "@/features/tenant/slice";
 import type { AuthResult, LoginPayload } from "../types/auth.types";
 
 export function useAuth() {
@@ -22,12 +23,22 @@ export function useAuth() {
 
 export function useLogin() {
     const qc = useQueryClient();
+    const dispatch = useAppDispatch();
     return useMutation<AuthResult, Error, LoginPayload>({
         mutationFn: (payload: LoginPayload) => authApi.login(payload).then(r => r.data),
         mutationKey: authKeys.login,
         onSuccess: (result) => {
             localStorage.setItem('crm.auth.token', result.accessToken);
             localStorage.setItem('crm.auth.refresh_token', result.refreshToken ?? "");
+            if (result.tenant?.tenant_key) {
+                dispatch(setCurrentTenant({
+                    tenantKey: result.tenant.tenant_key,
+                    ...(result.tenant.slug !== undefined ? { slug: result.tenant.slug } : {}),
+                    ...(result.tenant.name !== undefined ? { name: result.tenant.name } : {}),
+                }));
+            } else {
+                dispatch(clearTenant());
+            }
             qc.setQueryData(authKeys.me, result)
         },
     });
@@ -44,7 +55,7 @@ export function useLogout() {
             // Clear everything manually
             localStorage.removeItem('crm.auth.token');
             localStorage.removeItem('crm.auth.refresh_token');
-            localStorage.removeItem('crm.tenant.slug');
+            dispatch(clearTenant());
             qc.clear();
         },
     });

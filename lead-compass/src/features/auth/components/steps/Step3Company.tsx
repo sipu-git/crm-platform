@@ -206,6 +206,43 @@ export const Step3Company: React.FC<Props> = ({
             </div>
           </div>
         </div>
+
+        {/* Company Logo Upload */}
+        <div>
+          <label className="block text-sm font-medium text-slate-300 mb-1.5">Company Logo (Optional S3 Upload)</label>
+          <div className="flex items-center gap-4 p-3.5 rounded-xl bg-[#13172E]/80 border border-slate-700/80">
+            {formData.logo_url ? (
+              <div className="h-12 w-12 rounded-lg bg-indigo-500/20 border border-indigo-500/30 flex items-center justify-center text-indigo-300 font-bold text-xs overflow-hidden">
+                Logo Set
+              </div>
+            ) : (
+              <div className="h-12 w-12 rounded-lg bg-slate-800 border border-slate-700 flex items-center justify-center text-slate-400">
+                <Building2 className="h-6 w-6" />
+              </div>
+            )}
+            <div className="flex-1">
+              <label className="cursor-pointer inline-flex items-center gap-2 px-3.5 py-2 rounded-lg bg-indigo-600/30 hover:bg-indigo-600/50 border border-indigo-500/40 text-xs font-semibold text-indigo-200 transition-all">
+                Upload Logo to S3
+                <input
+                  type="file"
+                  accept="image/png,image/jpeg,image/jpg,image/webp"
+                  className="hidden"
+                  onChange={async (e) => {
+                    const file = e.target.files?.[0];
+                    if (!file) return;
+                    try {
+                      const res = await uploadOnboardingLogoApi(file);
+                      updateFormData({ logo_url: res.logo_url });
+                    } catch (err) {
+                      console.error('Failed to upload logo:', err);
+                    }
+                  }}
+                />
+              </label>
+              <p className="text-[11px] text-slate-400 mt-1">PNG, JPG, WEBP up to 5MB</p>
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Footer Navigation */}

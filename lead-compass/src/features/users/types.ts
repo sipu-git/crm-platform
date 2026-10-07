@@ -7,6 +7,8 @@ export interface Invite {
     id: string;
     email: string;
     role: Role;
+    profilePic?: string | null;
+    profilePicUrl?: string | null;
     full_name?: string | null;
     mobile?: string | null;
     phone?: string | null;

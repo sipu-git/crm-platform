@@ -12,6 +12,7 @@ import {
 import { toast } from "sonner";
 import {
     Building2,
+    Camera,
     ExternalLink,
     KeyRound,
     Loader2,
@@ -97,7 +98,7 @@ export default function ProfilePage() {
     const auth = useAuthPayload()
     const isClient = auth?.user.role==="CLIENT";
     const { data: profile, isLoading, isError } = useProfile();
-    const { update: updateProfile, delete: deleteProfile } = useProfileMutation();
+    const { update: updateProfile, delete: deleteProfile, uploadPicture, uploadLogo } = useProfileMutation();
     const [editingPersonal, setEditingPersonal] = useState(false);
     const [editingCompany, setEditingCompany] = useState(false);
     const [deleteModalOpen, setDeleteModalOpen] = useState(false);
@@ -193,8 +194,40 @@ export default function ProfilePage() {
 
                         <div className="flex flex-col gap-5 p-5 sm:flex-row sm:items-center sm:justify-between sm:p-7">
                             <div className="flex min-w-0 items-center gap-4">
-                                <div className="grid h-16 w-16 shrink-0 place-items-center rounded-2xl bg-[image:var(--gradient-amber)] text-lg font-bold text-amber-foreground shadow-sm">
-                                    {initials}
+                                <div className="relative group shrink-0">
+                                    <div className="grid h-16 w-16 place-items-center overflow-hidden rounded-2xl bg-[image:var(--gradient-amber)] text-lg font-bold text-amber-foreground shadow-sm">
+                                        {profile.user.profilePicUrl ? (
+                                            <img
+                                                src={profile.user.profilePicUrl}
+                                                alt={profile.user.full_name}
+                                                className="h-full w-full object-cover"
+                                            />
+                                        ) : (
+                                            initials
+                                        )}
+                                    </div>
+                                    <label className="absolute -bottom-1 -right-1 grid h-7 w-7 cursor-pointer place-items-center rounded-full bg-primary text-primary-foreground shadow-md transition-transform hover:scale-110">
+                                        {uploadPicture.isPending ? (
+                                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                        ) : (
+                                            <Camera className="h-3.5 w-3.5" />
+                                        )}
+                                        <input
+                                            type="file"
+                                            accept="image/png,image/jpeg,image/jpg,image/webp"
+                                            className="hidden"
+                                            onChange={async (e) => {
+                                                const file = e.target.files?.[0];
+                                                if (!file) return;
+                                                try {
+                                                    await uploadPicture.mutateAsync(file);
+                                                    toast.success("Profile picture updated");
+                                                } catch {
+                                                    toast.error("Failed to upload profile picture");
+                                                }
+                                            }}
+                                        />
+                                    </label>
                                 </div>
 
                                 <div className="min-w-0">
@@ -356,15 +389,42 @@ export default function ProfilePage() {
                                     </div>
                                 </div>
 
-                                {canEditCompany && !editingCompany && (
-                                    <button
-                                        type="button"
-                                        onClick={() => setEditingCompany(true)}
-                                        className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-border px-3 py-2 text-sm font-medium transition-colors hover:bg-secondary"
-                                    >
-                                        <Pencil className="h-3.5 w-3.5" />
-                                        Edit
-                                    </button>
+                                {canEditCompany && (
+                                    <div className="flex items-center gap-2">
+                                        <label className="inline-flex shrink-0 cursor-pointer items-center gap-1.5 rounded-lg border border-border px-3 py-2 text-sm font-medium transition-colors hover:bg-secondary">
+                                            {uploadLogo.isPending ? (
+                                                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                            ) : (
+                                                <Camera className="h-3.5 w-3.5" />
+                                            )}
+                                            Upload Logo
+                                            <input
+                                                type="file"
+                                                accept="image/png,image/jpeg,image/jpg,image/webp"
+                                                className="hidden"
+                                                onChange={async (e) => {
+                                                    const file = e.target.files?.[0];
+                                                    if (!file) return;
+                                                    try {
+                                                        await uploadLogo.mutateAsync(file);
+                                                        toast.success("Company logo updated");
+                                                    } catch {
+                                                        toast.error("Failed to upload company logo");
+                                                    }
+                                                }}
+                                            />
+                                        </label>
+                                        {!editingCompany && (
+                                            <button
+                                                type="button"
+                                                onClick={() => setEditingCompany(true)}
+                                                className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-border px-3 py-2 text-sm font-medium transition-colors hover:bg-secondary"
+                                            >
+                                                <Pencil className="h-3.5 w-3.5" />
+                                                Edit
+                                            </button>
+                                        )}
+                                    </div>
                                 )}
                             </div>
 
@@ -453,6 +513,18 @@ export default function ProfilePage() {
                                 </form>
                             ) : (
                                 <dl className="mt-6 grid gap-5 sm:grid-cols-2">
+                                    {profile.tenant.logoUrl && (
+                                        <DetailItem label="Company logo" className="sm:col-span-2">
+                                            <div className="mt-1 h-16 w-16 overflow-hidden rounded-xl border border-border bg-secondary/30 p-1">
+                                                <img
+                                                    src={profile.tenant.logoUrl}
+                                                    alt="Company logo"
+                                                    className="h-full w-full object-contain"
+                                                />
+                                            </div>
+                                        </DetailItem>
+                                    )}
+
                                     <DetailItem label="Company name">
                                         {profile.tenant.name || "—"}
                                     </DetailItem>

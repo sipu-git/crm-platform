@@ -1,12 +1,13 @@
 import { lazy, Suspense, useEffect } from "react";
-import { Navigate, Route, Routes, useParams } from "react-router-dom";
+import { Navigate, Route, Routes, useLocation, useParams } from "react-router-dom";
 
 import { FullPageSpinner } from "@/components/FullPageSpinner";
 import { ProtectedRoute } from "@/components/ProtectedRoutes";
 
-import { useAppDispatch } from "@/store/hooks";
+import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { setCurrentTenant } from "@/features/tenant/slice";
 import { useAuth } from "@/features/auth/hooks/useAuth";
+import { useProfile } from "@/features/profiles/hooks/useProfile";
 import AppShell from "./components/AppShell";
 
 const LoginPage = lazy(() => import("@/features/auth/routes/login"));
@@ -43,20 +44,30 @@ const TermsOfService = lazy(() => import("@/pages/TermsOfService"));
 
 function RequireAuth() {
   const { tenantSlug = "acme" } = useParams();
+  const location = useLocation();
   const dispatch = useAppDispatch();
+  const storedTenantSlug = useAppSelector((state) => state.tenant.currentSlug);
 
   const {data: authResult,isLoading,isError} = useAuth();
   const user = authResult?.user;
+  const { data: profile, isLoading: isProfileLoading } = useProfile(Boolean(user));
+  const tenant = profile?.tenant ?? authResult?.tenant;
 
   useEffect(() => {
-    dispatch(setCurrentTenant(tenantSlug));
-  }, [dispatch, tenantSlug]);
+    if (!tenant?.tenant_key) return;
+
+    dispatch(setCurrentTenant({
+      tenantKey: tenant.tenant_key,
+      ...(tenant.slug !== undefined ? { slug: tenant.slug } : {}),
+      ...(tenant.name !== undefined ? { name: tenant.name } : {}),
+    }));
+  }, [dispatch, tenant?.tenant_key, tenant?.slug, tenant?.name]);
 
   if (!localStorage.getItem("crm.auth.token")) {
     return <Navigate to="/login" replace />;
   }
 
-  if (isLoading) {
+  if (isLoading || (Boolean(user) && isProfileLoading)) {
     return <FullPageSpinner />;
   }
 
@@ -64,7 +75,21 @@ function RequireAuth() {
     return <Navigate to="/login" replace />;
   }
 
-  return <AppShell tenantSlug={tenantSlug} />;
+  const canonicalTenantSlug = tenant?.slug || storedTenantSlug;
+  if (canonicalTenantSlug && tenantSlug !== canonicalTenantSlug) {
+    const routePrefix = `/${tenantSlug}`;
+    const routeSuffix = location.pathname.startsWith(`${routePrefix}/`)
+      ? location.pathname.slice(routePrefix.length)
+      : "/home";
+    return (
+      <Navigate
+        to={`/${canonicalTenantSlug}${routeSuffix}${location.search}${location.hash}`}
+        replace
+      />
+    );
+  }
+
+  return <AppShell tenantSlug={tenantSlug} tenant={profile?.tenant} />;
 }
 
 function RoleDashboard() {

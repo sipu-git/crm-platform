@@ -9,7 +9,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useNavigate, useParams } from "react-router-dom";
 import { Button } from "../ui/button";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { RoleLabel } from "../UserRoleBadge";
 import { LogOut } from "lucide-react";
 import { useProfile } from "@/features/profiles/hooks/useProfile";
@@ -23,6 +23,7 @@ export function UserMenu() {
     const name = profile?.user.full_name ?? "";
     const email = profile?.user.email ?? "";
     const role = profile?.user.role ?? "";
+    const profilePicUrl = profile?.user.profilePicUrl;
 
     const initials = (name || "?").split(" ").filter(Boolean).map((s) => s[0]).slice(0, 2).join("").toUpperCase();
 
@@ -39,6 +40,9 @@ export function UserMenu() {
                     className="h-auto items-center gap-2 px-2 py-0.5"
                 >
                     <Avatar className="h-9 w-9 shrink-0">
+                        {profilePicUrl ? (
+                            <AvatarImage src={profilePicUrl} alt={name} className="object-cover" />
+                        ) : null}
                         <AvatarFallback className="bg-[hsla(264,97%,15%,1)] text-xs font-medium dark:text-primary text-secondary hover:hover:bg-warning-foreground">
                             {isLoading ? "…" : initials}
                         </AvatarFallback>
