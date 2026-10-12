@@ -20,7 +20,7 @@ export const dashboardService = {
             ADMIN: [
                 {
                     id: 'admin-arr',
-                    label: 'Closed Revenue (ARR)',
+                    label: 'All-Time Closed Deal Value',
                     value: metricsData.closedRevenueVal,
                     formattedValue: formatCurrency(metricsData.closedRevenueVal),
                     changePeriod: `${metricsData.wonDealsCount} won deals`,
@@ -233,25 +233,32 @@ export const dashboardService = {
     async getRevenue(tenantId: string) {
         const revenueData = await dashboardRepository.getRevenueTrend(tenantId);
 
-        const monthMap = new Map<string, { revenue: number; collected: number }>();
+        const monthMap = new Map<string, { bookings: number; wonDeals: number; invoiced: number; collected: number }>();
         for (let i = 11; i >= 0; i--) {
             const d = subMonths(new Date(), i);
-            const period = format(startOfMonth(d), 'MMM yy');
-            monthMap.set(period, { revenue: 0, collected: 0 });
+            const period = format(startOfMonth(d), 'yyyy-MM-dd');
+            monthMap.set(period, { bookings: 0, wonDeals: 0, invoiced: 0, collected: 0 });
         }
 
         revenueData.invoices.forEach((inv) => {
-            const dateVal = inv.issue_date || inv.created_at;
-            if (dateVal) {
+            if (inv.issue_date && !['DRAFT', 'CANCELLED'].includes(inv.status)) {
                 try {
-                    const key = format(startOfMonth(new Date(dateVal)), 'MMM yy');
+                    const key = format(startOfMonth(new Date(inv.issue_date)), 'yyyy-MM-dd');
                     if (monthMap.has(key)) {
                         const entry = monthMap.get(key)!;
                         const amt = Number(inv.total_amount || 0);
-                        entry.revenue += amt;
-                        if (inv.status === 'PAID') {
-                            entry.collected += amt;
-                        }
+                        entry.invoiced += amt;
+                    }
+                } catch {
+                    // Ignore
+                }
+            }
+
+            if (inv.status === 'PAID' && inv.paid_at) {
+                try {
+                    const key = format(startOfMonth(new Date(inv.paid_at)), 'yyyy-MM-dd');
+                    if (monthMap.has(key)) {
+                        monthMap.get(key)!.collected += Number(inv.amount_paid || 0);
                     }
                 } catch {
                     // Ignore
@@ -260,12 +267,13 @@ export const dashboardService = {
         });
 
         revenueData.wonDeals.forEach((deal) => {
-            if (deal.created_at) {
+            if (deal.won_at) {
                 try {
-                    const key = format(startOfMonth(new Date(deal.created_at)), 'MMM yy');
+                    const key = format(startOfMonth(new Date(deal.won_at)), 'yyyy-MM-dd');
                     if (monthMap.has(key)) {
                         const entry = monthMap.get(key)!;
-                        entry.revenue += Number(deal.amount || 0);
+                        entry.bookings += Number(deal.amount || 0);
+                        entry.wonDeals += 1;
                     }
                 } catch {
                     // Ignore
@@ -277,8 +285,9 @@ export const dashboardService = {
         monthMap.forEach((val, period) => {
             revenueTrend.push({
                 period,
-                revenue: val.revenue,
-                target: Math.round(val.revenue * 1.15),
+                bookings: val.bookings,
+                wonDeals: val.wonDeals,
+                invoiced: val.invoiced,
                 collected: val.collected,
             });
         });

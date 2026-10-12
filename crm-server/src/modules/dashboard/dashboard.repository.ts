@@ -115,26 +115,31 @@ export const dashboardRepository = {
             prisma.invoice.findMany({
                 where: {
                     tenant_id: tenantId,
-                    created_at: { gte: twelveMonthsAgo },
+                    OR: [
+                        {
+                            issue_date: { gte: twelveMonthsAgo },
+                            status: { notIn: ['DRAFT', 'CANCELLED'] },
+                        },
+                        { paid_at: { gte: twelveMonthsAgo }, status: 'PAID' },
+                    ],
                 },
                 select: {
-                    id: true,
                     total_amount: true,
+                    amount_paid: true,
                     status: true,
                     issue_date: true,
-                    created_at: true,
+                    paid_at: true,
                 },
             }),
             prisma.deal.findMany({
                 where: {
                     tenant_id: tenantId,
                     pipeline: { is_won: true },
-                    created_at: { gte: twelveMonthsAgo },
+                    won_at: { gte: twelveMonthsAgo },
                 },
                 select: {
-                    id: true,
                     amount: true,
-                    created_at: true,
+                    won_at: true,
                 },
             }),
         ]);

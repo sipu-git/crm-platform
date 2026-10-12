@@ -8,6 +8,7 @@ model Deal {
     stage_id            String
     owner_id            String
     expected_close_date DateTime
+    won_at              DateTime?
     created_at          DateTime @default(now())
     updated_at          DateTime @updatedAt
 

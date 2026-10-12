@@ -4,6 +4,8 @@ import { AccessTokenPayload } from "../../../shared/utils/jwt";
 import { PrismaClientTx } from "../../../shared/utils/prisma.types";
 import { buildOwnershipFilter } from "../../rbac/scope";
 import { generateInvoiceNumber, InvoiceHeaderInput, InvoiceUpdatableFields } from "../utils/invoice.calculation";
+import { computeInvoiceItemAmounts } from "../utils/items-calculation";
+import { invoiceItemsRepository } from "./invoice-items.repository";
 
 export const invoiceRepository = {
   findMany(tx: PrismaClientTx, tenantId: string, user: AccessTokenPayload,
@@ -86,7 +88,13 @@ export const invoiceRepository = {
           include: {
             company: true
           }
-        }
+        },
+        project: {
+          include: {
+            originatingLead: { select: { project_name: true, project_type: true } },
+            enquiry: { select: { project_name: true, project_type: true } },
+          },
+        },
       }
     });
 
@@ -130,14 +138,25 @@ export const invoiceRepository = {
     const buyerState = buyerCompany?.place_of_supply || buyerCompany?.state || null;
 
     const invoice_number = await generateInvoiceNumber(tx, tenantId, companyDetail);
+    const projectName = deal.project?.originatingLead?.project_name
+      || deal.project?.enquiry?.project_name
+      || deal.leads?.project_name;
+    const projectType = deal.project?.originatingLead?.project_type
+      || deal.project?.enquiry?.project_type
+      || deal.leads?.project_type;
+    const itemDescription = [
+      projectName?.trim(),
+      projectType?.replaceAll("_", " ").trim(),
+    ].filter(Boolean).join(" - ") || deal.title;
 
-    return tx.invoice.create({
+    const invoice = await tx.invoice.create({
       data: {
         tenant_id: tenantId,
         invoice_number,
         invoice_type: "B2B",
         status: "DRAFT",
         deal_id: deal.id,
+        project_id: deal.project?.id,
         contact_id: deal.contact_id || null,
         company_id: deal.leads?.companyId || null,
         issue_date: new Date(),
@@ -167,6 +186,21 @@ export const invoiceRepository = {
         amount_due: amount,
       },
     });
+
+    // Deal-won invoices use the deal amount as their total, so persist a
+    // matching project line item as part of the same transaction.
+    const item = computeInvoiceItemAmounts({
+      description: itemDescription,
+      quantity: 1,
+      unit_price: amount,
+      discount_amount: 0,
+      cgst_rate: 0,
+      sgst_rate: 0,
+      igst_rate: 0,
+    });
+    await invoiceItemsRepository.create(tx, invoice.id, item);
+
+    return invoice;
   },
   update(tx: PrismaClientTx, id: string, data: Partial<InvoiceUpdatableFields>) {
     return tx.invoice.update({

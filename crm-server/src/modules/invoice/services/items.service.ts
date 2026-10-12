@@ -24,26 +24,38 @@ async function resolveDefaultDescription(
         } | null;
     }
 ): Promise<string | undefined> {
+    const formatDescription = (source?: { project_name?: string | null; project_type?: string | null } | null) => {
+        const name = source?.project_name?.trim();
+        const type = source?.project_type?.replaceAll("_", " ").trim();
+        const description = [name, type].filter(Boolean).join(" - ");
+        return description || undefined;
+    };
+
     // 1. Prefer the invoice's directly linked project name
-    const eagerName = invoice.project?.originatingLead?.project_name || invoice.project?.enquiry?.project_name;
-    if (eagerName) {
-        return eagerName;
+    const eagerDescription = formatDescription(invoice.project?.originatingLead)
+        || formatDescription(invoice.project?.enquiry);
+    if (eagerDescription) {
+        return eagerDescription;
     }
 
     // 2. If invoice has a project_id but wasn't eager-loaded, fetch it
     if (invoice.project_id) {
         const project = await tx.project.findUnique({
             where: { id: invoice.project_id },
-            include: { originatingLead: { select: { project_name: true } }, enquiry: { select: { project_name: true } } },
+            include: {
+                originatingLead: { select: { project_name: true, project_type: true } },
+                enquiry: { select: { project_name: true, project_type: true } },
+            },
         });
-        const name = project?.originatingLead?.project_name || project?.enquiry?.project_name;
-        if (name) return name;
+        const description = formatDescription(project?.originatingLead)
+            || formatDescription(project?.enquiry);
+        if (description) return description;
     }
 
     // 3. Fall back to the lead's project_name via the deal
     if (!invoice.deal?.lead_id) return undefined;
     const lead = await leadsRepository.findById(tx, tenantId, invoice.deal?.lead_id);
-    return lead?.project_name ?? undefined;
+    return formatDescription(lead);
 }
 
 async function recalculateInvoiceTotals(tx: PrismaClientTx, tenantId: string, invoiceId: string) {

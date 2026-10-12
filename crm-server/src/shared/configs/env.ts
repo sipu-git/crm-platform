@@ -11,8 +11,8 @@ export const env = {
   port: Number(process.env.PORT ?? 5000),
   nodeEnv: process.env.NODE_ENV ?? 'development',
   databaseUrl: required('DATABASE_URL'),
-  // clientUrl: process.env.CLIENT_URL ?? 'http://localhost:5173',
-  clientUrl: process.env.PRODUCTION_URL ?? 'https://crm-platform-weld.vercel.app',
+  clientUrl: process.env.CLIENT_URL ?? 'http://localhost:5173',
+  // clientUrl: process.env.PRODUCTION_URL ?? 'https://crm-platform-weld.vercel.app',
   jwt: {
     accessSecret: required('JWT_ACCESS_SECRET_KEY'),
     refreshSecret: required('JWT_REFRESH_SECRET_KEY'),

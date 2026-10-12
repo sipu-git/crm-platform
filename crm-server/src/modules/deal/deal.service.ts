@@ -61,7 +61,10 @@ export const dealService = {
         );
       }
 
-      await dealRepository.moveStage(tx, tenantId, id, stageId);
+      const wonAt = targetStage.is_won
+        ? deal.won_at || new Date()
+        : null;
+      await dealRepository.moveStage(tx, tenantId, id, stageId, wonAt);
       const updatedDeal = await dealRepository.findById(tx, tenantId, id);
       const project = targetStage.is_won
         ? await projectService.convertWonDeal(tx, tenantId, id)
@@ -98,7 +101,15 @@ export const dealService = {
     const deal = await prisma.$transaction(async (tx) => {
       const existing = await dealRepository.findById(tx, tenantId, id);
       if (!existing) throw ApiError.notFound("Deal not found");
-      return dealRepository.update(tx, tenantId, id, data);
+
+      let wonAt: Date | null | undefined;
+      if (data.stageId !== undefined) {
+        const targetStage = await pipelineRepository.findStageById(tx, tenantId, data.stageId);
+        if (!targetStage) throw ApiError.notFound("Target stage not found");
+        wonAt = targetStage.is_won ? existing.won_at || new Date() : null;
+      }
+
+      return dealRepository.update(tx, tenantId, id, data, wonAt);
     });
 
     await Promise.all([

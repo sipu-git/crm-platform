@@ -2,7 +2,8 @@
 import { z } from 'zod';
 
 const invoiceItemBaseSchema = z.object({
-  description: z.string().min(1, 'Description is required'),
+  // The server can fill this from the linked project or enquiry when omitted.
+  description: z.string().trim().optional(),
   quantity: z.coerce.number().positive().default(1),
   unit_price: z.coerce.number().nonnegative(),
   discount_amount: z.coerce.number().nonnegative().default(0),

@@ -136,7 +136,7 @@ export const dealRepository = {
     return pipelineStages;
   },
 
-  moveStage(tx: PrismaClientTx, tenantId: string, dealId: string, stageId: string) {
+  moveStage(tx: PrismaClientTx, tenantId: string, dealId: string, stageId: string, wonAt: Date | null) {
     return tx.deal.updateMany({
       where: {
         id: dealId,
@@ -144,17 +144,19 @@ export const dealRepository = {
       },
       data: {
         stage_id: stageId,
+        won_at: wonAt,
       },
     });
   },
 
-  async update(tx: PrismaClientTx, tenantId: string, dealId: string, data: UpdateStageInput) {
+  async update(tx: PrismaClientTx, tenantId: string, dealId: string, data: UpdateStageInput, wonAt?: Date | null) {
     const updateData: Record<string, any> = {};
     if (data.title !== undefined) updateData.title = data.title;
     if (data.amount !== undefined) updateData.amount = data.amount;
     if (data.contactId !== undefined) updateData.contact_id = data.contactId;
     if (data.leadId !== undefined) updateData.lead_id = data.leadId;
     if (data.stageId !== undefined) updateData.stage_id = data.stageId;
+    if (wonAt !== undefined) updateData.won_at = wonAt;
     if (data.expectedCloseDate !== undefined) updateData.expected_close_date = data.expectedCloseDate;
 
     await tx.deal.updateMany({
