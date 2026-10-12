@@ -42,6 +42,7 @@ export function useDealMutation() {
     Promise.all([
       qc.invalidateQueries({ queryKey: dealsKeys.lists() }),
       qc.invalidateQueries({ queryKey: dealsKeys.board() }),
+      qc.invalidateQueries({ queryKey: ["dashboard", "revenue"] }),
     ]);
 
   return {

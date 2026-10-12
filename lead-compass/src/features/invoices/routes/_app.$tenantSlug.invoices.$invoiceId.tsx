@@ -1,26 +1,79 @@
-import { lazy, Suspense, useCallback, useState } from "react";
+import {
+  lazy,
+  Suspense,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type ComponentType,
+  type ReactNode,
+} from "react";
+import { createPortal } from "react-dom";
 import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
 import { useInvoiceById, useInvoiceMutation } from "@/features/invoices/hooks/useInvoices";
-import { useCompanies } from "@/features/companies/hooks/useCompanies";
 import type { Company } from "@/features/companies/types/companies.types";
 import type { CreateInvoiceLineItemInput, Invoice } from "@/features/invoices/types/invoices.type";
 import { useAuthPayload } from "@/features/auth/hooks/useAuthPayload";
 import InvoiceHeader from "@/features/invoices/components/InvoiceHeader";
 import InvoiceStatusActions from "@/features/invoices/components/InvoiceStatusActions";
-import SellerDetails from "@/features/invoices/components/SellerDetails";
-import BuyerDetails from "@/features/invoices/components/BuyerDetails";
-import InvoiceMeta from "@/features/invoices/components/InvoiceMeta";
-import InvoiceNotes from "@/features/invoices/components/InvoiceNotes";
-import InvoiceLineItemsSkeleton from "@/features/invoices/components/InvoiceLineItemsSkeleton";
 import type {
   BuyerDetailsDraft,
   InvoiceMetaDraft,
 } from "@/features/invoices/components/invoice-detail.types";
 
-const EMPTY_COMPANIES: Company[] = [];
-
+const SellerDetails = lazy(() => import("@/features/invoices/components/SellerDetails"));
+const BuyerDetails = lazy(() => import("@/features/invoices/components/BuyerDetails"));
+const InvoiceMeta = lazy(() => import("@/features/invoices/components/InvoiceMeta"));
+const InvoiceNotes = lazy(() => import("@/features/invoices/components/InvoiceNotes"));
 const InvoiceLineItems = lazy(() => import("@/features/invoices/components/InvoiceLineItems"));
+
+function DeferredSection({
+  children,
+  placeholderClassName,
+  priority = false,
+}: {
+  children: ReactNode;
+  placeholderClassName: string;
+  priority?: boolean;
+}) {
+  const sectionRef = useRef<HTMLDivElement>(null);
+  const [shouldRender, setShouldRender] = useState(priority);
+
+  useEffect(() => {
+    if (shouldRender) return;
+    const section = sectionRef.current;
+    if (!section) return;
+    if (!("IntersectionObserver" in window)) {
+      setShouldRender(true);
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setShouldRender(true);
+          observer.disconnect();
+        }
+      },
+      { rootMargin: "360px 0px" },
+    );
+    observer.observe(section);
+    return () => observer.disconnect();
+  }, [shouldRender]);
+
+  return (
+    <div ref={sectionRef} className="min-w-0">
+      {shouldRender ? (
+        <Suspense fallback={<div aria-hidden="true" className={placeholderClassName} />}>
+          {children}
+        </Suspense>
+      ) : (
+        <div aria-hidden="true" className={placeholderClassName} />
+      )}
+    </div>
+  );
+}
 
 export default function InvoiceDetail() {
   const { tenantSlug = "", invoiceId = "" } = useParams();
@@ -34,10 +87,16 @@ export default function InvoiceDetail() {
     updateItem: updateInvoiceItem,
     deleteItem: deleteInvoiceItem,
   } = useInvoiceMutation();
-  const { data: companies = EMPTY_COMPANIES } = useCompanies();
   const auth = useAuthPayload();
   const isClient = auth?.user.role === "CLIENT";
   const [saving, setSaving] = useState(false);
+  const [isPreparingPdf, setIsPreparingPdf] = useState(false);
+  const [PrintDocument, setPrintDocument] = useState<ComponentType<{
+    invoice: Invoice;
+    onReady: () => void;
+  }> | null>(null);
+  const printRequestedRef = useRef(false);
+  const printStartedRef = useRef(false);
 
   const isDraft = invoice?.status === "DRAFT" && !isClient;
   const currentInvoiceId = invoice?.id;
@@ -115,6 +174,37 @@ export default function InvoiceDetail() {
     }
   }, [currentInvoiceId, deleteInvoice.mutateAsync, navigate, tenantSlug]);
 
+  const handleSaveAsPdf = useCallback(async () => {
+    if (printStartedRef.current || printRequestedRef.current) return;
+    printRequestedRef.current = true;
+    setIsPreparingPdf(true);
+    try {
+      const module = await import("@/features/invoices/components/InvoicePrintDocument");
+      setPrintDocument(() => module.default);
+    } catch {
+      printRequestedRef.current = false;
+      setIsPreparingPdf(false);
+      toast.error("Unable to prepare the invoice PDF");
+    }
+  }, []);
+
+  const handlePrintDocumentReady = useCallback(() => {
+    if (!printRequestedRef.current || printStartedRef.current) return;
+    printRequestedRef.current = false;
+    printStartedRef.current = true;
+    setIsPreparingPdf(false);
+
+    const finishPrint = () => {
+      document.body.classList.remove("invoice-printing");
+      printStartedRef.current = false;
+      setPrintDocument(null);
+    };
+
+    window.addEventListener("afterprint", finishPrint, { once: true });
+    document.body.classList.add("invoice-printing");
+    window.print();
+  }, []);
+
   const handleCreateItem = useCallback(
     async (draft: CreateInvoiceLineItemInput) => {
       if (!currentInvoiceId) return false;
@@ -122,8 +212,8 @@ export default function InvoiceDetail() {
         await createInvoiceItem.mutateAsync({ invoiceId: currentInvoiceId, value: draft });
         toast.success("Line item added");
         return true;
-      } catch {
-        toast.error("Failed to add line item");
+      } catch (error) {
+        toast.error(error instanceof Error ? error.message : "Failed to add line item");
         return false;
       }
     },
@@ -137,8 +227,8 @@ export default function InvoiceDetail() {
         await updateInvoiceItem.mutateAsync({ invoiceId: currentInvoiceId, itemId, value: draft });
         toast.success("Line item updated");
         return true;
-      } catch {
-        toast.error("Failed to update line item");
+      } catch (error) {
+        toast.error(error instanceof Error ? error.message : "Failed to update line item");
         return false;
       }
     },
@@ -172,47 +262,64 @@ export default function InvoiceDetail() {
         tenantSlug={tenantSlug}
         isDraft={Boolean(isDraft)}
         onDelete={handleDelete}
+        onSaveAsPdf={handleSaveAsPdf}
+        isPreparingPdf={isPreparingPdf}
       />
-      <div className="space-y-6 p-6">
-        <InvoiceStatusActions
-          status={invoice.status}
-          isDraft={Boolean(isDraft)}
-          onSend={handleSend}
-          onMarkPaid={handleMarkPaid}
-          onCancel={handleCancel}
-        />
+      <main className="mx-auto w-full max-w-[1440px] px-4 py-5 sm:px-6 lg:px-8 lg:py-7">
+        <div className="grid grid-cols-1 items-start gap-4 lg:gap-5 xl:grid-cols-12">
+          <section aria-label="Invoice details" className="min-w-0 space-y-4 xl:col-span-5">
+            <InvoiceStatusActions
+              status={invoice.status}
+              isDraft={Boolean(isDraft)}
+              onSend={handleSend}
+              onMarkPaid={handleMarkPaid}
+              onCancel={handleCancel}
+            />
 
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-          <SellerDetails invoice={invoice} isDraft={Boolean(isDraft)} saving={saving} />
-          <BuyerDetails
-            invoice={invoice}
-            companies={companies}
-            tenantSlug={tenantSlug}
-            isDraft={Boolean(isDraft)}
-            saving={saving}
-            onPopulateCompany={handlePopulateFromCompany}
-          />
+            <DeferredSection priority placeholderClassName="h-[300px] animate-pulse rounded-lg bg-muted/40">
+              <SellerDetails invoice={invoice} isDraft={Boolean(isDraft)} saving={saving} />
+            </DeferredSection>
+            <DeferredSection placeholderClassName="h-[340px] animate-pulse rounded-lg bg-muted/40">
+              <BuyerDetails
+                invoice={invoice}
+                tenantSlug={tenantSlug}
+                isDraft={Boolean(isDraft)}
+                saving={saving}
+                onPopulateCompany={handlePopulateFromCompany}
+              />
+            </DeferredSection>
+            <DeferredSection placeholderClassName="h-[200px] animate-pulse rounded-lg bg-muted/40">
+              <InvoiceMeta invoice={invoice} />
+            </DeferredSection>
+            <DeferredSection placeholderClassName="h-[190px] animate-pulse rounded-lg bg-muted/40">
+              <InvoiceNotes
+                invoice={invoice}
+                isDraft={Boolean(isDraft)}
+                saving={saving}
+                onSave={saveMeta}
+              />
+            </DeferredSection>
+          </section>
+
+          <section aria-label="Invoice item details" className="min-w-0 xl:col-span-7">
+            <DeferredSection placeholderClassName="min-h-[420px] animate-pulse rounded-lg bg-muted/40">
+              <InvoiceLineItems
+                invoice={invoice}
+                isDraft={Boolean(isDraft)}
+                onCreateItem={handleCreateItem}
+                onUpdateItem={handleUpdateItem}
+                onDeleteItem={handleDeleteItem}
+              />
+            </DeferredSection>
+          </section>
         </div>
-
-        <InvoiceMeta invoice={invoice} />
-
-        <Suspense fallback={<InvoiceLineItemsSkeleton />}>
-          <InvoiceLineItems
-            invoice={invoice}
-            isDraft={Boolean(isDraft)}
-            onCreateItem={handleCreateItem}
-            onUpdateItem={handleUpdateItem}
-            onDeleteItem={handleDeleteItem}
-          />
-        </Suspense>
-
-        <InvoiceNotes
-          invoice={invoice}
-          isDraft={Boolean(isDraft)}
-          saving={saving}
-          onSave={saveMeta}
-        />
-      </div>
+      </main>
+      {PrintDocument && createPortal(
+        <div id="invoice-print-root">
+          <PrintDocument invoice={invoice} onReady={handlePrintDocumentReady} />
+        </div>,
+        document.body,
+      )}
     </div>
   );
 }

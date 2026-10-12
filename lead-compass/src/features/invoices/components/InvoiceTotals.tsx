@@ -2,100 +2,92 @@ import { memo, useMemo } from "react";
 import type { Invoice } from "@/features/invoices/types/invoices.type";
 import { formatInvoiceAmount } from "@/features/invoices/components/invoice-detail.utils";
 
-interface InvoiceTotalsProps {
-  invoice: Invoice;
-  isDraft: boolean;
-}
-
-function InvoiceTotals({ invoice, isDraft }: InvoiceTotalsProps) {
+function InvoiceTotals({ invoice }: { invoice: Invoice }) {
   const rows = useMemo(() => {
-    const rows = [
-      { key: "subtotal", label: "Subtotal", amount: formatInvoiceAmount(Number(invoice.subtotal)) },
+    const totals = [
+      { key: "subtotal", label: "Subtotal", amount: formatInvoiceAmount(Number(invoice.subtotal), invoice.currency) },
     ];
 
     if (Number(invoice.discount_amount) > 0) {
-      rows.push({
+      totals.push({
         key: "discount",
         label: "Discount",
-        amount: `−${formatInvoiceAmount(Number(invoice.discount_amount))}`,
+        amount: `-${formatInvoiceAmount(Number(invoice.discount_amount), invoice.currency)}`,
       });
     }
 
-    rows.push({
+    totals.push({
       key: "taxable",
       label: "Taxable amount",
-      amount: formatInvoiceAmount(Number(invoice.taxable_amount)),
+      amount: formatInvoiceAmount(Number(invoice.taxable_amount), invoice.currency),
     });
 
     if (Number(invoice.cgst_amount) > 0) {
-      rows.push({
+      totals.push({
         key: "cgst",
         label: "CGST",
-        amount: formatInvoiceAmount(Number(invoice.cgst_amount)),
+        amount: formatInvoiceAmount(Number(invoice.cgst_amount), invoice.currency),
       });
     }
     if (Number(invoice.sgst_amount) > 0) {
-      rows.push({
+      totals.push({
         key: "sgst",
         label: "SGST",
-        amount: formatInvoiceAmount(Number(invoice.sgst_amount)),
+        amount: formatInvoiceAmount(Number(invoice.sgst_amount), invoice.currency),
       });
     }
     if (Number(invoice.igst_amount) > 0) {
-      rows.push({
+      totals.push({
         key: "igst",
         label: "IGST",
-        amount: formatInvoiceAmount(Number(invoice.igst_amount)),
+        amount: formatInvoiceAmount(Number(invoice.igst_amount), invoice.currency),
       });
     }
 
-    rows.push({
+    totals.push({
       key: "total",
       label: "Total",
-      amount: formatInvoiceAmount(Number(invoice.total_amount)),
+      amount: formatInvoiceAmount(Number(invoice.total_amount), invoice.currency),
     });
 
     if (Number(invoice.amount_paid) > 0) {
-      rows.push({
+      totals.push({
         key: "paid",
         label: "Amount paid",
-        amount: formatInvoiceAmount(Number(invoice.amount_paid)),
+        amount: formatInvoiceAmount(Number(invoice.amount_paid), invoice.currency),
       });
     }
     if (Number(invoice.amount_due) > 0) {
-      rows.push({
+      totals.push({
         key: "due",
         label: "Amount due",
-        amount: formatInvoiceAmount(Number(invoice.amount_due)),
+        amount: formatInvoiceAmount(Number(invoice.amount_due), invoice.currency),
       });
     }
 
-    return rows;
+    return totals;
   }, [invoice]);
 
   return (
-    <tfoot className="border-t bg-muted/40">
+    <dl className="ml-auto w-full max-w-sm space-y-2 border-t pt-4">
       {rows.map((row) => {
         const isTotal = row.key === "total";
         const isMuted = row.key === "paid" || row.key === "due";
         return (
-          <tr key={row.key} className={isTotal ? "border-t" : undefined}>
-            <td
-              colSpan={9}
-              className={`px-3 text-right ${isTotal ? "py-2.5 font-medium" : "py-2 text-muted-foreground"}`}
-            >
+          <div
+            key={row.key}
+            className={`flex items-center justify-between gap-4 ${isTotal ? "border-t pt-3" : ""}`}
+          >
+            <dt className={`${isTotal ? "font-semibold text-foreground" : "text-muted-foreground"} ${isMuted ? "text-muted-foreground" : ""}`}>
               {row.label}
-            </td>
-            <td
-              className={`px-3 text-right tabular-nums ${isTotal ? "py-2.5 text-base font-semibold" : "py-2"} ${isMuted ? "text-muted-foreground" : ""}`}
-            >
+            </dt>
+            <dd className={`shrink-0 tabular-nums ${isTotal ? "text-base font-semibold" : ""} ${isMuted ? "text-muted-foreground" : ""}`}>
               {row.amount}
-            </td>
-            {isDraft && <td />}
-          </tr>
+            </dd>
+          </div>
         );
       })}
-    </tfoot>
+    </dl>
   );
 }
 

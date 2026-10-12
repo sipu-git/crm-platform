@@ -13,16 +13,15 @@ const LightweightAreaChart = lazy(() =>
   }))
 );
 
-/** Convert period strings (e.g. "Jan 2025", "2024-01", "Jan") to strictly ascending YYYY-MM-DD date strings for lightweight-charts */
+/** Convert a monthly period to the date key expected by lightweight-charts. */
 function periodToTime(period: string, index: number, totalCount: number = 12): string {
   if (/^\d{4}-\d{2}-\d{2}$/.test(period)) {
     return period;
   }
   if (/^\d{4}-\d{2}$/.test(period)) {
-    return `${period}-01`;
+    return `${period}-01`;3
   }
 
-  // Parse explicit month and year from string e.g. "Jan 2025" or "Jan '25"
   const yearMatch = period.match(/\b(20\d{2}|\d{2})\b/);
   const monthNames = ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"];
   const mIndex = monthNames.findIndex((m) => period.toLowerCase().includes(m));
@@ -45,10 +44,8 @@ function periodToTime(period: string, index: number, totalCount: number = 12): s
 export const RevenueChartWidget = memo(function RevenueChartWidget({
   data = [],
   isLoading,
-  scope,
-  title = "Revenue Performance & Target",
-  subtitle = "Monthly recurring revenue, closed ARR, and projection targets",
-  showTargetLine = true,
+  title = "Monthly Closed-Won Bookings",
+  subtitle = "Won deal value by close month",
   mode = "standard",
 }: {
   data?: RevenueDataPoint[];
@@ -56,10 +53,19 @@ export const RevenueChartWidget = memo(function RevenueChartWidget({
   scope?: WidgetScope;
   title?: string;
   subtitle?: string;
-  showTargetLine?: boolean;
   mode?: "standard" | "cashflow";
 }) {
-  const [timeframe, setTimeframe] = useState<"30D" | "90D" | "12M">("12M");
+  const [timeframe, setTimeframe] = useState<"3M" | "6M" | "12M">("12M");
+  const filteredData = data.slice(-(timeframe === "3M" ? 3 : timeframe === "6M" ? 6 : 12));
+  const summary = filteredData.reduce(
+    (totals, point) => ({
+      bookings: totals.bookings + point.bookings,
+      wonDeals: totals.wonDeals + point.wonDeals,
+      invoiced: totals.invoiced + point.invoiced,
+      collected: totals.collected + point.collected,
+    }),
+    { bookings: 0, wonDeals: 0, invoiced: 0, collected: 0 },
+  );
 
   if (isLoading) {
     return (
@@ -75,40 +81,9 @@ export const RevenueChartWidget = memo(function RevenueChartWidget({
     );
   }
 
-  if (!data || data.length === 0) {
-    return (
-      <Card className="border border-border/70 bg-card shadow-sm h-full flex flex-col justify-between">
-        <CardHeader className="pb-3 flex flex-row items-start justify-between">
-          <div className="space-y-1">
-            <div className="flex items-center gap-2">
-              <CardTitle className="text-base font-semibold">{title}</CardTitle>
-              <span className="text-[10px] font-semibold uppercase px-1.5 py-0.5 rounded bg-muted text-muted-foreground border border-border">
-                {mode === "cashflow" ? "Cash Flow" : "Revenue"}
-              </span>
-            </div>
-            <CardDescription className="text-xs">{subtitle}</CardDescription>
-          </div>
-          <div className="grid h-8 w-8 place-items-center rounded-lg bg-muted text-muted-foreground">
-            <TrendingUp className="h-4 w-4" />
-          </div>
-        </CardHeader>
-        <CardContent className="flex flex-col items-center justify-center py-20 text-center text-muted-foreground space-y-2">
-          <Inbox className="h-8 w-8 stroke-[1.5] text-muted-foreground/60" />
-          <p className="text-xs font-semibold text-foreground">No revenue transactions recorded</p>
-          <p className="text-[11px] text-muted-foreground max-w-xs">
-            Revenue trends will populate automatically once paid invoices or closed-won deals are logged.
-          </p>
-        </CardContent>
-      </Card>
-    );
-  }
-
-  const filteredData =
-    timeframe === "30D"
-      ? data.slice(-3)
-      : timeframe === "90D"
-      ? data.slice(-6)
-      : data;
+  const hasActivity = mode === "cashflow"
+    ? summary.invoiced > 0 || summary.collected > 0
+    : summary.wonDeals > 0;
 
   return (
     <Card className="border border-border/70 bg-card shadow-sm h-full flex flex-col justify-between">
@@ -117,40 +92,62 @@ export const RevenueChartWidget = memo(function RevenueChartWidget({
           <div className="flex items-center gap-2">
             <CardTitle className="text-base font-semibold">{title}</CardTitle>
             <span className="text-[10px] font-semibold uppercase px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
-              {mode === "cashflow" ? "Cash Flow" : "ARR / MRR"}
+              {mode === "cashflow" ? "Cash Flow" : "Bookings"}
             </span>
           </div>
-          <CardDescription className="text-xs">{subtitle}</CardDescription>
+          <CardDescription className="text-xs">
+            {subtitle} | {mode === "cashflow"
+              ? `${formatCurrency(summary.invoiced)} invoiced | ${formatCurrency(summary.collected)} collected`
+              : `${formatCurrency(summary.bookings)} booked | ${summary.wonDeals} deals won`}
+          </CardDescription>
         </div>
 
-        <Tabs value={timeframe} onValueChange={(v) => setTimeframe(v as any)} className="w-auto">
+        <Tabs value={timeframe} onValueChange={(v) => setTimeframe(v as "3M" | "6M" | "12M")} className="w-auto">
           <TabsList className="h-8 text-xs bg-muted/60 p-0.5">
-            <TabsTrigger value="30D" className="text-xs px-2.5 py-1">30D</TabsTrigger>
-            <TabsTrigger value="90D" className="text-xs px-2.5 py-1">90D</TabsTrigger>
+            <TabsTrigger value="3M" className="text-xs px-2.5 py-1">3M</TabsTrigger>
+            <TabsTrigger value="6M" className="text-xs px-2.5 py-1">6M</TabsTrigger>
             <TabsTrigger value="12M" className="text-xs px-2.5 py-1">12M</TabsTrigger>
           </TabsList>
         </Tabs>
       </CardHeader>
 
       <CardContent className="pt-3">
-        <RevenueChart
-          filteredData={filteredData}
-          mode={mode}
-          showTargetLine={showTargetLine}
-        />
-
-        <div className="flex items-center justify-center gap-6 pt-3 text-xs text-muted-foreground">
-          <div className="flex items-center gap-2">
-            <span className="h-2.5 w-2.5 rounded-full bg-[#00a88f]" />
-            <span>Actual Realized</span>
+        {!hasActivity ? (
+          <div className="flex h-72 flex-col items-center justify-center text-center text-muted-foreground space-y-2">
+            <Inbox className="h-8 w-8 stroke-[1.5] text-muted-foreground/60" />
+            <p className="text-xs font-semibold text-foreground">
+              {mode === "cashflow" ? "No invoices or payments in this period" : "No won deals in this period"}
+            </p>
+            <p className="text-[11px] text-muted-foreground max-w-xs">
+              {mode === "cashflow"
+                ? "Issued invoices and collected payments will appear here by their respective dates."
+                : "Bookings will appear here when deals move to a won stage."}
+            </p>
           </div>
-          {showTargetLine && (
-            <div className="flex items-center gap-2">
-              <span className="h-2.5 w-2.5 rounded-full bg-amber-500" />
-              <span>Target Quota</span>
+        ) : (
+          <>
+            <RevenueChart filteredData={filteredData} mode={mode} />
+            <div className="flex items-center justify-center gap-6 pt-3 text-xs text-muted-foreground">
+              {mode === "cashflow" ? (
+                <>
+                  <div className="flex items-center gap-2">
+                    <span className="h-2.5 w-2.5 rounded-full bg-[#3b82f6]" />
+                    <span>Invoiced</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="h-2.5 w-2.5 rounded-full bg-[#00a88f]" />
+                    <span>Collected</span>
+                  </div>
+                </>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <span className="h-2.5 w-2.5 rounded-full bg-[#00a88f]" />
+                  <span>Closed-won bookings</span>
+                </div>
+              )}
             </div>
-          )}
-        </div>
+          </>
+        )}
       </CardContent>
     </Card>
   );
@@ -160,46 +157,31 @@ export const RevenueChartWidget = memo(function RevenueChartWidget({
 const RevenueChart = memo(function RevenueChart({
   filteredData,
   mode,
-  showTargetLine,
 }: {
   filteredData: RevenueDataPoint[];
   mode: "standard" | "cashflow";
-  showTargetLine: boolean;
 }) {
-  const { series, lineOverlays } = useMemo(() => {
-    const areaData = filteredData.map((d, i) => ({
-      time: periodToTime(d.period, i, filteredData.length),
-      value: mode === "cashflow" ? (d.collected ?? d.revenue) : d.revenue,
-    }));
+  const series = useMemo(() => {
+    const toSeriesData = (field: "bookings" | "invoiced" | "collected") =>
+      filteredData.map((point, index) => ({
+        time: periodToTime(point.period, index, filteredData.length),
+        value: point[field],
+      }));
 
-    const areaSeries = [
-      {
-        data: areaData,
-        color: "#00A88F",
-        topColor: "rgba(0, 168, 143, 0.32)",
-        bottomColor: "rgba(0, 168, 143, 0)",
-        lineWidth: 2 as const,
-        lastValueVisible: true,
-        priceLineVisible: false,
-      },
-    ];
+    const makeSeries = (field: "bookings" | "invoiced" | "collected", color: string) => ({
+      data: toSeriesData(field),
+      color,
+      topColor: `${color}40`,
+      bottomColor: `${color}00`,
+      lineWidth: 2 as const,
+      lastValueVisible: true,
+      priceLineVisible: false,
+    });
 
-    const overlays = showTargetLine
-      ? [
-          {
-            data: filteredData.map((d, i) => ({
-              time: periodToTime(d.period, i, filteredData.length),
-              value: d.target,
-            })),
-            color: "#F59E0B",
-            lineWidth: 2 as const,
-            lineStyle: "dashed" as const,
-          },
-        ]
-      : [];
-
-    return { series: areaSeries, lineOverlays: overlays };
-  }, [filteredData, mode, showTargetLine]);
+    return mode === "cashflow"
+      ? [makeSeries("invoiced", "#3B82F6"), makeSeries("collected", "#00A88F")]
+      : [makeSeries("bookings", "#00A88F")];
+  }, [filteredData, mode]);
 
   const currencyFormatter = useMemo(
     () => (value: number) => formatCurrency(value),
@@ -223,7 +205,6 @@ const RevenueChart = memo(function RevenueChart({
       <Suspense fallback={<Skeleton className="h-72 w-full rounded-lg" />}>
         <LightweightAreaChart
           series={series}
-          lineOverlays={lineOverlays}
           height={288}
           yAxisFormatter={yAxisFormatter}
           tooltipFormatter={currencyFormatter}

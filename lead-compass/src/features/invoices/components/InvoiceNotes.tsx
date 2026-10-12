@@ -29,11 +29,11 @@ function InvoiceNotes({ invoice, isDraft, saving, onSave }: InvoiceNotesProps) {
   const handleBlur = useCallback(() => onSave(draft), [draft, onSave]);
 
   return (
-    <Card>
+    <Card className="h-full">
       <CardHeader>
         <CardTitle className="text-sm font-medium">Notes &amp; terms</CardTitle>
       </CardHeader>
-      <CardContent className="grid grid-cols-1 gap-4 py-2 md:grid-cols-2">
+      <CardContent className="grid grid-cols-1 gap-4 py-2 sm:grid-cols-2">
         <InvoiceField label="Notes">
           <Textarea
             value={draft.notes}

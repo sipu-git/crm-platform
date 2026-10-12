@@ -47,7 +47,10 @@ export function useInvoiceMutation() {
   const qc = useQueryClient();
 
   const refresh = () =>
-    qc.invalidateQueries({ queryKey: invoicesKeys.lists() });
+    Promise.all([
+      qc.invalidateQueries({ queryKey: invoicesKeys.lists() }),
+      qc.invalidateQueries({ queryKey: ["dashboard", "revenue"] }),
+    ]);
 
   const patch = (invoice: Invoice) =>
     qc.setQueryData(invoicesKeys.detail(invoice.id), invoice);

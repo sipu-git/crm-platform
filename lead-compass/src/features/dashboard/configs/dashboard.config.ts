@@ -14,10 +14,10 @@ export const ROLE_DASHBOARD_CONFIG: DashboardConfigMap = {
     {
       id: "admin-revenue-chart",
       type: "revenue_chart",
-      title: "Annual Revenue vs Target",
-      subtitle: "Monthly revenue, closed ARR, and projections",
+      title: "Monthly Closed-Won Bookings",
+      subtitle: "Won deal value by close month",
       colSpan: 7,
-      props: { scope: "org", defaultTimeframe: "12M", showTargetLine: true },
+      props: { scope: "org", defaultTimeframe: "12M" },
     },
     {
       id: "admin-pipeline-funnel",
@@ -96,7 +96,7 @@ export const ROLE_DASHBOARD_CONFIG: DashboardConfigMap = {
       id: "finance-revenue-chart",
       type: "revenue_chart",
       title: "Invoiced vs Cash Collected",
-      subtitle: "Billing trends and cash flow realization",
+      subtitle: "Issued invoice totals compared with payments collected",
       colSpan: 12,
       props: { scope: "org", defaultTimeframe: "12M", mode: "cashflow" },
     },

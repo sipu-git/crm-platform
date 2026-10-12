@@ -30,11 +30,11 @@ function SellerDetails({
   }, [invoice]);
 
   return (
-    <Card>
+    <Card className="h-full">
       <CardHeader>
         <CardTitle className="text-sm font-medium">Seller details</CardTitle>
       </CardHeader>
-      <CardContent className="space-y-3 py-2">
+      <CardContent className="grid grid-cols-1 gap-x-4 gap-y-3 py-2 xl:grid-cols-2">
         <InvoiceField label="Seller name">
           <Input
             value={draft.seller_name}
@@ -54,7 +54,7 @@ function SellerDetails({
             placeholder="—"
           />
         </InvoiceField>
-        <InvoiceField label="Seller address">
+        <InvoiceField label="Seller address" className="xl:col-span-2">
           <Input
             value={draft.seller_address}
             disabled={!isDraft || saving}
@@ -64,7 +64,7 @@ function SellerDetails({
             placeholder="—"
           />
         </InvoiceField>
-        <InvoiceField label="Seller state">
+        <InvoiceField label="Seller state" className="xl:col-span-2">
           <Input
             value={draft.seller_state}
             disabled={!isDraft || saving}

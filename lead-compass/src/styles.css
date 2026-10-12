@@ -196,3 +196,74 @@
   display: none;               /* Chrome, Safari, Opera */
 }
 }
+
+#invoice-print-root {
+  display: none;
+}
+
+@page {
+  size: A4 portrait;
+  margin: 14mm;
+}
+
+@media print {
+  body.invoice-printing,
+  body.invoice-printing #root {
+    height: auto !important;
+    min-height: 0 !important;
+    overflow: visible !important;
+    background: #fff !important;
+  }
+
+  body.invoice-printing {
+    margin: 0 !important;
+    color: #0f172a !important;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+
+  body.invoice-printing > * {
+    display: none !important;
+  }
+
+  body.invoice-printing > #invoice-print-root {
+    display: block !important;
+  }
+
+  #invoice-print-root {
+    width: 100%;
+    background: #fff !important;
+    color: #0f172a !important;
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 10pt;
+    --foreground: #0f172a;
+    --muted-foreground: #475569;
+    --border: #cbd5e1;
+  }
+
+  #invoice-print-root * {
+    box-sizing: border-box;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+
+  #invoice-print-root table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  #invoice-print-root thead {
+    display: table-header-group;
+  }
+
+  #invoice-print-root tr,
+  #invoice-print-root .invoice-print-section {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  #invoice-print-root .invoice-items-section {
+    break-inside: auto;
+    page-break-inside: auto;
+  }
+}

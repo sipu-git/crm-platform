@@ -114,7 +114,6 @@ export function WidgetRenderer({
             scope={widget.props.scope}
             title={widget.title}
             subtitle={widget.subtitle}
-            showTargetLine={widget.props.showTargetLine}
             mode={widget.props.mode}
           />
         );

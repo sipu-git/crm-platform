@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 export type DashboardRole = "ADMIN" | "MANAGER" | "SALES_REP" | "FINANCE";
 
 export type WidgetScope = "own" | "team" | "org";
+export type DashboardWidgetLayout = "full" | "half";
 
 export type WidgetType =
   | "kpi_grid"
@@ -22,7 +23,7 @@ export interface DashboardWidgetConfig {
   type: WidgetType;
   title?: string;
   subtitle?: string;
-  colSpan: number; // 1 to 12 (12-column responsive grid)
+  layout: DashboardWidgetLayout;
   rowSpan?: number;
   props: {
     scope: WidgetScope;
@@ -111,9 +112,9 @@ export interface QuickActionItem {
 
 export interface RevenueDataPoint {
   period: string;
-  revenue: number;
-  target: number;
-  projected?: number;
-  collected?: number;
+  bookings: number;
+  wonDeals: number;
+  invoiced: number;
+  collected: number;
 }
 

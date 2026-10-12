@@ -3,11 +3,14 @@ import { Link } from "react-router-dom";
 import { Building2, ExternalLink } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { useCompanies } from "@/features/companies/hooks/useCompanies";
 import InvoiceField from "@/features/invoices/components/InvoiceField";
 import CompanySelector from "@/features/invoices/components/CompanySelector";
 import type { Company } from "@/features/companies/types/companies.types";
 import type { Invoice } from "@/features/invoices/types/invoices.type";
 import type { BuyerDetailsDraft } from "@/features/invoices/components/invoice-detail.types";
+
+const EMPTY_COMPANIES: Company[] = [];
 
 function createDraft(invoice: Invoice): BuyerDetailsDraft {
   return {
@@ -20,7 +23,6 @@ function createDraft(invoice: Invoice): BuyerDetailsDraft {
 
 interface BuyerDetailsProps {
   invoice: Invoice;
-  companies: Company[];
   tenantSlug: string;
   isDraft: boolean;
   saving: boolean;
@@ -29,12 +31,12 @@ interface BuyerDetailsProps {
 
 function BuyerDetails({
   invoice,
-  companies,
   tenantSlug,
   isDraft,
   saving,
   onPopulateCompany,
 }: BuyerDetailsProps) {
+  const { data: companies = EMPTY_COMPANIES } = useCompanies();
   const [draft, setDraft] = useState(() => createDraft(invoice));
 
   useEffect(() => {
@@ -88,7 +90,7 @@ function BuyerDetails({
   );
 
   return (
-    <Card>
+    <Card className="h-full">
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
         <div className="flex items-center gap-2">
           <Building2 className="h-4 w-4 text-primary" />
@@ -96,9 +98,9 @@ function BuyerDetails({
         </div>
         <CompanySelector companies={companies} isDraft={isDraft} onSelect={handleCompanySelect} />
       </CardHeader>
-      <CardContent className="space-y-3 py-2">
+      <CardContent className="grid grid-cols-1 gap-x-4 gap-y-3 py-2 xl:grid-cols-2">
         {matchedCompany && (
-          <div className="flex items-center justify-between rounded-lg border border-primary/20 bg-primary/5 px-3 py-1.5 text-xs">
+          <div className="col-span-full flex items-center justify-between gap-3 rounded-lg border border-primary/20 bg-primary/5 px-3 py-1.5 text-xs">
             <div className="flex items-center gap-1.5 text-primary">
               <Building2 className="h-3.5 w-3.5" />
               <span className="font-semibold">{matchedCompany.name}</span>
@@ -136,7 +138,7 @@ function BuyerDetails({
             className="font-mono uppercase"
           />
         </InvoiceField>
-        <InvoiceField label="Buyer address">
+        <InvoiceField label="Buyer address" className="xl:col-span-2">
           <Input
             value={draft.buyer_address}
             disabled={!isDraft || saving}
@@ -146,7 +148,7 @@ function BuyerDetails({
             placeholder="Registered office or billing address"
           />
         </InvoiceField>
-        <InvoiceField label="Buyer state / Place of Supply">
+        <InvoiceField label="Buyer state / Place of Supply" className="xl:col-span-2">
           <Input
             value={draft.buyer_state}
             disabled={!isDraft || saving}
