@@ -7,7 +7,7 @@ export interface AISummaryResult {
 }
 
 export interface MessageInput {
-  sender: string;
+  sender : string;
   text: string;
   date?: string;
 }
