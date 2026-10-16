@@ -58,8 +58,30 @@ export async function invokeBedrockAmazon(prompt: string, systemPrompt?: string)
       json: jsonResult,
     };
   } catch (error) {
-    console.error("[AWS Bedrock Error]:", error);
-    throw new Error(`AWS Bedrock invocation failed: ${(error as Error).message}`);
+    const awsError = error as {
+      name?: string;
+      message?: string;
+      code?: string;
+      Code?: string;
+      $fault?: string;
+      $metadata?: {
+        httpStatusCode?: number;
+        requestId?: string;
+      };
+    };
+
+    console.error("[AWS Bedrock Error Details]", {
+      name: awsError.name,
+      code: awsError.code ?? awsError.Code,
+      fault: awsError.$fault,
+      httpStatusCode: awsError.$metadata?.httpStatusCode,
+      requestId: awsError.$metadata?.requestId,
+      region: env.aws.region,
+      modelId,
+      message: awsError.message ?? String(error),
+    });
+
+    throw new Error(`AWS Bedrock invocation failed: ${awsError.message ?? String(error)}`);
   }
 }
 
