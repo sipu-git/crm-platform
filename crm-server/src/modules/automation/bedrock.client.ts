@@ -11,7 +11,7 @@ export interface BedrockResponse {
  * Invokes Amazon Nova Lite (or any model specified by BEDROCK_MODEL_ID) via AWS Bedrock Converse API
  */
 export async function invokeBedrockAmazon(prompt: string, systemPrompt?: string): Promise<BedrockResponse> {
-  const modelId = env.aws.bedrockModelId || "us.amazon.nova-lite-v1:0";
+  const modelId = env.aws.bedrockModelId || "global.amazon.nova-2-lite-v1:0";
 
   const command = new ConverseCommand({
     modelId,
