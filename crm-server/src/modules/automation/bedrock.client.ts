@@ -37,10 +37,7 @@ export async function invokeBedrockAmazon(prompt: string, systemPrompt?: string)
 
     // Extract text response from ConverseCommand output
     const contentBlocks = response.output?.message?.content || [];
-    const completionText = contentBlocks
-      .map((block) => block.text || "")
-      .join("")
-      .trim();
+    const completionText = contentBlocks.map((block) => block.text || "").join("").trim();
 
     // Try extracting JSON if response contains structured data
     let jsonResult = null;
