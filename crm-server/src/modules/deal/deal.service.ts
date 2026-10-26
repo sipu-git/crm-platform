@@ -98,19 +98,60 @@ export const dealService = {
   },
 
   async update(tenantId: string, id: string, data: UpdateStageInput) {
-    const deal = await prisma.$transaction(async (tx) => {
+    const result = await prisma.$transaction(async (tx) => {
       const existing = await dealRepository.findById(tx, tenantId, id);
       if (!existing) throw ApiError.notFound("Deal not found");
 
+      let transition: {
+        from: string;
+        to: string;
+        changed: boolean;
+        isNewlyWon: boolean;
+        isNewlyLost: boolean;
+      } | null = null;
       let wonAt: Date | null | undefined;
       if (data.stageId !== undefined) {
-        const targetStage = await pipelineRepository.findStageById(tx, tenantId, data.stageId);
+        const [currentStage, targetStage] = await Promise.all([
+          pipelineRepository.findStageById(tx, tenantId, existing.stage_id),
+          pipelineRepository.findStageById(tx, tenantId, data.stageId),
+        ]);
+        if (!currentStage) throw ApiError.notFound("Current stage not found");
         if (!targetStage) throw ApiError.notFound("Target stage not found");
+        if (targetStage.sort_order < currentStage.sort_order) {
+          throw ApiError.badRequest(
+            `Cannot move deal backward from "${currentStage.name}" to "${targetStage.name}"`
+          );
+        }
+
+        transition = {
+          from: currentStage.name,
+          to: targetStage.name,
+          changed: currentStage.id !== targetStage.id,
+          isNewlyWon: targetStage.is_won && (!currentStage.is_won || !existing.won_at),
+          isNewlyLost: targetStage.is_lost && !currentStage.is_lost,
+        };
         wonAt = targetStage.is_won ? existing.won_at || new Date() : null;
+        if (targetStage.is_won) {
+          await projectService.convertWonDeal(tx, tenantId, id);
+        }
       }
 
-      return dealRepository.update(tx, tenantId, id, data, wonAt);
+      const deal = await dealRepository.update(tx, tenantId, id, data, wonAt);
+      return { deal, transition };
     });
+
+    if (result.transition?.changed && result.deal && data.stageId !== undefined) {
+      await eventBus.emit("deal.stage_changed", {
+        tenantId,
+        dealId: id,
+        stage: result.transition.to,
+      });
+      if (result.transition.isNewlyWon) {
+        eventBus.emit("deal.won", { tenantId, dealId: id });
+      } else if (result.transition.isNewlyLost) {
+        eventBus.emit("deal.lost", { tenantId, dealId: id });
+      }
+    }
 
     await Promise.all([
       redisService.delete(`deal-get-${tenantId}-${id}`),
@@ -122,7 +163,7 @@ export const dealService = {
       redisService.deleteByPattern(`invoice-list-${tenantId}-*`)
     ]);
 
-    return deal;
+    return result.deal;
   },
 
   async delete(tenantId: string, id: string) {

@@ -30,6 +30,7 @@ import { errorHandler } from './src/shared/middleware/errorHandler.middleware.js
 import { connectDB } from './src/shared/configs/db.js';
 import { registerInvoiceListeners } from './src/modules/invoice/utils/invoice.listener.js';
 import { verifyConnection } from './src/modules/mail/services/email-connection.service';
+import { registerAutomationListeners } from './src/modules/automation/automation.listener.js';
 
 export function createApp() {
   const app = express();
@@ -87,6 +88,7 @@ export function createApp() {
   app.use(errorHandler);
 
   registerInvoiceListeners();
+  registerAutomationListeners();
   registerNotificationListeners();
   registerAuditListeners();
 

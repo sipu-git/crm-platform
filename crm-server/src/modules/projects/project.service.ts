@@ -13,6 +13,22 @@ import { parseBudgetToDecimal } from "./utils/parseBudgets.js";
 import { Deal } from "../../../generated/prisma/client.js";
 
 export const projectService = {
+    async addClientToWonDealProject(tx: any, tenantId: string, dealId: string, clientUserId: string) {
+        const client = await tx.user.findFirst({
+            where: { id: clientUserId, tenantId, role: 'CLIENT' },
+            select: { id: true },
+        });
+        if (!client) throw ApiError.badRequest('Client must belong to this tenant before joining a project');
+
+        const project = await this.convertWonDeal(tx, tenantId, dealId);
+        await tx.projectMember.upsert({
+            where: { project_id_user_id: { project_id: project.id, user_id: clientUserId } },
+            create: { tenant_id: tenantId, project_id: project.id, user_id: clientUserId },
+            update: {},
+        });
+        return project;
+    },
+
     async convertWonDeal(tx: any, tenantId: string, dealId: string) {
         const deal = await tx.deal.findFirst({
             where: { id: dealId, tenant_id: tenantId },
@@ -129,7 +145,7 @@ export const projectService = {
         });
 
         if (isNewLead) {
-            eventBus.emit('lead.created', { tenantId, lead_id: resolvedLeadId });
+            eventBus.emit('lead.created', { tenantId, leadId: resolvedLeadId });
         }
         eventBus.emit('project.created', { tenantId, project_id: project.id, lead_id: resolvedLeadId });
 

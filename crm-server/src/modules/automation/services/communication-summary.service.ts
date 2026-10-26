@@ -1,4 +1,4 @@
-import { invokeBedrockAmazon } from "../bedrock.client";
+import { runCommunicationSummaryWorkflow } from "../workflows/communication-summary/workflow.js";
 
 export interface AISummaryResult {
   summary: string;
@@ -7,45 +7,13 @@ export interface AISummaryResult {
 }
 
 export interface MessageInput {
-  sender : string;
+  sender: string;
   text: string;
   date?: string;
 }
 
 export const communicationSummaryService = {
-  /**
-   * Module 3: Communication & Meeting Summarizer
-   */
   async summarizeCommunications(messages: MessageInput[]): Promise<AISummaryResult> {
-    const systemPrompt = `You are an AI Communications Executive. Summarize the provided interaction history.
-Return STRICT JSON with:
-1. "summary": short executive overview of conversation.
-2. "objections": list of client concerns/hesitations.
-3. "action_items": array of objects { "title": string, "priority": "HIGH"|"MEDIUM"|"LOW" }.
-
-JSON format:
-{
-  "summary": "Client requested pricing breakdown and GST compliance.",
-  "objections": ["Timeline is tight"],
-  "action_items": [{ "title": "Send updated GST invoice", "priority": "HIGH" }]
-}`;
-
-    const prompt = `Conversation Transcript:\n` + messages.map((m) => `${m.sender}: ${m.text}`).join("\n");
-
-    const response = await invokeBedrockAmazon(prompt, systemPrompt);
-
-    if (response.json) {
-      return {
-        summary: response.json.summary || "Conversation reviewed.",
-        objections: Array.isArray(response.json.objections) ? response.json.objections : [],
-        action_items: Array.isArray(response.json.action_items) ? response.json.action_items : [],
-      };
-    }
-
-    return {
-      summary: "Communication thread logged.",
-      objections: [],
-      action_items: [],
-    };
+    return runCommunicationSummaryWorkflow(messages);
   },
 };

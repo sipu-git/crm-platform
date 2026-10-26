@@ -23,6 +23,23 @@ export const env = {
     region: process.env.AWS_REGION ?? 'ap-south-1',
     accessKeyId: process.env.AWS_ACCESS_KEY_ID ?? '',
     secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY ?? '',
-    bedrockModelId: process.env.BEDROCK_MODEL_ID,
+  },
+  gemini: {
+    apiKey: (process.env.GEMINI_API_KEY ?? '').trim(),
+  },
+  llm: {
+    modelId: (process.env.GEMINI_MODEL_ID ?? 'gemini-3.8-flash').trim(),
+    timeoutMs: Number(process.env.LLM_TIMEOUT_MS ?? 30000),
+    maxRetries: Number(process.env.LLM_MAX_RETRIES ?? 2),
   },
 };
+
+if (!env.llm.modelId) {
+  throw new Error('GEMINI_MODEL_ID must not be empty.');
+}
+if (!Number.isInteger(env.llm.timeoutMs) || env.llm.timeoutMs < 1000 || env.llm.timeoutMs > 120000) {
+  throw new Error('LLM_TIMEOUT_MS must be an integer between 1000 and 120000.');
+}
+if (!Number.isInteger(env.llm.maxRetries) || env.llm.maxRetries < 0 || env.llm.maxRetries > 5) {
+  throw new Error('LLM_MAX_RETRIES must be an integer between 0 and 5.');
+}

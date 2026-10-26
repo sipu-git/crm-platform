@@ -1,0 +1,22 @@
+model AiAutomationRun {
+  id            String    @id @default(cuid())
+  tenant_id     String
+  run_key       String    @unique
+  workflow      String
+  event_type    String
+  entity_id     String
+  status        String    @default("PENDING")
+  result        Json?
+  error_message String?
+  started_at    DateTime?
+  finished_at   DateTime?
+  created_at    DateTime  @default(now())
+  updated_at    DateTime  @updatedAt
+
+  tenant Tenant @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
+
+  @@index([tenant_id, created_at])
+  @@index([tenant_id, status])
+  @@index([tenant_id, workflow])
+  @@map("ai_automation_runs")
+}
