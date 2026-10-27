@@ -1,4 +1,4 @@
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { aiApi } from "../apis/ai.api";
 
 /**
@@ -43,5 +43,16 @@ export function useEvaluateDealHealthMutation() {
 export function useCopilotMutation() {
   return useMutation({
     mutationFn: aiApi.copilot,
+  });
+}
+
+/**
+ * Hook for AI Automation Runs History
+ */
+export function useAutomationRunsQuery(limit = 50) {
+  return useQuery({
+    queryKey: ["ai", "automation-runs", limit],
+    queryFn: () => aiApi.getAutomationRuns(limit),
+    refetchInterval: 15000,
   });
 }

@@ -138,25 +138,37 @@ export default function Communications() {
 
   const overLimit = body.length > MAX_CHARS;
 
+  const leadFullName = [
+    data?.contact?.first_name || lead?.contact?.first_name || lead?.first_name,
+    data?.contact?.last_name || lead?.contact?.last_name || lead?.last_name,
+  ]
+    .filter(Boolean)
+    .join(" ");
+
+  const leadCompanyName = lead?.company?.name || lead?.company_name || "";
+
   return (
     <TooltipProvider delayDuration={200}>
       <div className="flex min-h-screen flex-col bg-muted/30">
         <ConversationHeader
           tenantSlug={tenantSlug}
           leadId={leadId}
-          firstName={data?.contact?.first_name}
-          lastName={data?.contact?.last_name}
-          phone={data?.contact?.phone}
-          email={data?.contact?.email}
+          firstName={data?.contact?.first_name || lead?.contact?.first_name || lead?.first_name}
+          lastName={data?.contact?.last_name || lead?.contact?.last_name || lead?.last_name}
+          phone={data?.contact?.phone || lead?.contact?.phone || lead?.phone}
+          email={data?.contact?.email || lead?.contact?.email || lead?.email}
           messageCount={history.length}
+          history={history}
         />
 
         <div className="mx-auto grid w-full max-w-7xl flex-1 grid-cols-1 gap-4 p-4 sm:px-6 lg:grid-cols-[minmax(0,26rem)_minmax(0,1fr)] lg:gap-6 lg:py-6">
           <ChannelComposer
             channel={channel}
             onChannelChange={setChannel}
-            contactEmail={data?.contact?.email}
-            contactPhone={data?.contact?.phone}
+            contactEmail={data?.contact?.email || lead?.contact?.email || lead?.email}
+            contactPhone={data?.contact?.phone || lead?.contact?.phone || lead?.phone}
+            clientName={leadFullName}
+            companyName={leadCompanyName}
             messageType={messageType}
             onMessageTypeChange={setMessageType}
             subject={subject}
@@ -183,7 +195,7 @@ export default function Communications() {
             filter={filter}
             onFilterChange={setFilter}
             historyLoading={historyLoading}
-            leadFirstName={lead?.contact?.first_name?.split(" ")[0]}
+            leadFirstName={lead?.contact?.first_name?.split(" ")[0] || lead?.first_name}
           />
         </div>
       </div>

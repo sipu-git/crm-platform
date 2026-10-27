@@ -32,20 +32,33 @@ export interface AICopilotResult {
   actionTaken?: string;
 }
 
+export interface AutomationRun {
+  id: string;
+  workflow: "LEAD_ASSIGNMENT" | "CLIENT_CONVERSION" | string;
+  event_type: "lead.created" | "deal.won" | string;
+  entity_id: string;
+  status: "PENDING" | "RUNNING" | "SUCCEEDED" | "SKIPPED" | "FAILED";
+  result: unknown;
+  error_message: string | null;
+  started_at: string | null;
+  finished_at: string | null;
+  created_at: string;
+}
+
 export const aiApi = {
   /**
    * Module 1: Analyze Lead Enquiry
    */
   async analyzeEnquiry(data: {
     company_name: string;
-    first_name?: string;
-    last_name?: string;
-    email?: string;
-    project_name?: string;
-    project_type?: string;
-    budget?: string;
-    timeline?: string;
-    description?: string;
+    first_name?: string | null;
+    last_name?: string | null;
+    email?: string | null;
+    project_name?: string | null;
+    project_type?: string | null;
+    budget?: string | null;
+    timeline?: string | null;
+    description?: string | null;
   }): Promise<AIEnquiryAnalysis> {
     return payload(await api.post<Envelope<AIEnquiryAnalysis>>("/ai/analyze-enquiry", data));
   },
@@ -91,5 +104,12 @@ export const aiApi = {
    */
   async copilot(data: { prompt: string }): Promise<AICopilotResult> {
     return payload(await api.post<Envelope<AICopilotResult>>("/ai/copilot", data));
+  },
+
+  /**
+   * Module 6: Get AI Automation Runs History
+   */
+  async getAutomationRuns(limit = 50): Promise<AutomationRun[]> {
+    return payload(await api.get<Envelope<AutomationRun[]>>(`/ai/automation-runs?limit=${limit}`));
   },
 };

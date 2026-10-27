@@ -78,17 +78,25 @@ export default function EnquiryDetailPage() {
 
   const handleAnalyze = () => {
     if (!enquiry) return;
-    analyzeMutation.mutate({
-      company_name: enquiry.company_name,
-      first_name: enquiry.first_name,
-      last_name: enquiry.last_name,
-      email: enquiry.email,
-      project_name: enquiry.project_name,
-      project_type: enquiry.project_type,
-      budget: enquiry.budget,
-      timeline: enquiry.timeline,
-      description: enquiry.description,
-    });
+    const safeCompanyName = enquiry.company_name?.trim() || enquiry.project_name?.trim() || "Prospective Client";
+    analyzeMutation.mutate(
+      {
+        company_name: safeCompanyName,
+        first_name: enquiry.first_name,
+        last_name: enquiry.last_name,
+        email: enquiry.email,
+        project_name: enquiry.project_name,
+        project_type: enquiry.project_type,
+        budget: enquiry.budget,
+        timeline: enquiry.timeline,
+        description: enquiry.description,
+      },
+      {
+        onError: (err: any) => {
+          toast.error(err?.response?.data?.message || err?.message || "Failed to analyze enquiry.");
+        },
+      }
+    );
   };
 
   if (isLoading) {
@@ -268,7 +276,7 @@ export default function EnquiryDetailPage() {
                         disabled={isPending}
                         onClick={() =>
                           reject(
-                            { id, input: {} },
+                            { id, input: { status: "REJECTED" } },
                             {
                               onSuccess: () => toast.success("Enquiry rejected."),
                               onError: (err) =>
@@ -284,7 +292,7 @@ export default function EnquiryDetailPage() {
                         disabled={isPending}
                         onClick={() =>
                           approve(
-                            { id, input: {} },
+                            { id, input: { status: "APPROVED" } },
                             {
                               onSuccess: () => toast.success("Enquiry approved!"),
                               onError: (err) =>

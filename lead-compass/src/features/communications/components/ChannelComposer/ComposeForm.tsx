@@ -1,4 +1,5 @@
-import { Send, RotateCcw } from "lucide-react";
+import { useState } from "react";
+import { Send, RotateCcw, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
@@ -8,14 +9,34 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { cn } from "@/lib/utils";
 import { CommunicationChannel, GmailAccountStatus, MessageType } from "@/features/communications/communication.types";
 import { GmailConnectBanner } from "./GmailConnectBanner";
-import { CHANNEL_META, MAX_CHARS, MESSAGE_TYPE_OPTIONS, QUICK_REPLIES } from "@/features/communications/utils/constants";
+import { CHANNEL_META, MAX_CHARS, MESSAGE_TYPE_OPTIONS } from "@/features/communications/utils/constants";
 import { AttachmentPicker } from "./AttachmentPicker";
 import { QuickReplies } from "./QuickReplies";
+import { AIEmailDraftModal } from "../AIEmailDraftModal";
 
-export function ComposeForm({channel,contactEmail,contactPhone,messageType,
-  onMessageTypeChange,subject,onSubjectChange,body,onBodyChange,attachment,
-  onAttachmentPick,onAttachmentRemove,gmailStatus,connectingGmail,onConnectGmail,sending,
-  canSend,overLimit,onSend,onClear,
+export function ComposeForm({
+  channel,
+  contactEmail,
+  contactPhone,
+  messageType,
+  onMessageTypeChange,
+  subject,
+  onSubjectChange,
+  body,
+  onBodyChange,
+  attachment,
+  onAttachmentPick,
+  onAttachmentRemove,
+  gmailStatus,
+  connectingGmail,
+  onConnectGmail,
+  sending,
+  canSend,
+  overLimit,
+  onSend,
+  onClear,
+  clientName,
+  companyName,
 }: {
   channel: CommunicationChannel;
   contactEmail?: string | null;
@@ -37,7 +58,10 @@ export function ComposeForm({channel,contactEmail,contactPhone,messageType,
   overLimit: boolean;
   onSend: () => void;
   onClear: () => void;
+  clientName?: string | null;
+  companyName?: string | null;
 }) {
+  const [isAiModalOpen, setIsAiModalOpen] = useState(false);
   const isEmail = channel === "EMAIL";
   const isNote = channel === "INTERNAL_NOTE";
   const isCall = channel === "CALL";
@@ -45,15 +69,28 @@ export function ComposeForm({channel,contactEmail,contactPhone,messageType,
 
   return (
     <div className="space-y-4 p-4">
-      <div className="flex items-center gap-2">
-        <span className="h-2 w-2 rounded-full" style={{ backgroundColor: meta.tint }} />
-        <p className="text-xs text-muted-foreground">
-          {isNote
-            ? "Visible to your team only"
-            : isCall
-              ? "Log the outcome of a call"
-              : `Sending to ${isEmail ? (contactEmail ?? "—") : (contactPhone ?? "—")}`}
-        </p>
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2">
+          <span className="h-2 w-2 rounded-full" style={{ backgroundColor: meta.tint }} />
+          <p className="text-xs text-muted-foreground">
+            {isNote
+              ? "Visible to your team only"
+              : isCall
+                ? "Log the outcome of a call"
+                : `Sending to ${isEmail ? (contactEmail ?? "—") : (contactPhone ?? "—")}`}
+          </p>
+        </div>
+
+        {!isCall && !isNote && (
+          <button
+            type="button"
+            onClick={() => setIsAiModalOpen(true)}
+            className="inline-flex items-center gap-1.5 rounded-lg border border-indigo-500/30 bg-indigo-500/10 px-2.5 py-1 text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:bg-indigo-500/20 transition-colors shadow-2xs"
+          >
+            <Sparkles className="h-3 w-3" />
+            <span>AI Draft</span>
+          </button>
+        )}
       </div>
 
       {isEmail && (
@@ -81,14 +118,16 @@ export function ComposeForm({channel,contactEmail,contactPhone,messageType,
       )}
 
       <div className="space-y-1.5">
-        <Label htmlFor="body" className="text-xs">
-          {isNote ? "Note" : isCall ? "Call summary" : "Message"}
-        </Label>
+        <div className="flex items-center justify-between">
+          <Label htmlFor="body" className="text-xs">
+            {isNote ? "Note" : isCall ? "Call summary" : "Message"}
+          </Label>
+        </div>
         <Textarea
           id="body"
           value={body}
           onChange={(e) => onBodyChange(e.target.value)}
-          placeholder={isNote ? "Write an internal note…" : isCall ? "Log what was discussed…" : "Write your message…"}
+          placeholder={isNote ? "Write an internal note…" : isCall ? "Log what was discussed…" : "Write your message or click 'AI Draft'…"}
           className="min-h-32 resize-none"
         />
         {isNote && (
@@ -121,6 +160,18 @@ export function ComposeForm({channel,contactEmail,contactPhone,messageType,
           {sending ? "Sending…" : isNote ? "Save note" : isCall ? "Log call" : "Send"}
         </Button>
       </div>
+
+      {/* AI Email/Message Drafter Modal */}
+      <AIEmailDraftModal
+        isOpen={isAiModalOpen}
+        onClose={() => setIsAiModalOpen(false)}
+        clientName={clientName || ""}
+        companyName={companyName || ""}
+        onApplyDraft={(draftSubject, draftBody) => {
+          if (isEmail && draftSubject) onSubjectChange(draftSubject);
+          if (draftBody) onBodyChange(draftBody);
+        }}
+      />
     </div>
   );
 }
