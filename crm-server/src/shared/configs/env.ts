@@ -24,18 +24,18 @@ export const env = {
     accessKeyId: process.env.AWS_ACCESS_KEY_ID ?? '',
     secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY ?? '',
   },
-  gemini: {
-    apiKey: (process.env.GEMINI_API_KEY ?? '').trim(),
+  nvidia: {
+    apiKey: (process.env.NVIDIA_API_KEY ?? '').trim(),
   },
   llm: {
-    modelId: (process.env.GEMINI_MODEL_ID ?? 'gemini-3.8-flash').trim(),
-    timeoutMs: Number(process.env.LLM_TIMEOUT_MS ?? 30000),
+    modelId: (process.env.NVIDIA_MODEL_ID ?? 'nvidia/nemotron-3.5-bolt-e4b').trim(),
+    timeoutMs: Number(process.env.LLM_TIMEOUT_MS ?? 60000),
     maxRetries: Number(process.env.LLM_MAX_RETRIES ?? 2),
   },
 };
 
 if (!env.llm.modelId) {
-  throw new Error('GEMINI_MODEL_ID must not be empty.');
+  throw new Error('NVIDIA_MODEL_ID must not be empty.');
 }
 if (!Number.isInteger(env.llm.timeoutMs) || env.llm.timeoutMs < 1000 || env.llm.timeoutMs > 120000) {
   throw new Error('LLM_TIMEOUT_MS must be an integer between 1000 and 120000.');

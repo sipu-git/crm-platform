@@ -1,6 +1,14 @@
-import { ChatGoogle } from '@langchain/google';
+import dns from 'node:dns';
+import { ChatOpenAI } from '@langchain/openai';
 import { env } from '../shared/configs/env.js';
 import { ApiError } from '../shared/utils/ApiError.js';
+
+// Ensure undici and node fetch use IPv4 first to avoid 30s+ IPv6 connection delays on Windows/Render
+try {
+  dns.setDefaultResultOrder('ipv4first');
+} catch {
+  // Ignore in environments where not supported
+}
 
 function statusCode(error: unknown): number | undefined {
   if (typeof error !== 'object' || error === null) return undefined;
@@ -12,6 +20,20 @@ function statusCode(error: unknown): number | undefined {
 }
 
 function isRetryable(error: unknown): boolean {
+  if (error instanceof Error) {
+    if (error.name === 'TimeoutError' || error.name === 'AbortError') return true;
+    const msg = error.message.toLowerCase();
+    if (
+      msg.includes('timeout') ||
+      msg.includes('aborted') ||
+      msg.includes('high demand') ||
+      msg.includes('temporarily') ||
+      msg.includes('503') ||
+      msg.includes('econnreset')
+    ) {
+      return true;
+    }
+  }
   const status = statusCode(error);
   return status === 429 || (status !== undefined && status >= 500 && status <= 599);
 }
@@ -20,7 +42,8 @@ function pause(milliseconds: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, milliseconds));
 }
 
-export async function withLlmRetries<T>(operation: () => Promise<T>,
+export async function withLlmRetries<T>(
+  operation: () => Promise<T>,
   options: { maxRetries: number; sleep?: (milliseconds: number) => Promise<void> },
 ): Promise<T> {
   const sleep = options.sleep ?? pause;
@@ -29,24 +52,35 @@ export async function withLlmRetries<T>(operation: () => Promise<T>,
     try {
       return await operation();
     } catch (error) {
-      if (!isRetryable(error) || attempt >= options.maxRetries) throw error;
-      const delay = Math.min(5000, 300 * 2 ** attempt) + Math.floor(Math.random() * 200);
+      if (!isRetryable(error) || attempt >= options.maxRetries) {
+        if (error instanceof Error && (error.name === 'TimeoutError' || error.message.includes('timeout') || error.message.includes('aborted'))) {
+          throw new ApiError(504, 'The AI request timed out. Please try again.');
+        }
+        if (error instanceof Error && (error.message.includes('high demand') || error.message.includes('503'))) {
+          throw new ApiError(503, 'The AI service is experiencing high demand. Please try again in a few moments.');
+        }
+        throw error;
+      }
+      const delay = Math.min(3000, 400 * 2 ** attempt) + Math.floor(Math.random() * 200);
       await sleep(delay);
     }
   }
 }
 
-/** Returns the shared Gemini model used by LangChain chains, agents, and graphs. */
-export function getLlmModel(): ChatGoogle {
-  if (!env.gemini.apiKey) {
-    throw new ApiError(503, 'Set GEMINI_API_KEY to your Google AI Studio API key before using AI features.');
+/** Returns the shared NVIDIA Nemotron model used by LangChain chains, agents, and graphs. */
+export function getLlmModel(overrideModel?: string): ChatOpenAI {
+  if (!env.nvidia.apiKey) {
+    throw new ApiError(503, 'Set NVIDIA_API_KEY to your NVIDIA API key before using AI features.');
   }
 
-  return new ChatGoogle({
-    apiKey: env.gemini.apiKey,
-    model: env.llm.modelId,
-    platformType: 'gai',
+  return new ChatOpenAI({
+    apiKey: env.nvidia.apiKey,
+    model: overrideModel || env.llm.modelId,
+    configuration: {
+      baseURL: 'https://integrate.api.nvidia.com/v1',
+    },
+    temperature: 0.2,
+    maxTokens: 4096,
     maxRetries: 0,
   });
 }
-

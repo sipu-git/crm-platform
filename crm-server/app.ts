@@ -21,7 +21,6 @@ import calendarRoutes from './src/modules/apps/calendar/calendar.routes.js';
 import dashboardRoutes from './src/modules/dashboard/dashboard.route.js';
 import aiRoutes from './src/modules/automation/ai.routes.js';
 import tenantRoutes from './src/modules/tenant/tenant.routes.js';
-
 import { registerNotificationListeners } from './src/modules/notification/utils/notification.listener.js';
 import { registerAuditListeners } from './src/modules/audit/audit.listener.js';
 import { env } from './src/shared/configs/env.js';
@@ -94,3 +93,4 @@ export function createApp() {
 
   return app;
 }
+
