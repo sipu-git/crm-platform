@@ -221,6 +221,7 @@ async function convertQualifiedLeadToClient(options: ConversionOptions) {
       tenantId,
       clientUserId: result.clientUser.id,
       isNewClient: result.isNewClient,
+      userId: options.actorUserId || undefined,
     });
   }
 
@@ -328,9 +329,10 @@ export const leadService = {
       leadId: id,
       tenantId,
       status,
+      userId: actingUserId,
     });
     if (result.deal) {
-      eventBus.emit("deal.created", { tenantId, dealId: result.deal.id, leadId: id });
+      eventBus.emit("deal.created", { tenantId, dealId: result.deal.id, leadId: id, userId: actingUserId });
     }
 
     return result;
@@ -347,6 +349,12 @@ export const leadService = {
       redisService.deleteByPattern(`lead-list-${tenantId}-*`),
     ])
     if (!lead) throw ApiError.notFound('Lead not found');
+    eventBus.emit('lead.updated', {
+      leadId: id,
+      tenantId,
+      userId: user.userId,
+      changedFields: Object.keys(data),
+    });
     return lead;
   },
 
@@ -360,7 +368,7 @@ export const leadService = {
       redisService.deleteByPattern(`lead-get-${tenantId}-*`),
       redisService.deleteByPattern(`lead-list-${tenantId}-*`)
     ])
-    eventBus.emit("lead.deleted", { leadId: id, tenantId });
+    eventBus.emit("lead.deleted", { leadId: id, tenantId, userId: user.userId });
     return lead;
   },
 

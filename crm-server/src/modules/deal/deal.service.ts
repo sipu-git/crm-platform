@@ -43,7 +43,7 @@ export const dealService = {
     })
   },
 
-  async moveStage(tenantId: string, id: string, stageId: string) {
+  async moveStage(tenantId: string, id: string, stageId: string, userId?: string) {
     const stage = await prisma.$transaction(async (tx) => {
       const deal = await dealRepository.findById(tx, tenantId, id);
       if (!deal) throw ApiError.notFound("Deal not found");
@@ -76,12 +76,13 @@ export const dealService = {
       tenantId,
       dealId: id,
       stage: stage.targetStage.name,
+      userId,
     });
 
     if (stage.targetStage.is_won) {
-      eventBus.emit("deal.won", { tenantId, dealId: id });
+      eventBus.emit("deal.won", { tenantId, dealId: id, userId });
     } else if (stage.targetStage.is_lost) {
-      eventBus.emit("deal.lost", { tenantId, dealId: id });
+      eventBus.emit("deal.lost", { tenantId, dealId: id, userId });
     }
 
     await Promise.all([
@@ -97,7 +98,7 @@ export const dealService = {
     return stage;
   },
 
-  async update(tenantId: string, id: string, data: UpdateStageInput) {
+  async update(tenantId: string, id: string, data: UpdateStageInput, userId?: string) {
     const result = await prisma.$transaction(async (tx) => {
       const existing = await dealRepository.findById(tx, tenantId, id);
       if (!existing) throw ApiError.notFound("Deal not found");
@@ -145,12 +146,21 @@ export const dealService = {
         tenantId,
         dealId: id,
         stage: result.transition.to,
+        userId,
       });
       if (result.transition.isNewlyWon) {
-        eventBus.emit("deal.won", { tenantId, dealId: id });
+        eventBus.emit("deal.won", { tenantId, dealId: id, userId });
       } else if (result.transition.isNewlyLost) {
-        eventBus.emit("deal.lost", { tenantId, dealId: id });
+        eventBus.emit("deal.lost", { tenantId, dealId: id, userId });
       }
+    }
+    if (result.deal) {
+      eventBus.emit('deal.updated', {
+        tenantId,
+        dealId: id,
+        userId,
+        changedFields: Object.keys(data),
+      });
     }
 
     await Promise.all([
@@ -166,7 +176,7 @@ export const dealService = {
     return result.deal;
   },
 
-  async delete(tenantId: string, id: string) {
+  async delete(tenantId: string, id: string, userId?: string) {
     const deal = await prisma.$transaction(async (tx) => {
       const existingDeal = await tx.deal.findUnique({
         where: { id, tenant_id: tenantId },
@@ -189,6 +199,10 @@ export const dealService = {
       redisService.deleteByPattern(`invoice-list-${tenantId}-*`)
     ]);
 
+    if (deal) {
+      eventBus.emit('deal.deleted', { tenantId, dealId: id, userId });
+      eventBus.emit('lead.deleted', { tenantId, leadId: deal[1].id, userId });
+    }
     return deal;
   },
 };

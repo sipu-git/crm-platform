@@ -29,15 +29,15 @@ export const invoiceController = {
     return res.status(200).json(successResponse("Invoice fetched successfully!", invoice));
   },
   async modifyInvoice(req: Request, res: Response) {
-    const invoice = await invoiceService.updateInvoice(req.tenantId!, getId(req), req.body);
+    const invoice = await invoiceService.updateInvoice(req.tenantId!, getId(req), req.body, req.auth?.userId);
     return res.status(201).json(successResponse("Invoice modified successfully!", invoice));
   },
   async markPaid(req: Request, res: Response) {
-    const invoice = await invoiceService.markPaid(req.tenantId!, getId(req));
+    const invoice = await invoiceService.markPaid(req.tenantId!, getId(req), req.auth?.userId);
     return res.status(200).json(successResponse("Invoices marked successfully!", invoice));
   },
   async dropInvoice(req: Request, res: Response) {
-    const invoice = await invoiceService.removeInvoice(req.tenantId!, getId(req));
+    const invoice = await invoiceService.removeInvoice(req.tenantId!, getId(req), req.auth?.userId);
     return res.status(200).json(successResponse("Invoice deleted successfully!", invoice));
   },
 };

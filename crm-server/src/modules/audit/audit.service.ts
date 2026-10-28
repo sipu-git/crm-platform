@@ -6,7 +6,7 @@ export const auditService = {
     return auditRepository.create(tenantId, action, entityType, entityId, userId, metadata);
   },
 
-  history(tenantId: string, entityType: AuditEntityType, entityId: string) {
-    return auditRepository.findByEntity(tenantId, entityType, entityId);
+  history(tenantId: string, entityType?: AuditEntityType, entityId?: string) {
+    return auditRepository.findHistory(tenantId, entityType, entityId);
   },
 };

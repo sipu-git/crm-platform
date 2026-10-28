@@ -32,16 +32,16 @@ async function attachPresignedLogo(company: any) {
 }
 
 export const companyService = {
-    async listCompanies(tenantId: string, params: PaginationParams) {
+    async listCompanies(tenantId: string, params: PaginationParams, ownCompanyId?: string) {
         const page = Math.max(params.page ?? 1, 1);
         const limit = Math.min(Math.max(params.limit ?? 8, 1), 100);
         const search = params.search?.trim() || undefined;
 
-        const redisKey = `company-list-${tenantId}:p${page}:l${limit}:s${search ?? ""}`;
+        const redisKey = `company-list-${tenantId}:c${ownCompanyId ?? ""}:p${page}:l${limit}:s${search ?? ""}`;
 
         const res = await cacheQuery(redisKey, 400, async () => {
             return prisma.$transaction(async (tx) => {
-                return companyRepository.findManyCompanies(tx, tenantId, params);
+                return companyRepository.findManyCompanies(tx, tenantId, { page, limit, search }, ownCompanyId);
             });
         });
 

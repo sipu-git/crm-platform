@@ -10,5 +10,6 @@ router.get("/", asyncHandler(assigneeController.list));
 router.get("/assignee", requirePermission("leads:assign:own"), asyncHandler(assigneeController.getOwnAssignee));
 router.get("/:id", asyncHandler(assigneeController.getById));
 router.patch('/:leadId/assign', requirePermission("leads:assign"), asyncHandler(assigneeController.create));
+router.patch('/:leadId/reassign', requirePermission("leads:assign"), asyncHandler(assigneeController.reassign));
 
 export default router;

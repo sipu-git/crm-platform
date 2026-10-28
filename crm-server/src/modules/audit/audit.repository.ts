@@ -16,16 +16,24 @@ export const auditRepository = {
         action,
         entityType,
         entityId,
-        userId: userId ?? "",
-        metadata: metadata as any,
+        userId: userId ?? null,
+        metaData: metadata === undefined ? undefined : JSON.stringify(metadata),
       },
     });
   },
 
-  findByEntity(tenantId: string, entityType: AuditEntityType, entityId: string) {
+  findHistory(tenantId: string, entityType?: AuditEntityType, entityId?: string) {
     return prisma.auditLogs.findMany({
-      where: { tenant_id: tenantId, entityType, entityId },
+      where: {
+        tenant_id: tenantId,
+        ...(entityType ? { entityType } : {}),
+        ...(entityId ? { entityId } : {}),
+      },
+      include: {
+        user: { select: { id: true, full_name: true, email: true } },
+      },
       orderBy: { created_at: "desc" },
+      take: 200,
     });
   },
 };

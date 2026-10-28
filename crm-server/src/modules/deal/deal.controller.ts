@@ -39,17 +39,17 @@ export const dealController = {
     if (!dealId) {
       throw new ApiError(400, "Deal id is required");
     }
-    const result = await dealService.moveStage(tenantId, dealId, stageId);
+    const result = await dealService.moveStage(tenantId, dealId, stageId, req.auth?.userId);
     return res.status(200).json(successResponse("Deal stage updated successfully", result));
   },
 
   async updateStage(req: Request, res: Response) {
-    const deal = await dealService.update(req.tenantId!, getId(req), req.body);
+    const deal = await dealService.update(req.tenantId!, getId(req), req.body, req.auth?.userId);
     return res.status(201).json(successResponse("Deal modified successfully!", deal))
   },
 
   async deleteDeal(req: Request, res: Response) {
-    const deal = await dealService.delete(req.tenantId!, getId(req));
+    const deal = await dealService.delete(req.tenantId!, getId(req), req.auth?.userId);
     return res.status(201).json(successResponse("Deal modified successfully!", deal))
   },
 };

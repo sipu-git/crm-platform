@@ -17,7 +17,11 @@ export const companyController = {
     const page = parseInt(req.query.page as string) || 1;
     const limit = parseInt(req.query.limit as string) || 8;
     const search = req.query.search as string | undefined;
-    const companies = await companyService.listCompanies(req.tenantId!, { page, limit, search });
+    const companies = await companyService.listCompanies(
+      req.tenantId!,
+      { page, limit, search },
+      req.auth?.companyId,
+    );
     return res.status(200).json(successResponse("companies found successfully", companies));
   },
   

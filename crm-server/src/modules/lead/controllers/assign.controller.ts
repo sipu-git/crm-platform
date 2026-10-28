@@ -8,8 +8,16 @@ export const assigneeController = {
     const parsed = assignSchema.parse(req.body);
     const { leadId } = req.params as assignParams;
 
-    const assignee = await assigneeService.create(req.tenantId!, leadId, parsed);
+    const assignee = await assigneeService.create(req.tenantId!, leadId, parsed, req.auth?.userId);
     return res.status(201).json(successResponse("Assignee created successfully!", assignee));
+  },
+
+  async reassign(req: Request, res: Response) {
+    const parsed = assignSchema.parse(req.body);
+    const { leadId } = req.params as assignParams;
+
+    const lead = await assigneeService.reassign(req.tenantId!, leadId, parsed, req.auth?.userId);
+    return res.status(200).json(successResponse("Lead reassigned successfully!", lead));
   },
 
   async list(req: Request, res: Response) {

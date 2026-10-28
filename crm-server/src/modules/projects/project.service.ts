@@ -145,7 +145,7 @@ export const projectService = {
         });
 
         if (isNewLead) {
-            eventBus.emit('lead.created', { tenantId, leadId: resolvedLeadId });
+            eventBus.emit('lead.created', { tenantId, leadId: resolvedLeadId, userId: creatorId });
         }
         eventBus.emit('project.created', { tenantId, project_id: project.id, lead_id: resolvedLeadId });
 

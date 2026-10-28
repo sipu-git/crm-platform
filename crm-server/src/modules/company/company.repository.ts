@@ -1,17 +1,17 @@
 import { Prisma } from "../../../generated/prisma/client.js";
-import { prisma } from "../../../lib/prisma.js";
-import { Role } from "../../shared/configs/role.js";
 import { PrismaClientTx } from "../../shared/utils/prisma.types.js";
 import { PaginationParams } from "./company.types.js";
 
 export const companyRepository = {
-    async findManyCompanies(tx: PrismaClientTx, tenantId: string, { page = 1, limit = 8, search }: PaginationParams) {
+    async findManyCompanies(tx: PrismaClientTx, tenantId: string, { page = 1, limit = 8, search }: PaginationParams,
+        ownCompanyId?: string) {
         const take = Math.min(Math.max(limit, 1), 100);
         const current = Math.max(page, 1);
         const skip = (current - 1) * take;
 
         const where: Prisma.CompanyWhereInput = {
             tenant_id: tenantId,
+            ...(ownCompanyId ? { id: { not: ownCompanyId } } : {}),
             ...(search && {
                 name: { contains: search, mode: "insensitive" },
             }),
@@ -27,7 +27,8 @@ export const companyRepository = {
                 orderBy: [{ created_at: "desc" }, { id: "desc" }],
             }),
             tx.company.count({ where }),
-        ])
+        ]);
+
         return {
             data, meta: {
                 total,
@@ -54,7 +55,7 @@ export const companyRepository = {
     },
 
     findOwnCompany(tx: PrismaClientTx, tenantId: string, userId: string) {
-        return prisma.user.findFirst({
+        return tx.user.findFirst({
             where: {
                 id: userId,
                 tenantId,
@@ -128,4 +129,3 @@ export const companyRepository = {
         throw new Error("tenantId is required to create a new company");
     },
 };
-

@@ -38,7 +38,7 @@ export const invoiceService = {
     return invoice;
   },
 
-  async updateInvoice(tenantId: string, invoiceId: string, data: Partial<InvoiceUpdatableFields>) {
+  async updateInvoice(tenantId: string, invoiceId: string, data: Partial<InvoiceUpdatableFields>, userId?: string) {
     const invoice = await prisma.$transaction(async (tx) => {
       const findInvoice = await invoiceRepository.findById(tx, tenantId, invoiceId);
       if (!findInvoice) throw ApiError.notFound('Invoice not found');
@@ -48,10 +48,16 @@ export const invoiceService = {
       redisService.deleteByPattern(`invoice-get-${tenantId}-*`),
       redisService.deleteByPattern(`invoice-list-${tenantId}-*`)
     ])
+    eventBus.emit('invoice.updated', {
+      invoiceId,
+      tenantId,
+      userId,
+      changedFields: Object.keys(data),
+    });
     return invoice;
   },
 
-  async markPaid(tenantId: string, id: string) {
+  async markPaid(tenantId: string, id: string, userId?: string) {
     const invoice = await prisma.$transaction(async (tx) => {
       const existing = await invoiceRepository.findById(tx, tenantId, id);
       if (!existing) throw ApiError.notFound('Invoice not found');
@@ -62,12 +68,12 @@ export const invoiceService = {
       const remaining = Number(existing.total_amount) - Number(existing.amount_paid);
       return invoiceRepository.recordPayment(tx, id, remaining, 0, new Date(), InvoiceStatus.PAID);
     });
-    eventBus.emit('invoice.paid', { invoiceId: id, tenantId, dealId: invoice.deal_id });
+    eventBus.emit('invoice.paid', { invoiceId: id, tenantId, dealId: invoice.deal_id, userId });
 
     return invoice;
   },
 
-  async removeInvoice(tenantId: string, id: string) {
+  async removeInvoice(tenantId: string, id: string, userId?: string) {
     const invoice = await prisma.$transaction(async (tx) => {
       const findInvoice = await invoiceRepository.findById(tx, tenantId, id);
       if (!findInvoice) throw ApiError.notFound('Invoice not found');
@@ -78,6 +84,7 @@ export const invoiceService = {
       redisService.deleteByPattern(`invoice-list-${tenantId}-*`)
     ])
 
+    eventBus.emit('invoice.deleted', { invoiceId: id, tenantId, userId });
     return invoice;
   }
 };
