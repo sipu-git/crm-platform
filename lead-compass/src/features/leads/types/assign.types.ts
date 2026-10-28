@@ -29,6 +29,7 @@ export interface AssignLeadInput {
 
 export interface LeadAssignee {
     id: string;
+    userId?: string | null;
     full_name: string;
     designation: string | null;
     email: string | null;

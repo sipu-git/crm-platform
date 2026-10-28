@@ -11,6 +11,12 @@ export const assigneeApis = {
         return response.data.data.lead;
     },
 
+    reassign: async (leadId: string, data: CreateAssigneeInput): Promise<Lead> => {
+        const response = await api.patch<{ data: { lead: Lead } }>(`${subUrl}/${leadId}/reassign`,
+            data);
+        return response.data.data.lead;
+    },
+
     list: async (): Promise<Assignee[]> => {
         const response = await api.get<{ data: Assignee[] }>(subUrl);
         return response.data.data;

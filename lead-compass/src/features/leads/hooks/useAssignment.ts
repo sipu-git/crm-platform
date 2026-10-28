@@ -58,3 +58,20 @@ export function useAssign() {
         },
     });
 }
+
+export function useReassign() {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: ({ leadId, data }: {
+            leadId: string; data: CreateAssigneeInput;
+        }) => assigneeApis.reassign(leadId, data),
+
+        onSuccess: (updatedLead, { leadId }) => {
+            queryClient.setQueryData<Lead>(leadsKeys.detail(leadId), updatedLead);
+            queryClient.invalidateQueries({ queryKey: assignmentKeys.lists() });
+            queryClient.invalidateQueries({ queryKey: leadsKeys.detail(leadId) });
+            queryClient.invalidateQueries({ queryKey: leadsKeys.lists() });
+        },
+    });
+}

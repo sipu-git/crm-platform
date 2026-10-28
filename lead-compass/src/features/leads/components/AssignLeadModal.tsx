@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { UserPlus, User } from "lucide-react";
 import { toast } from "sonner";
 import { CreateAssigneeInput, LeadAssignee } from "@/features/leads/types/assign.types";
-import { useAssign } from "@/features/leads/hooks/useAssignment";
+import { useAssign, useReassign } from "@/features/leads/hooks/useAssignment";
 import { useUsers } from "@/features/users/hooks/useUsers";
 // import { useUsers } from "@/features/auth/hooks/useAuth";
 
@@ -41,11 +41,14 @@ export default function AssignLeadDialog({ open, onOpenChange, leadId, currentAs
     const [submitError, setSubmitError] = useState<string | null>(null);
 
     const { mutateAsync: createAssign, isPending: submitting } = useAssign();
+    const { mutateAsync: reassignLead, isPending: reassigning } = useReassign();
+    const isSubmitting = submitting || reassigning;
+    const availableSalesReps = salesRepUsers.filter((user) => user.id !== currentAssignee?.userId);
 
     useEffect(() => {
         if (!open) return;
         setMode("select");
-        setSelectedUserId(currentAssignee?.id ?? "");
+        setSelectedUserId("");
         setForm(emptyForm);
         setSubmitError(null);
     }, [open, leadId, currentAssignee?.id]);
@@ -57,16 +60,22 @@ export default function AssignLeadDialog({ open, onOpenChange, leadId, currentAs
         async (data: CreateAssigneeInput) => {
             setSubmitError(null);
             try {
-                await createAssign({ leadId, data });
-                toast.success("Lead assigned");
+                if (currentAssignee) {
+                    await reassignLead({ leadId, data });
+                } else {
+                    await createAssign({ leadId, data });
+                }
+                toast.success(currentAssignee ? "Lead reassigned" : "Lead assigned");
                 onOpenChange(false);
             } catch (err) {
-                const message = err instanceof Error ? err.message : "Failed to assign lead";
+                const message = err instanceof Error
+                    ? err.message
+                    : `Failed to ${currentAssignee ? "reassign" : "assign"} lead`;
                 setSubmitError(message);
                 toast.error(message);
             }
         },
-        [createAssign, leadId, onOpenChange]
+        [createAssign, currentAssignee, leadId, onOpenChange, reassignLead]
     );
 
     const handleSelectExisting = useCallback(() => {
@@ -102,7 +111,7 @@ export default function AssignLeadDialog({ open, onOpenChange, leadId, currentAs
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="sm:max-w-md">
                 <DialogHeader>
-                    <DialogTitle>Assign lead</DialogTitle>
+                    <DialogTitle>{currentAssignee ? "Reassign lead" : "Assign lead"}</DialogTitle>
                 </DialogHeader>
 
                 <div className="flex gap-2 border-b pb-3">
@@ -111,7 +120,7 @@ export default function AssignLeadDialog({ open, onOpenChange, leadId, currentAs
                         variant={mode === "select" ? "secondary" : "ghost"}
                         size="sm"
                         onClick={() => setMode("select")}
-                        disabled={submitting}
+                        disabled={isSubmitting}
                     >
                         <User className="mr-2 h-3.5 w-3.5" />
                         Choose sales rep
@@ -121,7 +130,7 @@ export default function AssignLeadDialog({ open, onOpenChange, leadId, currentAs
                         variant={mode === "create" ? "secondary" : "ghost"}
                         size="sm"
                         onClick={() => setMode("create")}
-                        disabled={submitting}
+                        disabled={isSubmitting}
                     >
                         <UserPlus className="mr-2 h-3.5 w-3.5" />
                         Add new person
@@ -133,13 +142,13 @@ export default function AssignLeadDialog({ open, onOpenChange, leadId, currentAs
                         <Select
                             value={selectedUserId}
                             onValueChange={setSelectedUserId}
-                            disabled={loadingSalesReps || submitting}
+                            disabled={loadingSalesReps || isSubmitting}
                         >
                             <SelectTrigger className="w-full">
                                 <SelectValue placeholder={loadingSalesReps ? "Loading…" : "Select a sales rep"} />
                             </SelectTrigger>
                             <SelectContent>
-                                {salesRepUsers.map((u) => (
+                                {availableSalesReps.map((u) => (
                                     <SelectItem key={u.id} value={u.id}>
                                         {u.full_name}
                                         {u.email ? ` · ${u.email}` : ""}
@@ -147,12 +156,17 @@ export default function AssignLeadDialog({ open, onOpenChange, leadId, currentAs
                                 ))}
                             </SelectContent>
                         </Select>
+                        {currentAssignee && (
+                            <p className="text-xs text-muted-foreground">
+                                Currently assigned to {currentAssignee.full_name}. Choose another sales rep.
+                            </p>
+                        )}
                         {assigneesError && (
                             <p className="text-xs text-destructive" role="alert">
                                 Couldn't load sales reps. Try again, or switch to "Add new person".
                             </p>
                         )}
-                        {!loadingSalesReps && !assigneesError && salesRepUsers.length === 0 && (
+                        {!loadingSalesReps && !assigneesError && availableSalesReps.length === 0 && (
                             <p className="text-xs text-muted-foreground">
                                 No sales reps found — invite one from Team Management, or switch to "Add new person".
                             </p>
@@ -164,19 +178,19 @@ export default function AssignLeadDialog({ open, onOpenChange, leadId, currentAs
                             placeholder="Full name"
                             value={form.full_name}
                             onChange={updateForm("full_name")}
-                            disabled={submitting}
+                            disabled={isSubmitting}
                         />
                         <Input
                             placeholder="Designation"
                             value={form.designation}
                             onChange={updateForm("designation")}
-                            disabled={submitting}
+                            disabled={isSubmitting}
                         />
                         <Input
                             placeholder="Department (optional)"
                             value={form.department}
                             onChange={updateForm("department")}
-                            disabled={submitting}
+                            disabled={isSubmitting}
                         />
                         <p className="text-xs text-muted-foreground">
                             This person doesn't need a login account — just enter their details to make them assignable.
@@ -191,14 +205,16 @@ export default function AssignLeadDialog({ open, onOpenChange, leadId, currentAs
                 )}
 
                 <DialogFooter>
-                    <Button variant="outline" onClick={() => onOpenChange(false)} disabled={submitting}>
+                    <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isSubmitting}>
                         Cancel
                     </Button>
                     <Button
                         onClick={mode === "select" ? handleSelectExisting : handleCreateAndAssign}
-                        disabled={submitting || !canSubmit}
+                        disabled={isSubmitting || !canSubmit}
                     >
-                        {submitting ? "Assigning…" : "Assign"}
+                        {isSubmitting
+                            ? currentAssignee ? "Reassigning…" : "Assigning…"
+                            : currentAssignee ? "Reassign lead" : "Assign"}
                     </Button>
                 </DialogFooter>
             </DialogContent>
