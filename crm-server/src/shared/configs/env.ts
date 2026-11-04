@@ -1,19 +1,6 @@
 import dotenv from 'dotenv';
 dotenv.config();
 
-const defaultLlmModelId = 'openai/gpt-oss-20b';
-const incompatibleAsyncToolModels = new Set(['nvidia/nemotron-3.5-bolt-e4b']);
-const configuredLlmModelId = (process.env.NVIDIA_MODEL_ID ?? defaultLlmModelId).trim();
-const llmModelId = incompatibleAsyncToolModels.has(configuredLlmModelId.toLowerCase())
-  ? defaultLlmModelId
-  : configuredLlmModelId;
-
-if (llmModelId !== configuredLlmModelId) {
-  console.warn(
-    `NVIDIA_MODEL_ID=${configuredLlmModelId} uses asynchronous tool calls and is incompatible with this synchronous LangChain agent. Using ${llmModelId}.`,
-  );
-}
-
 function required(key: string): string {
   const value = process.env[key];
   if (!value) throw new Error(`Missing required env var: ${key}`);
@@ -37,22 +24,22 @@ export const env = {
     accessKeyId: process.env.AWS_ACCESS_KEY_ID ?? '',
     secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY ?? '',
   },
-  nvidia: {
-    apiKey: (process.env.NVIDIA_API_KEY ?? '').trim(),
+  google: {
+    apiKey: (process.env.GEMINI_API_KEY ?? process.env.GOOGLE_API_KEY ?? '').trim(),
   },
   llm: {
-    modelId: llmModelId,
-    timeoutMs: Number(process.env.LLM_TIMEOUT_MS ?? 60000),
-    maxRetries: Number(process.env.LLM_MAX_RETRIES ?? 2),
+    modelId: (process.env.GEMINI_MODEL_ID ?? 'gemini-3.5-flash-lite').trim(),
+    timeoutMs: Number(process.env.GEMINI_TIMEOUT_MS ?? 7000),
+    maxRetries: Number(process.env.GEMINI_MAX_RETRIES ?? 0),
   },
 };
 
 if (!env.llm.modelId) {
-  throw new Error('NVIDIA_MODEL_ID must not be empty.');
+  throw new Error('GEMINI_MODEL_ID must not be empty.');
 }
 if (!Number.isInteger(env.llm.timeoutMs) || env.llm.timeoutMs < 1000 || env.llm.timeoutMs > 120000) {
-  throw new Error('LLM_TIMEOUT_MS must be an integer between 1000 and 120000.');
+  throw new Error('GEMINI_TIMEOUT_MS must be an integer between 1000 and 120000.');
 }
 if (!Number.isInteger(env.llm.maxRetries) || env.llm.maxRetries < 0 || env.llm.maxRetries > 5) {
-  throw new Error('LLM_MAX_RETRIES must be an integer between 0 and 5.');
+  throw new Error('GEMINI_MAX_RETRIES must be an integer between 0 and 5.');
 }

@@ -1,7 +1,7 @@
 import dns from 'node:dns';
 import type { BaseLanguageModelInput } from '@langchain/core/language_models/base';
 import { RunnableLambda, type RunnableConfig } from '@langchain/core/runnables';
-import { ChatOpenAI } from '@langchain/openai';
+import { ChatGoogle } from '@langchain/google';
 import type { ZodType } from 'zod';
 import { env } from '../shared/configs/env.js';
 import { ApiError } from '../shared/utils/ApiError.js';
@@ -81,21 +81,17 @@ export async function withLlmRetries<T>(
   }
 }
 
-/** Returns the shared NVIDIA NIM model used by LangChain chains, agents, and graphs. */
-export function getLlmModel(overrideModel?: string): ChatOpenAI {
-  if (!env.nvidia.apiKey) {
-    throw new ApiError(503, 'Set NVIDIA_API_KEY to your NVIDIA API key before using AI features.');
+/** Returns the shared Gemini model used by LangChain chains, agents, and graphs. */
+export function getLlmModel(overrideModel?: string): ChatGoogle {
+  if (!env.google.apiKey) {
+    throw new ApiError(503, 'Set GEMINI_API_KEY before using AI features.');
   }
 
-  return new ChatOpenAI({
-    apiKey: env.nvidia.apiKey,
+  return new ChatGoogle({
+    apiKey: env.google.apiKey,
     model: overrideModel || env.llm.modelId,
-    configuration: {
-      baseURL: 'https://integrate.api.nvidia.com/v1',
-    },
     temperature: 0.2,
-    maxTokens: 4096,
-    maxRetries: 0,
+    maxOutputTokens: 2048,
   });
 }
 
