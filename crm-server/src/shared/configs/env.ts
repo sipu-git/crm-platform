@@ -1,6 +1,19 @@
 import dotenv from 'dotenv';
 dotenv.config();
 
+const defaultLlmModelId = 'openai/gpt-oss-20b';
+const incompatibleAsyncToolModels = new Set(['nvidia/nemotron-3.5-bolt-e4b']);
+const configuredLlmModelId = (process.env.NVIDIA_MODEL_ID ?? defaultLlmModelId).trim();
+const llmModelId = incompatibleAsyncToolModels.has(configuredLlmModelId.toLowerCase())
+  ? defaultLlmModelId
+  : configuredLlmModelId;
+
+if (llmModelId !== configuredLlmModelId) {
+  console.warn(
+    `NVIDIA_MODEL_ID=${configuredLlmModelId} uses asynchronous tool calls and is incompatible with this synchronous LangChain agent. Using ${llmModelId}.`,
+  );
+}
+
 function required(key: string): string {
   const value = process.env[key];
   if (!value) throw new Error(`Missing required env var: ${key}`);
@@ -28,7 +41,7 @@ export const env = {
     apiKey: (process.env.NVIDIA_API_KEY ?? '').trim(),
   },
   llm: {
-    modelId: (process.env.NVIDIA_MODEL_ID ?? 'nvidia/nemotron-3.5-bolt-e4b').trim(),
+    modelId: llmModelId,
     timeoutMs: Number(process.env.LLM_TIMEOUT_MS ?? 60000),
     maxRetries: Number(process.env.LLM_MAX_RETRIES ?? 2),
   },

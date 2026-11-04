@@ -29,6 +29,10 @@ export const copilotService = {
       return await runCopilotWorkflow(safePrompt, actor);
     } catch (error) {
       if (error instanceof ApiError) throw error;
+      console.error('[AI copilot] Workflow failed:', {
+        name: error instanceof Error ? error.name : 'UnknownError',
+        message: error instanceof Error ? error.message.slice(0, 500) : String(error).slice(0, 500),
+      });
       throw new ApiError(
         502,
         "The CRM assistant is temporarily unavailable. Please try again in a moment.",

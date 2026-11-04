@@ -1,4 +1,6 @@
 import dns from 'node:dns';
+import type { BaseLanguageModelInput } from '@langchain/core/language_models/base';
+import { RunnableLambda, type RunnableConfig } from '@langchain/core/runnables';
 import { ChatOpenAI } from '@langchain/openai';
 import type { ZodType } from 'zod';
 import { env } from '../shared/configs/env.js';
@@ -21,6 +23,7 @@ function statusCode(error: unknown): number | undefined {
 }
 
 function isRetryable(error: unknown): boolean {
+  if (error instanceof InvalidStructuredOutputError) return true;
   if (error instanceof Error) {
     if (error.name === 'TimeoutError' || error.name === 'AbortError') return true;
     const msg = error.message.toLowerCase();
@@ -43,6 +46,13 @@ function pause(milliseconds: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, milliseconds));
 }
 
+class InvalidStructuredOutputError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'InvalidStructuredOutputError';
+  }
+}
+
 export async function withLlmRetries<T>(
   operation: () => Promise<T>,
   options: { maxRetries: number; sleep?: (milliseconds: number) => Promise<void> },
@@ -54,6 +64,9 @@ export async function withLlmRetries<T>(
       return await operation();
     } catch (error) {
       if (!isRetryable(error) || attempt >= options.maxRetries) {
+        if (error instanceof InvalidStructuredOutputError) {
+          throw new ApiError(502, 'The AI service returned an invalid response. Please try again.');
+        }
         if (error instanceof Error && (error.name === 'TimeoutError' || error.message.includes('timeout') || error.message.includes('aborted'))) {
           throw new ApiError(504, 'The AI request timed out. Please try again.');
         }
@@ -68,7 +81,7 @@ export async function withLlmRetries<T>(
   }
 }
 
-/** Returns the shared NVIDIA Nemotron model used by LangChain chains, agents, and graphs. */
+/** Returns the shared NVIDIA NIM model used by LangChain chains, agents, and graphs. */
 export function getLlmModel(overrideModel?: string): ChatOpenAI {
   if (!env.nvidia.apiKey) {
     throw new ApiError(503, 'Set NVIDIA_API_KEY to your NVIDIA API key before using AI features.');
@@ -87,5 +100,29 @@ export function getLlmModel(overrideModel?: string): ChatOpenAI {
 }
 
 export function getStructuredLlmModel<Output extends Record<string, unknown>>(schema: ZodType<Output>) {
-  return getLlmModel().withStructuredOutput(schema, { method: 'functionCalling' });
+  const structuredModel = getLlmModel().withStructuredOutput(schema, { method: 'functionCalling' });
+  return RunnableLambda.from<BaseLanguageModelInput, Output>(async (input, config?: RunnableConfig) => {
+    let result: unknown;
+    try {
+      result = await structuredModel.invoke(input, config);
+    } catch (error) {
+      if (isZodValidationError(error)) {
+        throw new InvalidStructuredOutputError(`Model ${env.llm.modelId} returned invalid structured output.`);
+      }
+      throw error;
+    }
+
+    const parsed = schema.safeParse(result);
+    if (!parsed.success) {
+      throw new InvalidStructuredOutputError(`Model ${env.llm.modelId} did not return the expected structured output.`);
+    }
+    return parsed.data;
+  });
+}
+
+function isZodValidationError(error: unknown): boolean {
+  return typeof error === 'object'
+    && error !== null
+    && 'issues' in error
+    && Array.isArray((error as { issues?: unknown }).issues);
 }
