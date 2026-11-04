@@ -1,5 +1,5 @@
 import { createAgent } from "langchain";
-import { getLlmModel, withLlmRetries } from "../../../../lib/llm.js";
+import { getLlmModel, getStructuredLlmModel, withLlmRetries } from "../../../../lib/llm.js";
 import { env } from "../../../../shared/configs/env.js";
 import type { AccessTokenPayload } from "../../../../shared/utils/jwt.js";
 import { createCopilotTools } from "./tools/index.js";
@@ -42,7 +42,7 @@ export async function runCopilotWorkflow(prompt: string, actor: AccessTokenPaylo
     .filter((message) => message.getType() === "tool")
     .map((message) => readMessageText(message.content));
 
-  const reviewer = getLlmModel().withStructuredOutput(copilotAnswerSchema);
+  const reviewer = getStructuredLlmModel(copilotAnswerSchema);
   const reviewed = await withLlmRetries(
     () => reviewer.invoke([
       {

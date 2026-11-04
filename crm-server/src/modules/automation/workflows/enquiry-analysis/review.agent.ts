@@ -1,10 +1,10 @@
 import { z } from "zod";
-import { getLlmModel, withLlmRetries } from "../../../../lib/llm.js";
+import { getStructuredLlmModel, withLlmRetries } from "../../../../lib/llm.js";
 import { env } from "../../../../shared/configs/env.js";
 import { enquiryAnalysisSchema, enquiryInputSchema } from "./schemas.js";
 
 export async function reviewEnquiry(enquiry: z.infer<typeof enquiryInputSchema>, proposed: z.infer<typeof enquiryAnalysisSchema>) {
-  const model = getLlmModel().withStructuredOutput(enquiryAnalysisSchema);
+  const model = getStructuredLlmModel(enquiryAnalysisSchema);
   const result = await withLlmRetries(
     () => model.invoke([
       {

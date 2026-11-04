@@ -1,5 +1,6 @@
 import dns from 'node:dns';
 import { ChatOpenAI } from '@langchain/openai';
+import type { ZodType } from 'zod';
 import { env } from '../shared/configs/env.js';
 import { ApiError } from '../shared/utils/ApiError.js';
 
@@ -83,4 +84,8 @@ export function getLlmModel(overrideModel?: string): ChatOpenAI {
     maxTokens: 4096,
     maxRetries: 0,
   });
+}
+
+export function getStructuredLlmModel<Output extends Record<string, unknown>>(schema: ZodType<Output>) {
+  return getLlmModel().withStructuredOutput(schema, { method: 'functionCalling' });
 }

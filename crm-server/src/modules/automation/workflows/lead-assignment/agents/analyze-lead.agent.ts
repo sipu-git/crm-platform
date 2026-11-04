@@ -1,11 +1,11 @@
-import { getLlmModel, withLlmRetries } from "../../../../../lib/llm.js";
+import { getStructuredLlmModel, withLlmRetries } from "../../../../../lib/llm.js";
 import { env } from "../../../../../shared/configs/env.js";
 import { leadAssignmentRecommendationSchema } from "../schemas.js";
 import type { LeadAssignmentState } from "../state.js";
 
 export async function analyzeLead(state: LeadAssignmentState) {
   if (!state.lead) throw new Error("Lead context is missing before the AI analysis step.");
-  const model = getLlmModel().withStructuredOutput(leadAssignmentRecommendationSchema);
+  const model = getStructuredLlmModel(leadAssignmentRecommendationSchema);
   const result = await withLlmRetries(
     () => model.invoke([
       {

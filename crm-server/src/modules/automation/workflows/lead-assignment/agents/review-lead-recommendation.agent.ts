@@ -1,11 +1,11 @@
-import { getLlmModel, withLlmRetries } from "../../../../../lib/llm.js";
+import { getStructuredLlmModel, withLlmRetries } from "../../../../../lib/llm.js";
 import { env } from "../../../../../shared/configs/env.js";
 import { leadAssignmentRecommendationSchema } from "../schemas.js";
 import type { LeadAssignmentState } from "../state.js";
 
 export async function reviewLeadRecommendation(state: LeadAssignmentState) {
   if (!state.lead || !state.recommendation) throw new Error("Lead context or recommendation is missing before review.");
-  const model = getLlmModel().withStructuredOutput(leadAssignmentRecommendationSchema);
+  const model = getStructuredLlmModel(leadAssignmentRecommendationSchema);
   const result = await withLlmRetries(
     () => model.invoke([
       {
