@@ -91,7 +91,9 @@ export function getLlmModel(overrideModel?: string): ChatGoogle {
     apiKey: env.google.apiKey,
     model: overrideModel || env.llm.modelId,
     temperature: 0.2,
-    maxOutputTokens: 2048,
+    maxOutputTokens: 1024,
+    thinkingLevel: 'minimal',
+    maxRetries: 0,
   });
 }
 
