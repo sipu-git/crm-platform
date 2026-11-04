@@ -6,8 +6,8 @@ import {
   useRejectEnquiry,
   useDeleteEnquiry,
 } from "@/features/enquiries/hooks/useEnquiries";
-import { useAuthPayload } from "@/features/auth/hooks/useAuthPayload";
 import { toast } from "sonner";
+import { handleApiError } from "@/lib/apiError";
 import { STATUS_META, STATUS_ORDER } from "@/features/enquiries/utils/enquiries.constants";
 import type { KpiMetric } from "@/features/dashboard/types/dashboard.types";
 import { lazy, Suspense } from "react";
@@ -41,7 +41,6 @@ export default function EnquiriesRoutePage() {
   const { mutateAsync: approve, isPending: isApprovePending } = useApproveEnquiry();
   const { mutateAsync: reject, isPending: isRejectPending } = useRejectEnquiry();
   const { mutateAsync: deleteEnquiry, isPending: isDeletePending } = useDeleteEnquiry();
-  const auth = useAuthPayload();
   const isPending = isApprovePending || isRejectPending || isDeletePending;
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState<"ALL" | EnquiryStatus>("ALL");
@@ -124,23 +123,21 @@ export default function EnquiriesRoutePage() {
   }, [enquiries]);
 
   const handleApprove = (id: string) => {
-    if (!auth?.user) return;
     approve(
-      { id, input: { status: "APPROVED", approvedBy: auth.user.name } },
+      id,
       {
         onSuccess: () => toast.success("Enquiry approved"),
-        onError: () => toast.error("Unable to approve enquiry"),
+        onError: (error) => toast.error(handleApiError(error)),
       },
     );
   };
 
   const handleReject = (id: string) => {
-    if (!auth?.user) return;
     reject(
-      { id, input: { status: "REJECTED", approvedBy: auth.user.name } },
+      id,
       {
         onSuccess: () => toast.success("Enquiry rejected"),
-        onError: () => toast.error("Unable to reject enquiry"),
+        onError: (error) => toast.error(handleApiError(error)),
       },
     );
   };
@@ -151,8 +148,8 @@ export default function EnquiriesRoutePage() {
     try {
       await deleteEnquiry(pendingDeleteId);
       toast.success("Enquiry deleted");
-    } catch {
-      toast.error("Unable to delete enquiry");
+    } catch (error) {
+      toast.error(handleApiError(error));
     } finally {
       setPendingDeleteId(null);
     }

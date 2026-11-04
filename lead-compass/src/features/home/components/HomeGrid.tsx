@@ -28,6 +28,7 @@ interface HomeGridProps {
   recentRecords: RecentRecord[];
   favoriteItems: HomeFavorite[];
   onConnectGmail: () => void;
+  showEmail: boolean;
   showTasks: boolean;
   showDeals: boolean;
   showInvoices: boolean;
@@ -44,6 +45,7 @@ function HomeGrid({
   recentRecords,
   favoriteItems,
   onConnectGmail,
+  showEmail,
   showTasks,
   showDeals,
   showInvoices,
@@ -71,6 +73,7 @@ function HomeGrid({
             isLoading={isLoading}
             gmailConnected={gmailConnected}
             onConnectGmail={onConnectGmail}
+            showEmail={showEmail}
             showTasks={showTasks}
             showDeals={showDeals}
             showInvoices={showInvoices}
@@ -80,7 +83,7 @@ function HomeGrid({
           <Suspense
             fallback={<div className="min-h-[350px] animate-pulse rounded-xl border bg-card/60" />}
           >
-            <CalendarUpcomingWidget title="Today" todayOnly />
+            {showTasks && <CalendarUpcomingWidget title="Today" todayOnly />}
           </Suspense>
         </div>
         <div className="xl:col-span-4">

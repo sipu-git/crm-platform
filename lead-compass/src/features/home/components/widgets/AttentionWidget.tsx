@@ -1,6 +1,13 @@
 import React from "react";
 import { Link } from "react-router-dom";
-import {ArrowUpRight,BriefcaseBusiness,CheckSquare,CircleDollarSign,FileText,Mail} from "lucide-react";
+import {
+  ArrowUpRight,
+  BriefcaseBusiness,
+  CheckSquare,
+  CircleDollarSign,
+  FileText,
+  Mail,
+} from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import type { TaskItem } from "@/features/dashboard/types/dashboard.types";
@@ -15,6 +22,7 @@ export const AttentionWidget = React.memo(function AttentionWidget({
   isLoading,
   gmailConnected,
   onConnectGmail,
+  showEmail,
   showTasks,
   showDeals,
   showInvoices,
@@ -26,6 +34,7 @@ export const AttentionWidget = React.memo(function AttentionWidget({
   isLoading: boolean;
   gmailConnected: boolean;
   onConnectGmail: () => void;
+  showEmail: boolean;
   showTasks: boolean;
   showDeals: boolean;
   showInvoices: boolean;
@@ -123,44 +132,45 @@ export const AttentionWidget = React.memo(function AttentionWidget({
             );
           })}
 
-        <div className="flex items-center gap-3 rounded-xl border border-border/60 bg-background/70 px-3 py-2.5">
-          <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-sky-500/10 text-sky-600">
-            <Mail className="h-4 w-4" />
-          </span>
-          <span className="min-w-0 flex-1">
-            <span className="block text-sm font-medium text-foreground">Unread emails</span>
-            <span className="block truncate text-xs text-muted-foreground">
-              {gmailConnected ? "Your Gmail inbox" : "Connect Gmail to see new messages"}
+        {showEmail && (
+          <div className="flex items-center gap-3 rounded-xl border border-border/60 bg-background/70 px-3 py-2.5">
+            <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-sky-500/10 text-sky-600">
+              <Mail className="h-4 w-4" />
             </span>
-          </span>
-          {gmailConnected ? (
-            <>
-              <span className="min-w-7 rounded-full bg-muted px-2 py-1 text-center text-xs font-semibold text-foreground">
-                {unreadEmails ?? "—"}
+            <span className="min-w-0 flex-1">
+              <span className="block text-sm font-medium text-foreground">Unread emails</span>
+              <span className="block truncate text-xs text-muted-foreground">
+                {gmailConnected ? "Your Gmail inbox" : "Connect Gmail to see new messages"}
               </span>
-              <a
-                href="https://mail.google.com/mail/u/0/#inbox"
-                target="_blank"
-                rel="noreferrer"
-                aria-label="Open Gmail inbox"
-                className="text-muted-foreground hover:text-primary"
+            </span>
+            {gmailConnected ? (
+              <>
+                <span className="min-w-7 rounded-full bg-muted px-2 py-1 text-center text-xs font-semibold text-foreground">
+                  {unreadEmails ?? "—"}
+                </span>
+                <a
+                  href="https://mail.google.com/mail/u/0/#inbox"
+                  target="_blank"
+                  rel="noreferrer"
+                  aria-label="Open Gmail inbox"
+                  className="text-muted-foreground hover:text-primary"
+                >
+                  <ArrowUpRight className="h-4 w-4" />
+                </a>
+              </>
+            ) : (
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-7 px-2 text-xs"
+                onClick={onConnectGmail}
               >
-                <ArrowUpRight className="h-4 w-4" />
-              </a>
-            </>
-          ) : (
-            <Button
-              variant="outline"
-              size="sm"
-              className="h-7 px-2 text-xs"
-              onClick={onConnectGmail}
-            >
-              Connect
-            </Button>
-          )}
-        </div>
+                Connect
+              </Button>
+            )}
+          </div>
+        )}
       </CardContent>
     </Card>
   );
 });
-

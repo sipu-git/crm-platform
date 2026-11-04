@@ -1,7 +1,13 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { ROLE_DASHBOARD_CONFIG, normalizeRole } from "@/features/dashboard/configs/dashboard.config";
-import type { DashboardRole, DashboardWidgetConfig } from "@/features/dashboard/types/dashboard.types";
+import {
+  ROLE_DASHBOARD_CONFIG,
+  normalizeRole,
+} from "@/features/dashboard/configs/dashboard.config";
+import type {
+  DashboardRole,
+  DashboardWidgetConfig,
+} from "@/features/dashboard/types/dashboard.types";
 import { useDashboardData } from "@/features/dashboard/hooks/useDashboardData";
 import { DashboardHeader } from "@/features/dashboard/components/DashboardHeader";
 import { leadsKeys } from "@/features/leads/keys/leads.keys";
@@ -10,8 +16,6 @@ import { activitiesKeys } from "@/features/activities/keys/activities.keys";
 import { invoicesKeys } from "@/features/invoices/keys/invoices.keys";
 import { useCurrentUser } from "@/features/auth/hooks/useCurrentUsers";
 import { WidgetRenderer } from "@/features/dashboard/components/WidgetRenderer";
-import ClientDashboardPage from "./_app.$tenantSlug.client-dashboard";
-
 
 const COL_SPAN_CLASSES: Record<number, string> = {
   1: "col-span-12 lg:col-span-1",
@@ -51,7 +55,7 @@ function LazyDashboardWidget({
 }: {
   widget: DashboardWidgetConfig;
   role: DashboardRole;
-  data: any;
+  data: ReturnType<typeof useDashboardData>;
   isLoading?: boolean;
   priority?: boolean;
 }) {
@@ -81,7 +85,7 @@ function LazyDashboardWidget({
         root: null,
         rootMargin: "300px 0px",
         threshold: 0,
-      }
+      },
     );
 
     observer.observe(element);
@@ -89,23 +93,13 @@ function LazyDashboardWidget({
     return () => observer.disconnect();
   }, [priority]);
 
-  const colSpanClass =
-    COL_SPAN_CLASSES[widget.colSpan] || "col-span-12";
-  const minHeightClass =
-    WIDGET_MIN_HEIGHTS[widget.type] || "min-h-[260px]";
+  const colSpanClass = COL_SPAN_CLASSES[widget.colSpan] || "col-span-12";
+  const minHeightClass = WIDGET_MIN_HEIGHTS[widget.type] || "min-h-[260px]";
 
   return (
-    <div
-      ref={containerRef}
-      className={`${colSpanClass} h-full flex flex-col`}
-    >
+    <div ref={containerRef} className={`${colSpanClass} h-full flex flex-col`}>
       {shouldRender ? (
-        <WidgetRenderer
-          widget={widget}
-          role={role}
-          data={data}
-          isLoading={isLoading}
-        />
+        <WidgetRenderer widget={widget} role={role} data={data} isLoading={isLoading} />
       ) : (
         <div className={`${minHeightClass} w-full rounded-xl border bg-card/60 animate-pulse`} />
       )}
@@ -119,10 +113,6 @@ export default function DashboardPage() {
   const currentUser = useCurrentUser();
 
   const activeRole = normalizeRole(currentUser?.user?.role);
-
-  if (currentUser?.user?.role === "CLIENT") {
-    return <ClientDashboardPage />;
-  }
 
   const dashboardData = useDashboardData(activeRole, currentUser);
   const handleRefresh = useCallback(() => {
@@ -139,10 +129,7 @@ export default function DashboardPage() {
   }, [queryClient]);
 
   const widgets = useMemo(() => {
-    return (
-      ROLE_DASHBOARD_CONFIG[activeRole] ||
-      ROLE_DASHBOARD_CONFIG.ADMIN
-    );
+    return ROLE_DASHBOARD_CONFIG[activeRole] || ROLE_DASHBOARD_CONFIG.ADMIN;
   }, [activeRole]);
 
   return (

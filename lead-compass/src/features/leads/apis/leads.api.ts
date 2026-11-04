@@ -67,7 +67,7 @@ export const leadsApi = {
     },
 
     remove: async (id: string): Promise<void> => {
-        await api.delete(`${subUrl}/delete-lead/${id}`);
+        await api.delete(`${subUrl}/${id}/delete`);
     },
     
     assign: async (leadId: string, assignId: string): Promise<Lead> => {

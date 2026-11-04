@@ -1,41 +1,48 @@
-import type { DashboardConfigMap, DashboardRole } from "../types/dashboard.types";
+import type {
+  DashboardConfigMap,
+  DashboardRole,
+  DashboardWidgetConfig,
+} from "../types/dashboard.types";
+
+const ADMIN_DASHBOARD_WIDGETS: DashboardWidgetConfig[] = [
+  {
+    id: "admin-org-kpis",
+    type: "kpi_grid",
+    title: "Organization Health & Executive Metrics",
+    subtitle: "High-level aggregate metrics across teams and revenue streams",
+    colSpan: 12,
+    props: { scope: "org", metricsLayout: "5-cols" },
+  },
+  {
+    id: "admin-revenue-chart",
+    type: "revenue_chart",
+    title: "Monthly Closed-Won Bookings",
+    subtitle: "Won deal value by close month",
+    colSpan: 7,
+    props: { scope: "org", defaultTimeframe: "12M" },
+  },
+  {
+    id: "admin-pipeline-funnel",
+    type: "pipeline_funnel",
+    title: "Team Pipeline Stage Velocity",
+    subtitle: "Conversion rates and deal volume at each stage",
+    colSpan: 5,
+    props: { scope: "team" },
+  },
+  {
+    id: "admin-team-leaderboard",
+    type: "leaderboard",
+    title: "Team & Rep Performance Rankings",
+    subtitle: "Quota attainment, revenue, and win-loss ratios",
+    colSpan: 12,
+    props: { scope: "org", showQuota: true },
+  },
+];
 
 /** Analytics-only layouts. Daily work and shortcuts live on the Home page. */
 export const ROLE_DASHBOARD_CONFIG: DashboardConfigMap = {
-  ADMIN: [
-    {
-      id: "admin-org-kpis",
-      type: "kpi_grid",
-      title: "Organization Health & Executive Metrics",
-      subtitle: "High-level aggregate metrics across teams and revenue streams",
-      colSpan: 12,
-      props: { scope: "org", metricsLayout: "5-cols" },
-    },
-    {
-      id: "admin-revenue-chart",
-      type: "revenue_chart",
-      title: "Monthly Closed-Won Bookings",
-      subtitle: "Won deal value by close month",
-      colSpan: 7,
-      props: { scope: "org", defaultTimeframe: "12M" },
-    },
-    {
-      id: "admin-pipeline-funnel",
-      type: "pipeline_funnel",
-      title: "Team Pipeline Stage Velocity",
-      subtitle: "Conversion rates and deal volume at each stage",
-      colSpan: 5,
-      props: { scope: "team" },
-    },
-    {
-      id: "admin-team-leaderboard",
-      type: "leaderboard",
-      title: "Team & Rep Performance Rankings",
-      subtitle: "Quota attainment, revenue, and win-loss ratios",
-      colSpan: 12,
-      props: { scope: "org", showQuota: true },
-    },
-  ],
+  SUPER_ADMIN: ADMIN_DASHBOARD_WIDGETS,
+  ADMIN: ADMIN_DASHBOARD_WIDGETS,
 
   MANAGER: [
     {
@@ -104,19 +111,34 @@ export const ROLE_DASHBOARD_CONFIG: DashboardConfigMap = {
 };
 
 export function normalizeRole(role?: string | null): DashboardRole {
-  if (!role) return "ADMIN";
-  const value = role.toUpperCase();
-  if (value.includes("ADMIN") || value.includes("OWNER")) return "ADMIN";
-  if (value.includes("MANAGER") || value.includes("LEAD")) return "MANAGER";
-  if (value.includes("FINANCE") || value.includes("BILLING") || value.includes("ACCOUNTANT")) return "FINANCE";
-  if (value.includes("REP") || value.includes("SALES") || value.includes("MEMBER")) return "SALES_REP";
-  return "ADMIN";
+  switch (role?.toUpperCase()) {
+    case "SUPER_ADMIN":
+      return "SUPER_ADMIN";
+    case "ADMIN":
+      return "ADMIN";
+    case "MANAGER":
+      return "MANAGER";
+    case "FINANCE":
+      return "FINANCE";
+    case "SALES_REP":
+    case "CLIENT":
+    default:
+      return "SALES_REP";
+  }
 }
 
-export const ROLE_LABELS: Record<DashboardRole, { label: string; badge: string; description: string }> = {
+export const ROLE_LABELS: Record<
+  DashboardRole,
+  { label: string; badge: string; description: string }
+> = {
+  SUPER_ADMIN: {
+    label: "Super administrator",
+    badge: "Super admin view",
+    description: "Workspace-wide visibility, administrative metrics, and audit telemetry",
+  },
   ADMIN: {
-    label: "Executive / Admin",
-    badge: "Admin View",
+    label: "Workspace administrator",
+    badge: "Admin view",
     description: "Full workspace visibility, executive KPIs, and audit telemetry",
   },
   MANAGER: {

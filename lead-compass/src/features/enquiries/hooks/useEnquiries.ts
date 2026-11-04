@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { enquiriesKeys } from "../keys/enquiries.keys";
 import { enquiriesApi } from "../apis/enquiries.api";
-import type { CreateEnquiryInput, Enquiry, EnquiryApprovalInput, UpdateEnquiryInput } from "../types/enquiry.types";
+import type { CreateEnquiryInput, Enquiry } from "../types/enquiry.types";
 import { leadsKeys } from "@/features/leads/keys/leads.keys";
 import { contactsKeys } from "@/features/contacts/keys/contacts.keys";
 import { companiesKeys } from "@/features/companies/keys/companies.keys";
@@ -38,8 +38,8 @@ export function useCreateEnquiry() {
 export function useApproveEnquiry() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, input }: { id: string; input: EnquiryApprovalInput }) => enquiriesApi.approve(id, input),
-    onSuccess: (_data, { id }) => {
+    mutationFn: (id: string) => enquiriesApi.approve(id),
+    onSuccess: (_data, id) => {
       queryClient.invalidateQueries({ queryKey: enquiriesKeys.detail(id) });
       queryClient.invalidateQueries({ queryKey: enquiriesKeys.lists() });
       queryClient.invalidateQueries({ queryKey: leadsKeys.list() });
@@ -52,14 +52,14 @@ export function useApproveEnquiry() {
 export function useRejectEnquiry() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, input }: { id: string; input: EnquiryApprovalInput }) => enquiriesApi.reject(id, input),
-    onSuccess: (updatedEnquiry, { id }) => {
+    mutationFn: (id: string) => enquiriesApi.reject(id),
+    onSuccess: (updatedEnquiry, id) => {
       queryClient.setQueryData<Enquiry>(enquiriesKeys.detail(id), (current) =>
-        current ? { ...current, ...updatedEnquiry, enquiryStatus: "REJECTED" } : updatedEnquiry,
+        current ? { ...current, ...updatedEnquiry } : updatedEnquiry,
       );
 
       queryClient.setQueryData<Enquiry[]>(enquiriesKeys.lists(), (current = []) =>
-        current.map((row) => row.id === id ? { ...row, ...updatedEnquiry, enquiryStatus: "REJECTED" } : row),
+        current.map((row) => row.id === id ? { ...row, ...updatedEnquiry } : row),
       );
 
       queryClient.invalidateQueries({ queryKey: enquiriesKeys.detail(id) });

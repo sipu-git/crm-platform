@@ -1,19 +1,13 @@
-// features/auth/permission.ts
-export function hasPermission(granted: string[] | undefined, required: string): boolean {
-    if (!granted?.length) return false;
-    if (granted.includes("*")) return true;
-    return granted.some((g) => matchPermission(g, required));
+import {
+  hasPermission as hasRolePermission,
+  hasResourcePermission,
+  type AppRole,
+} from "@/lib/permissionContract";
+
+export function hasPermission(role: AppRole | undefined, required: string): boolean {
+  return hasRolePermission(role, required);
 }
 
-function matchPermission(granted: string, required: string): boolean {
-    const g = granted.split(":");
-    const r = required.split(":");
-
-    if (g.length > r.length) return false;
-
-    for (let i = 0; i < g.length; i++) {
-        if (g[i] === "*") return true;
-        if (g[i] !== r[i]) return false;
-    }
-    return true;
+export function canAccessResource(role: AppRole | undefined, resource: string): boolean {
+  return hasResourcePermission(role, resource);
 }

@@ -1,12 +1,14 @@
-import { useMemo } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useEffect, useMemo, useState } from "react";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
+import { Textarea } from "@/components/ui/textarea";
 import {
-  ArrowLeft, CheckCircle2, XCircle, UserRound, Building2, Mail, Phone,
-  FileText, Calendar, Briefcase, Wallet, Clock, Tag, ShieldCheck, UserCheck,
+  ArrowLeft, CheckCircle2, XCircle, UserRound, Building2, Mail, Phone, FileText, Calendar, Briefcase, Wallet, Clock, Tag, ShieldCheck, UserCheck, Send,
 } from "lucide-react";
 import { useEnquiry, useApproveEnquiry, useRejectEnquiry } from "@/features/enquiries/hooks/useEnquiries";
 import { useAnalyzeEnquiryMutation } from "@/features/ai/hooks/useAi";
@@ -14,6 +16,9 @@ import { AILeadBadge } from "@/features/ai/components/AILeadBadge";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { EnquiryStatus } from "@/features/enquiries/types/enquiry.types";
+import { communicationApis } from "@/features/communications/communication.service";
+import type { GmailAccountStatus } from "@/features/communications/communication.types";
+import { handleApiError } from "@/lib/apiError";
 
 const STATUS_TONE: Record<EnquiryStatus, string> = {
   PENDING: "bg-amber-500/15 text-amber-700 border-amber-500/30",
@@ -62,14 +67,99 @@ function formatProjectType(value?: string) {
 }
 
 export default function EnquiryDetailPage() {
-  const { id = "" } = useParams();
+  const { id = "", tenantSlug = "" } = useParams();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { data: enquiry, isLoading, isError, error } = useEnquiry(id);
   const { mutate: approve, isPending: isApprovePending } = useApproveEnquiry();
   const { mutate: reject, isPending: isRejectPending } = useRejectEnquiry();
   const analyzeMutation = useAnalyzeEnquiryMutation();
+  const [gmailStatus, setGmailStatus] = useState<GmailAccountStatus | null>(null);
+  const [isGmailStatusLoading, setIsGmailStatusLoading] = useState(true);
+  const [isConnectingGmail, setIsConnectingGmail] = useState(false);
+  const [isSendingReply, setIsSendingReply] = useState(false);
+  const [replySubject, setReplySubject] = useState("");
+  const [replyBody, setReplyBody] = useState("");
 
   const isPending = isApprovePending || isRejectPending;
+
+  useEffect(() => {
+    let active = true;
+
+    communicationApis.getGmailStatus()
+      .then(({ data }) => {
+        if (active) setGmailStatus(data.data);
+      })
+      .catch((err: unknown) => {
+        if (active) {
+          setGmailStatus(null);
+          toast.error(`Unable to check Gmail connection: ${handleApiError(err)}`);
+        }
+      })
+      .finally(() => {
+        if (active) setIsGmailStatusLoading(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    const connected = searchParams.get("connected");
+    const connectionError = searchParams.get("error");
+
+    if (connected === "true") {
+      toast.success("Gmail connected");
+    }
+
+    if (connectionError) {
+      toast.error(`Failed to connect Gmail (${connectionError})`);
+    }
+
+    if (connected || connectionError) {
+      setSearchParams((previous) => {
+        previous.delete("connected");
+        previous.delete("error");
+        return previous;
+      }, { replace: true });
+    }
+  }, [searchParams, setSearchParams]);
+
+  const handleConnectGmail = async () => {
+    if (isConnectingGmail) return;
+    setIsConnectingGmail(true);
+
+    try {
+      const returnTo = `/${tenantSlug}/enquires/${id}`;
+      const response = await communicationApis.getGmailConnectUrl(returnTo);
+      const url = response.data?.data?.url;
+      if (!url) throw new Error("No Gmail authorization URL was returned.");
+      window.location.assign(url);
+    } catch (err) {
+      toast.error(`Unable to connect Gmail: ${handleApiError(err)}`);
+      setIsConnectingGmail(false);
+    }
+  };
+
+  const handleSendReply = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const recipient = enquiry?.email?.trim();
+    const subject = replySubject.trim();
+    const body = replyBody.trim();
+    if (!recipient || !subject || !body || isSendingReply) return;
+
+    setIsSendingReply(true);
+    try {
+      await communicationApis.sendGmailDirect({ to: recipient, subject, body });
+      toast.success("Email response sent.");
+      setReplyBody("");
+    } catch (err) {
+      toast.error(`Failed to send email response: ${handleApiError(err)}`);
+    } finally {
+      setIsSendingReply(false);
+    }
+  };
 
   const fullName = useMemo(
     () => (enquiry ? `${enquiry.first_name} ${enquiry.last_name}` : ""),
@@ -92,9 +182,7 @@ export default function EnquiryDetailPage() {
         description: enquiry.description,
       },
       {
-        onError: (err: any) => {
-          toast.error(err?.response?.data?.message || err?.message || "Failed to analyze enquiry.");
-        },
+        onError: (err) => toast.error(handleApiError(err)),
       }
     );
   };
@@ -111,7 +199,7 @@ export default function EnquiryDetailPage() {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center gap-3 bg-background p-4 text-center">
         <div className="text-sm text-destructive">
-          {error instanceof Error ? error.message : "Unable to load this enquiry."}
+          {error ? handleApiError(error) : "Unable to load this enquiry."}
         </div>
         <Button variant="outline" onClick={() => navigate(-1)}>
           Back to enquiries
@@ -276,11 +364,10 @@ export default function EnquiryDetailPage() {
                         disabled={isPending}
                         onClick={() =>
                           reject(
-                            { id, input: { status: "REJECTED" } },
+                            id,
                             {
                               onSuccess: () => toast.success("Enquiry rejected."),
-                              onError: (err) =>
-                                toast.error(err instanceof Error ? err.message : "Failed to reject."),
+                              onError: (err) => toast.error(handleApiError(err)),
                             }
                           )
                         }
@@ -292,11 +379,10 @@ export default function EnquiryDetailPage() {
                         disabled={isPending}
                         onClick={() =>
                           approve(
-                            { id, input: { status: "APPROVED" } },
+                            id,
                             {
                               onSuccess: () => toast.success("Enquiry approved!"),
-                              onError: (err) =>
-                                toast.error(err instanceof Error ? err.message : "Failed to approve."),
+                              onError: (err) => toast.error(handleApiError(err)),
                             }
                           )
                         }
@@ -305,6 +391,85 @@ export default function EnquiryDetailPage() {
                       </Button>
                     </div>
                   </>
+                )}
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-base">
+                  <Mail className="h-4 w-4" /> Respond to enquiry
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border p-3 text-sm">
+                  <div className="min-w-0">
+                    <p className="font-medium">
+                      {isGmailStatusLoading
+                        ? "Checking Gmail connection…"
+                        : gmailStatus?.connected
+                          ? `Sending via ${gmailStatus.email || "connected Gmail"}`
+                          : "Connect Gmail to send an email response"}
+                    </p>
+                    {!isGmailStatusLoading && !gmailStatus?.connected && (
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        Your response will be sent to the enquiry contact’s email address.
+                      </p>
+                    )}
+                  </div>
+                  {!isGmailStatusLoading && !gmailStatus?.connected && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={handleConnectGmail}
+                      disabled={isConnectingGmail}
+                    >
+                      {isConnectingGmail ? "Connecting…" : "Connect Gmail"}
+                    </Button>
+                  )}
+                </div>
+
+                {enquiry.email ? (
+                  <form className="space-y-4" onSubmit={handleSendReply}>
+                    <div className="space-y-2">
+                      <Label htmlFor="enquiry-reply-recipient">To</Label>
+                      <Input id="enquiry-reply-recipient" value={enquiry.email} readOnly />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="enquiry-reply-subject">Subject</Label>
+                      <Input
+                        id="enquiry-reply-subject"
+                        value={replySubject}
+                        onChange={(event) => setReplySubject(event.target.value)}
+                        placeholder={`Re: ${enquiry.project_name || "Your enquiry"}`}
+                        required
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="enquiry-reply-body">Message</Label>
+                      <Textarea
+                        id="enquiry-reply-body"
+                        value={replyBody}
+                        onChange={(event) => setReplyBody(event.target.value)}
+                        placeholder="Write your response…"
+                        className="min-h-32 resize-y"
+                        required
+                      />
+                    </div>
+                    <div className="flex justify-end">
+                      <Button
+                        type="submit"
+                        disabled={!gmailStatus?.connected || isSendingReply || !replySubject.trim() || !replyBody.trim()}
+                      >
+                        <Send className="mr-2 h-4 w-4" />
+                        {isSendingReply ? "Sending…" : "Send response"}
+                      </Button>
+                    </div>
+                  </form>
+                ) : (
+                  <p className="text-sm text-muted-foreground">
+                    This enquiry does not include an email address, so an email response cannot be sent.
+                  </p>
                 )}
               </CardContent>
             </Card>

@@ -38,7 +38,7 @@ function HomeHeader({
   const hour = new Date().getHours();
   const greeting = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
   const RoleIcon =
-    activeRole === "ADMIN"
+    activeRole === "SUPER_ADMIN" || activeRole === "ADMIN"
       ? ShieldCheck
       : activeRole === "MANAGER"
         ? Users
@@ -62,10 +62,7 @@ function HomeHeader({
           <h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
             {greeting}, {firstName}
           </h1>
-          <p className="mt-1.5 max-w-xl text-sm text-muted-foreground">
-            Here's what's happening across your workspace. Pick up where you left off or get a head
-            start on today's work.
-          </p>
+          <p className="mt-1.5 max-w-xl text-sm text-muted-foreground">{currentMeta.description}</p>
         </div>
         <div className="flex shrink-0 items-center gap-2">
           <Button

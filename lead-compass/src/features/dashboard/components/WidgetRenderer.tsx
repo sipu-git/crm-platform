@@ -4,6 +4,9 @@ import type {
   DashboardWidgetConfig,
   DashboardRole,
 } from "@/features/dashboard/types/dashboard.types";
+import type { useDashboardData } from "@/features/dashboard/hooks/useDashboardData";
+import type { HomeActivityItem, HomeLeadRecord } from "@/features/home/types";
+import type { TaskItem } from "@/features/dashboard/types/dashboard.types";
 /* Eagerly-loaded above-the-fold widgets */
 import { KpiGridWidget } from "./widgets/KpiGridWidget";
 import { RevenueChartWidget } from "./widgets/RevenueChartWidget";
@@ -12,55 +15,55 @@ import { RevenueChartWidget } from "./widgets/RevenueChartWidget";
 const PipelineFunnelWidget = lazy(() =>
   import("@/features/dashboard/components/widgets/PipelineFunnelWidget").then((module) => ({
     default: module.PipelineFunnelWidget,
-  }))
+  })),
 );
 
 const LeaderboardWidget = lazy(() =>
   import("@/features/dashboard/components/widgets/LeaderboardWidget").then((module) => ({
     default: module.LeaderboardWidget,
-  }))
+  })),
 );
 
 const ActivityFeedWidget = lazy(() =>
   import("@/features/dashboard/components/widgets/ActivityFeedWidget").then((module) => ({
     default: module.ActivityFeedWidget,
-  }))
+  })),
 );
 
 const TaskQueueWidget = lazy(() =>
   import("@/features/dashboard/components/widgets/TaskQueueWidget").then((module) => ({
     default: module.TaskQueueWidget,
-  }))
+  })),
 );
 
 const AlertBannerWidget = lazy(() =>
   import("@/features/dashboard/components/widgets/AlertBannerWidget").then((module) => ({
     default: module.AlertBannerWidget,
-  }))
+  })),
 );
 
 const QuickActionGridWidget = lazy(() =>
   import("@/features/dashboard/components/widgets/QuickActionGridWidget").then((module) => ({
     default: module.QuickActionGridWidget,
-  }))
+  })),
 );
 
 const InvoicesTableWidget = lazy(() =>
   import("@/features/dashboard/components/widgets/InvoicesTableWidget").then((module) => ({
     default: module.InvoicesTableWidget,
-  }))
+  })),
 );
 
 const NewLeadsWidget = lazy(() =>
   import("@/features/dashboard/components/widgets/NewLeadsWidget").then((module) => ({
     default: module.NewLeadsWidget,
-  }))
+  })),
 );
 
 const CalendarUpcomingWidget = lazy(() =>
   import("@/features/dashboard/components/widgets/CalendarUpcomingWidget").then((module) => ({
     default: module.CalendarUpcomingWidget,
-  }))
+  })),
 );
 
 const WIDGET_MIN_HEIGHTS: Record<string, string> = {
@@ -77,11 +80,29 @@ const WIDGET_MIN_HEIGHTS: Record<string, string> = {
   new_leads: "min-h-[320px]",
 };
 
+export type DashboardWidgetData = ReturnType<typeof useDashboardData> & {
+  activities?: HomeActivityItem[];
+  invoices?: {
+    id: string;
+    invoice_number?: string;
+    number?: string;
+    total_amount?: number;
+    total?: number;
+    status: string;
+    due_date?: string;
+    issue_date?: string;
+    client_name?: string;
+    deal?: { title?: string };
+  }[];
+  leads?: HomeLeadRecord[];
+  recentLoading?: boolean;
+  taskQueue?: TaskItem[];
+  tasksLoading?: boolean;
+};
+
 function WidgetLoadingSkeleton({ type }: { type?: string }) {
   const minHeightClass = (type && WIDGET_MIN_HEIGHTS[type]) || "min-h-[260px]";
-  return (
-    <div className={`${minHeightClass} w-full rounded-xl border bg-card/60 animate-pulse`} />
-  );
+  return <div className={`${minHeightClass} w-full rounded-xl border bg-card/60 animate-pulse`} />;
 }
 
 export function WidgetRenderer({
@@ -92,7 +113,7 @@ export function WidgetRenderer({
 }: {
   widget: DashboardWidgetConfig;
   role: DashboardRole;
-  data: any;
+  data: DashboardWidgetData;
   isLoading?: boolean;
 }) {
   const renderWidgetContent = () => {
@@ -140,7 +161,7 @@ export function WidgetRenderer({
       case "activity_feed":
         return (
           <ActivityFeedWidget
-            activities={data.activities}
+            activities={data.activities ?? []}
             isLoading={data.recentLoading ?? isLoading}
             scope={widget.props.scope}
             limit={widget.props.limit}
@@ -150,7 +171,7 @@ export function WidgetRenderer({
       case "task_queue":
         return (
           <TaskQueueWidget
-            tasks={data.taskQueue}
+            tasks={data.taskQueue ?? []}
             isLoading={data.tasksLoading ?? isLoading}
             scope={widget.props.scope}
             showAssignee={widget.props.showAssignee}
@@ -181,7 +202,7 @@ export function WidgetRenderer({
       case "invoices_table":
         return (
           <InvoicesTableWidget
-            invoices={data.invoices}
+            invoices={data.invoices ?? []}
             isLoading={data.recentLoading ?? isLoading}
             scope={widget.props.scope}
             title={widget.title}
@@ -193,7 +214,7 @@ export function WidgetRenderer({
       case "new_leads":
         return (
           <NewLeadsWidget
-            leads={data.leads}
+            leads={data.leads ?? []}
             isLoading={data.recentLoading ?? isLoading}
             scope={widget.props.scope}
             title={widget.title}

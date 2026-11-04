@@ -1,17 +1,11 @@
 import { Button } from "@/components/ui/button";
-import {
-  ShieldCheck,
-  Users,
-  Briefcase,
-  CreditCard,
-  RefreshCw,
-  Calendar,
-} from "lucide-react";
+import { ShieldCheck, Users, Briefcase, CreditCard, RefreshCw, Calendar } from "lucide-react";
 import type { DashboardRole } from "@/features/dashboard/types/dashboard.types";
 import { ROLE_LABELS } from "@/features/dashboard/configs/dashboard.config";
 import { format } from "date-fns";
 
 const ROLE_ICONS: Record<DashboardRole, React.ReactNode> = {
+  SUPER_ADMIN: <ShieldCheck className="h-4 w-4 text-rose-500" />,
   ADMIN: <ShieldCheck className="h-4 w-4 text-emerald-500" />,
   MANAGER: <Users className="h-4 w-4 text-purple-500" />,
   SALES_REP: <Briefcase className="h-4 w-4 text-blue-500" />,
@@ -51,7 +45,7 @@ export function DashboardHeader({
         <div className="flex items-center gap-1.5 rounded-lg border border-border/60 bg-muted/40 px-2.5 py-1.5 text-xs font-medium text-muted-foreground">
           <Calendar className="h-3.5 w-3.5" />
           <span>{format(new Date(), "MMMM yyyy")}</span>
-        </div>      
+        </div>
         {/* Refresh button */}
         {onRefresh && (
           <Button
@@ -66,7 +60,7 @@ export function DashboardHeader({
             <span className="hidden sm:inline">Refresh</span>
           </Button>
         )}
-      </div>    
+      </div>
     </div>
   );
 }

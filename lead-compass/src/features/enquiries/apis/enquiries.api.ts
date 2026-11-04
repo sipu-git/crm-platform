@@ -1,7 +1,9 @@
 import { api } from "@/api/client";
-import type { CreateEnquiryInput, Enquiry, EnquiryApprovalInput, UpdateEnquiryInput } from "../types/enquiry.types";
+import type { CreateEnquiryInput, Enquiry } from "../types/enquiry.types";
 
 const subUrl = "/enquiry";
+
+type EnquiryApprovalResult = { id: string };
 
 export const enquiriesApi = {
   getAll: async (): Promise<Enquiry[]> => {
@@ -19,13 +21,13 @@ export const enquiriesApi = {
     return response.data.data;
   },
 
-  approve: async (id: string, input: EnquiryApprovalInput): Promise<Enquiry> => {
-    const response = await api.patch<{ data: Enquiry }>(`${subUrl}/approve/${id}`, input);
+  approve: async (id: string): Promise<EnquiryApprovalResult> => {
+    const response = await api.patch<{ data: EnquiryApprovalResult }>(`${subUrl}/approve/${id}`);
     return response.data.data;
   },
 
- reject: async (id: string, input: EnquiryApprovalInput): Promise<Enquiry> => {
-    const response = await api.patch<{ data: Enquiry }>(`${subUrl}/reject/${id}`, input);
+  reject: async (id: string): Promise<Enquiry> => {
+    const response = await api.patch<{ data: Enquiry }>(`${subUrl}/reject/${id}`);
     return response.data.data;
   },
 

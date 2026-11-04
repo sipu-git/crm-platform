@@ -51,6 +51,7 @@ function HomePage() {
   const { tasks, activities, leads, isLoading: homeLoading } = useHomeData(activeRole);
   const dealsQuery = useDeals();
   const invoicesQuery = useInvoices();
+  const canSeeCommunications = canSeeModule("communications");
 
   const gmailStatusQuery = useQuery({
     queryKey: ["communications", "gmail-status"],
@@ -58,6 +59,7 @@ function HomePage() {
       emailPayload(await communicationApis.getGmailStatus()) as GmailAccountStatus,
     staleTime: 1000 * 60 * 5,
     retry: 1,
+    enabled: canSeeCommunications,
   });
   const gmailConnected = Boolean(gmailStatusQuery.data?.connected);
   const gmailInboxQuery = useQuery({
@@ -181,6 +183,7 @@ function HomePage() {
           unreadEmails={unreadEmails}
           gmailConnected={gmailConnected}
           isLoading={isLoadingRecords}
+          showEmail={canSeeCommunications}
           recentRecords={recentRecords}
           favoriteItems={favoriteItems}
           onConnectGmail={handleConnectGmail}

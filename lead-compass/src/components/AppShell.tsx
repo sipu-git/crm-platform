@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { Link, Outlet, useLocation } from "react-router-dom";
 import { usePermission } from "@/features/auth/hooks/use-permission";
 import { useAuthPayload } from "@/features/auth/hooks/useAuthPayload";
+import { getRoleNavigation } from "@/app/navigation/role-navigation";
 import { useAppSelector } from "@/store/hooks";
 import type { Profile } from "@/features/profiles/types";
 import { NotificationBell } from "./Header/NotificationBell";
@@ -12,13 +13,7 @@ import { useNavigate } from "react-router-dom";
 import { AICopilotModal } from "@/features/ai/components/AICopilotModal";
 import { toast } from "sonner";
 import { useProfileMutation } from "@/features/profiles/hooks/useProfile";
-import {
-  BarChart3, Users, Kanban, FileText, Bell, Settings,
-  ContactRound, ListTodo, ShieldCheck, Building2,
-  Users2, FolderKanban, ReceiptText, UserRound,
-  Building, Calendar, Sparkles, House,
-  LogOut, Camera, Loader2,
-} from "lucide-react";
+import { Sparkles, LogOut, Camera, Loader2 } from "lucide-react";
 
 import {
   SidebarProvider,
@@ -39,65 +34,12 @@ import {
 import { RainbowButton } from "./ui/rainbow-button";
 import { useLogout } from "@/features/auth/hooks/useAuth";
 
-const NAV_GROUPS = [
-  {
-    label: "Overview",
-    items: [
-      { to: "home", label: "Home", icon: House, resource: null },
-      { to: "dashboard", label: "Analytics dashboard", icon: BarChart3, resource: null },
-    ],
-  },
-  {
-    label: "CRM",
-    items: [
-      { to: "leads", label: "Leads", icon: Users, resource: "leads" },
-      { to: "enquires", label: "Enquiries", icon: Users, resource: "enquires" },
-      { to: "contacts", label: "Contacts", icon: ContactRound, resource: "contacts" },
-      { to: "companies", label: "Companies", icon: Building2, resource: "company" },
-      { to: "deals", label: "Deals", icon: Kanban, resource: "deals" },
-    ],
-  },
-  {
-    label: "Operations",
-    items: [
-      { to: "activities", label: "Activities", icon: ListTodo, resource: "activities" },
-      { to: "calendar", label: "Calendar", icon: Calendar, resource: null },
-      { to: "projects", label: "Projects", icon: FolderKanban, resource: "projects" },
-      { to: "invoices", label: "Invoices", icon: FileText, resource: "invoices" },
-    ],
-  },
-  {
-    label: "Admin",
-    items: [
-      { to: "notifications", label: "Notifications", icon: Bell, resource: null },
-      { to: "teams", label: "Teams", icon: Users2, resource: "users" },
-      { to: "audit", label: "Audit trail", icon: ShieldCheck, resource: "audit" },
-      { to: "settings", label: "Settings", icon: Settings, resource: null },
-    ],
-  },
-];
-
-const CLIENT_NAV_GROUPS = [
-  {
-    label: "Overview",
-    items: [{ to: "home", label: "Workspace", icon: House, resource: null }],
-  },
-  {
-    label: "My account",
-    items: [
-      { to: "company-detail", label: "Company Profile", icon: Building, resource: "company" },
-      { to: "projects", label: "Projects", icon: FolderKanban, resource: "projects" },
-      { to: "invoices", label: "Billing", icon: ReceiptText, resource: "invoices" },
-      { to: "profile", label: "Profile", icon: UserRound, resource: null },
-    ],
-  },
-  {
-    label: "Updates",
-    items: [{ to: "notifications", label: "Notifications", icon: Bell, resource: null }],
-  },
-];
-
-const AppSidebar = React.memo(function AppSidebar({ slug, workspaceName, tenantKey, logoUrl }: {
+const AppSidebar = React.memo(function AppSidebar({
+  slug,
+  workspaceName,
+  tenantKey,
+  logoUrl,
+}: {
   slug: string;
   workspaceName: string;
   tenantKey: string;
@@ -107,16 +49,22 @@ const AppSidebar = React.memo(function AppSidebar({ slug, workspaceName, tenantK
   const { canSeeModule } = usePermission();
   const auth = useAuthPayload();
   const role = auth?.user?.role;
-  const groups = role === "CLIENT" ? CLIENT_NAV_GROUPS : NAV_GROUPS;
+  const groups = getRoleNavigation(role);
 
   const visibleGroups = React.useMemo(() => {
-    return groups.map((group) => {
-      const visibleItems = group.items.filter((n) => n.resource === null || canSeeModule(n.resource));
-      return { ...group, items: visibleItems };
-    }).filter(group => group.items.length > 0);
-  }, [groups, canSeeModule]);
+    return groups
+      .map((group) => {
+        const visibleItems = group.items.filter(
+          (item) =>
+            (!item.roles || (role !== undefined && item.roles.includes(role))) &&
+            (!item.resource || canSeeModule(item.resource)),
+        );
+        return { ...group, items: visibleItems };
+      })
+      .filter((group) => group.items.length > 0);
+  }, [groups, canSeeModule, role]);
 
-  let navigate = useNavigate();
+  const navigate = useNavigate();
   const { mutateAsync: logout, isPending: isLoggingOut } = useLogout();
 
   const handleSignOut = async () => {
@@ -127,17 +75,18 @@ const AppSidebar = React.memo(function AppSidebar({ slug, workspaceName, tenantK
   const { uploadLogo } = useProfileMutation();
   const canEditLogo = role === "ADMIN" || role === "SUPER_ADMIN";
 
-  const workspaceInitials = (workspaceName || "Workspace")
-    .split(" ")
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((n) => n[0])
-    .join("")
-    .toUpperCase() || "W";
+  const workspaceInitials =
+    (workspaceName || "Workspace")
+      .split(" ")
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((n) => n[0])
+      .join("")
+      .toUpperCase() || "W";
 
   return (
     <Sidebar collapsible="icon" className="border-r border-border-sidebar-border">
-      <SidebarHeader className="mb-3 border-b dark:border-slate-800 border-border-sidebar-border py-4 text-sidebar-foreground" >
+      <SidebarHeader className="mb-3 border-b dark:border-slate-800 border-border-sidebar-border py-4 text-sidebar-foreground">
         <div
           className="grid min-w-0 grid-cols-[auto_1fr] items-center gap-x-2.5 gap-y-0 pt-1"
           title={`${workspaceName} · /${slug} · Tenant key: ${tenantKey}`}
@@ -146,7 +95,11 @@ const AppSidebar = React.memo(function AppSidebar({ slug, workspaceName, tenantK
           <div className="relative group row-span-2 shrink-0 self-center">
             <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-primary text-primary-foreground font-bold text-xs shadow-xs border border-border">
               {logoUrl ? (
-                <img src={logoUrl} alt={`${workspaceName} logo`} className="h-full w-full object-cover" />
+                <img
+                  src={logoUrl}
+                  alt={`${workspaceName} logo`}
+                  className="h-full w-full object-cover"
+                />
               ) : (
                 <span>{workspaceInitials}</span>
               )}
@@ -165,6 +118,7 @@ const AppSidebar = React.memo(function AppSidebar({ slug, workspaceName, tenantK
                   type="file"
                   accept="image/png,image/jpeg,image/jpg,image/webp"
                   className="hidden"
+                  aria-label="Upload workspace logo"
                   onChange={async (e) => {
                     const file = e.target.files?.[0];
                     if (!file) return;
@@ -181,12 +135,18 @@ const AppSidebar = React.memo(function AppSidebar({ slug, workspaceName, tenantK
           </div>
 
           {/* ── Workspace name ── */}
-          <span className="truncate text-xs font-semibold text-primary leading-tight" title={workspaceName}>
+          <span
+            className="truncate text-xs font-semibold text-primary leading-tight"
+            title={workspaceName}
+          >
             {workspaceName}
           </span>
 
           {/* ── Tenant ID ── */}
-          <span className="truncate font-mono text-[10px] text-muted-foreground leading-tight" title={tenantKey}>
+          <span
+            className="truncate font-mono text-[10px] text-muted-foreground leading-tight"
+            title={tenantKey}
+          >
             TENANT ID: {tenantKey}
           </span>
         </div>
@@ -201,13 +161,11 @@ const AppSidebar = React.memo(function AppSidebar({ slug, workspaceName, tenantK
                   const to = `/${slug}/${n.to}`;
                   const active = pathname === to || pathname.startsWith(to + "/");
                   const Icon = n.icon;
-                  const label = role === "SALES_REP" && n.to === "leads" ? "My assigned leads" : role === "SALES_REP" && n.to === "activities"
-                    ? "My activities"
-                    : n.label;
+                  const label = n.label;
                   return (
                     <SidebarMenuItem key={n.to} className="text-muted-foreground font-semibold">
                       <SidebarMenuButton asChild isActive={active} tooltip={label}>
-                        <Link to={to}>
+                        <Link to={to} aria-current={active ? "page" : undefined}>
                           <Icon />
                           <span>{label}</span>
                         </Link>
@@ -219,7 +177,6 @@ const AppSidebar = React.memo(function AppSidebar({ slug, workspaceName, tenantK
             </SidebarGroupContent>
           </SidebarGroup>
         ))}
-
       </SidebarContent>
       <SidebarFooter className="border-t border-border-sidebar-border">
         <SidebarMenu>
@@ -256,27 +213,44 @@ export default function AppShell({
   const tenantState = useAppSelector((state) => state.tenant);
   const appSlug = tenant?.slug || auth?.tenant?.slug || tenantState.currentSlug || tenantSlug;
   const workspaceName = tenant?.name || auth?.tenant?.name || tenantState.tenantName || "Workspace";
-  const tenantKey = tenant?.tenant_key || auth?.tenant?.tenant_key || tenantState.tenantKey || "Unavailable";
-  const showGlobalSearch = !(location.pathname === `/${appSlug}/home` && auth?.user.role !== "CLIENT");
+  const tenantKey =
+    tenant?.tenant_key || auth?.tenant?.tenant_key || tenantState.tenantKey || "Unavailable";
+  const showGlobalSearch = auth?.user.role !== "CLIENT";
 
   React.useEffect(() => {
     const segments = location.pathname.split("/").filter(Boolean);
     if (segments[0] !== appSlug) return;
     const [kind, id] = segments.slice(1);
-    if (!(kind === "lead" || kind === "deals" || kind === "invoices") || !id || id === "new") return;
+    if (!(kind === "lead" || kind === "deals" || kind === "invoices") || !id || id === "new")
+      return;
 
     const storageKey = `crm.home.recent.${appSlug}`;
     try {
-      const previous = JSON.parse(localStorage.getItem(storageKey) || "[]") as Array<{ href: string; kind: string; id: string }>;
+      const previous = JSON.parse(localStorage.getItem(storageKey) || "[]") as Array<{
+        href: string;
+        kind: string;
+        id: string;
+      }>;
       const next = [
-        { href: location.pathname, kind: kind === "lead" ? "lead" : kind === "deals" ? "deal" : "invoice", id },
+        {
+          href: location.pathname,
+          kind: kind === "lead" ? "lead" : kind === "deals" ? "deal" : "invoice",
+          id,
+        },
         ...previous.filter((record) => record.href !== location.pathname),
       ].slice(0, 8);
       localStorage.setItem(storageKey, JSON.stringify(next));
     } catch {
-      localStorage.setItem(storageKey, JSON.stringify([
-        { href: location.pathname, kind: kind === "lead" ? "lead" : kind === "deals" ? "deal" : "invoice", id },
-      ]));
+      localStorage.setItem(
+        storageKey,
+        JSON.stringify([
+          {
+            href: location.pathname,
+            kind: kind === "lead" ? "lead" : kind === "deals" ? "deal" : "invoice",
+            id,
+          },
+        ]),
+      );
     }
   }, [location.pathname, appSlug]);
 
@@ -292,7 +266,12 @@ export default function AppShell({
 
   return (
     <SidebarProvider key={tenantKey || appSlug}>
-      <AppSidebar slug={appSlug} workspaceName={workspaceName} tenantKey={tenantKey} logoUrl={tenant?.logoUrl} />
+      <AppSidebar
+        slug={appSlug}
+        workspaceName={workspaceName}
+        tenantKey={tenantKey}
+        logoUrl={tenant?.logoUrl}
+      />
       <SidebarInset className="flex flex-col h-screen overflow-hidden">
         <header className="shrink-0 border-b border-border-sidebar-border [background:var(--sidebar)] text-sidebar-foreground">
           {/* Top row: trigger + (desktop search) + actions */}
@@ -303,9 +282,11 @@ export default function AppShell({
             </div>
 
             {/* Center: Search (desktop only) */}
-            <div className="hidden md:flex flex-1 items-center justify-center max-w-2xl mx-auto px-4">
-              <HeaderSearch />
-            </div>
+            {showGlobalSearch && (
+              <div className="hidden md:flex flex-1 items-center justify-center max-w-2xl mx-auto px-4">
+                <HeaderSearch />
+              </div>
+            )}
 
             {/* Right: Notifications, Theme, User Menu */}
             <div className="flex items-center gap-3 shrink-0">
@@ -316,8 +297,15 @@ export default function AppShell({
           </div>
 
           {/* Floating AI button */}
-          <RainbowButton onClick={() => setIsCopilotOpen(true)}
-            className="fixed bottom-12 right-10 z-50 dark:text-slate-800 text-slate-300"><Sparkles /></RainbowButton>
+          {auth?.user.role !== "CLIENT" && (
+            <RainbowButton
+              aria-label="Open AI assistant"
+              onClick={() => setIsCopilotOpen(true)}
+              className="fixed bottom-12 right-10 z-50 dark:text-slate-800 text-slate-300"
+            >
+              <Sparkles aria-hidden="true" />
+            </RainbowButton>
+          )}
         </header>
 
         {/* Fixed viewport for the routed page — the page itself owns its scroll area */}
@@ -328,14 +316,17 @@ export default function AppShell({
         </main>
         <div className="bg-background">
           <footer className="max-w-4xl w-full mx-auto text-center text-xs text-slate-500 py-2">
-            © {new Date().getFullYear()} Lead Compass CRM. Multi-tenant Enterprise Platform. All rights reserved.
+            © {new Date().getFullYear()} Lead Compass CRM. Multi-tenant Enterprise Platform. All
+            rights reserved.
           </footer>
         </div>
-        <AICopilotModal
-          isOpen={isCopilotOpen}
-          onClose={() => setIsCopilotOpen(false)}
-          initialPrompt={aiPrompt}
-        />
+        {auth?.user.role !== "CLIENT" && (
+          <AICopilotModal
+            isOpen={isCopilotOpen}
+            onClose={() => setIsCopilotOpen(false)}
+            initialPrompt={aiPrompt}
+          />
+        )}
       </SidebarInset>
     </SidebarProvider>
   );

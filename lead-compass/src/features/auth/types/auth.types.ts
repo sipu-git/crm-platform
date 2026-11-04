@@ -1,10 +1,6 @@
-export type Role =
-  | "SUPER_ADMIN"
-  | "ADMIN"
-  | "MANAGER"
-  | "SALES_REP"
-  | "FINANCE"
-  | "CLIENT";
+import type { AppRole } from "@/lib/permissionContract";
+
+export type Role = AppRole;
 
 export type ApiUser = {
   id: string;

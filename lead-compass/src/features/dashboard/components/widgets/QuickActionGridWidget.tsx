@@ -40,8 +40,8 @@ export function QuickActionGridWidget({
   subtitle?: string;
 }) {
   const navigate = useNavigate();
-  const { tenantSlug=""} = useParams()
-  const roleActions: Record<DashboardRole, ActionItem[]> = {
+  const { tenantSlug = "" } = useParams();
+  const roleActions: Record<Exclude<DashboardRole, "SUPER_ADMIN">, ActionItem[]> = {
     ADMIN: [
       {
         id: "act-invite",
@@ -164,7 +164,7 @@ export function QuickActionGridWidget({
     ],
   };
 
-  const actions = roleActions[role] || roleActions.ADMIN;
+  const actions = role === "SUPER_ADMIN" ? roleActions.ADMIN : roleActions[role];
 
   const handleClick = (item: ActionItem) => {
     if (item.url) {
@@ -211,4 +211,3 @@ export function QuickActionGridWidget({
     </Card>
   );
 }
-

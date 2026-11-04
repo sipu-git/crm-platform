@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 
-export type DashboardRole = "ADMIN" | "MANAGER" | "SALES_REP" | "FINANCE";
+export type DashboardRole = "SUPER_ADMIN" | "ADMIN" | "MANAGER" | "SALES_REP" | "FINANCE";
 
 export type WidgetScope = "own" | "team" | "org";
 export type DashboardWidgetLayout = "full" | "half";
@@ -23,11 +23,17 @@ export interface DashboardWidgetConfig {
   type: WidgetType;
   title?: string;
   subtitle?: string;
-  layout: DashboardWidgetLayout;
+  layout?: DashboardWidgetLayout;
+  colSpan: number;
   rowSpan?: number;
   props: {
     scope: WidgetScope;
-    [key: string]: any;
+    mode?: "cashflow" | "standard";
+    metricsLayout?: "4-cols" | "5-cols";
+    defaultTimeframe?: string;
+    showQuota?: boolean;
+    showAssignee?: boolean;
+    limit?: number;
   };
 }
 
@@ -117,4 +123,3 @@ export interface RevenueDataPoint {
   invoiced: number;
   collected: number;
 }
-

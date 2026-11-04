@@ -1,19 +1,14 @@
-// src/hooks/usePermission.ts
 import { useAuthPayload } from "@/features/auth/hooks/useAuthPayload";
-import { hasPermission } from "@/features/auth/utils/permission";
-import { useAppSelector } from "@/store/hooks";
+import { canAccessResource, hasPermission } from "@/features/auth/utils/permission";
+import { getRolePermissions } from "@/lib/permissionContract";
 
 export function usePermission() {
-  const auth = useAuthPayload()
-  const permissions = auth?.permissions;
+  const auth = useAuthPayload();
+  const role = auth?.user?.role;
+  const permissions = getRolePermissions(role);
 
-
-  const can = (required: string): boolean => hasPermission(permissions, required);
-
-  // Loose check for nav/route visibility — "does this role touch this module at all"
-  const canSeeModule = (resource: string): boolean =>
-    permissions.includes("*") ||
-    permissions.some((p) => p.split(":")[0] === resource);
+  const can = (required: string): boolean => hasPermission(role, required);
+  const canSeeModule = (resource: string): boolean => canAccessResource(role, resource);
 
   return { can, canSeeModule, permissions };
 }

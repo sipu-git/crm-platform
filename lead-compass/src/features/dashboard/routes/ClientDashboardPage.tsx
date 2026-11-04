@@ -1,15 +1,38 @@
 import { Link, useParams } from "react-router-dom";
-import { FileText, FolderKanban, ReceiptText, ArrowRight, Clock, CheckCircle2, AlertCircle } from "lucide-react";
+import {
+  FileText,
+  FolderKanban,
+  ReceiptText,
+  ArrowRight,
+  Clock,
+  CheckCircle2,
+  AlertCircle,
+} from "lucide-react";
 import { useInvoices } from "@/features/invoices/hooks/useInvoices";
 import { useClientProjects } from "@/features/projects/hooks/useClientProjects";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PageHeader, TableSkeleton } from "@/components/ui-kit";
 import { InvoiceList } from "@/features/invoices/components/InvoiceList";
 
-const statusMeta: Record<string, { label: string; className: string; icon: React.ComponentType<{ className?: string }> }> = {
-  OVERDUE: { label: "Overdue", className: "bg-destructive/10 text-destructive border-destructive/20", icon: AlertCircle },
-  PENDING: { label: "Pending", className: "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20", icon: Clock },
-  DRAFT: { label: "Draft", className: "bg-muted text-muted-foreground border-border", icon: FileText },
+const statusMeta: Record<
+  string,
+  { label: string; className: string; icon: React.ComponentType<{ className?: string }> }
+> = {
+  OVERDUE: {
+    label: "Overdue",
+    className: "bg-destructive/10 text-destructive border-destructive/20",
+    icon: AlertCircle,
+  },
+  PENDING: {
+    label: "Pending",
+    className: "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20",
+    icon: Clock,
+  },
+  DRAFT: {
+    label: "Draft",
+    className: "bg-muted text-muted-foreground border-border",
+    icon: FileText,
+  },
 };
 
 function daysUntil(dateStr: string) {
@@ -21,14 +44,21 @@ export default function ClientDashboardPage() {
   const { tenantSlug = "" } = useParams();
   const invoices = useInvoices();
   const projects = useClientProjects();
-  const outstanding = (invoices.data ?? []).filter((invoice) => invoice.status !== "PAID" && invoice.status !== "CANCELLED");
+  const outstanding = (invoices.data ?? []).filter(
+    (invoice) => invoice.status !== "PAID" && invoice.status !== "CANCELLED",
+  );
   const overdueCount = outstanding.filter((i) => daysUntil(i.due_date) < 0).length;
-  const activeProjects = (projects.data ?? []).filter((p) => p.status === "IN_PROGRESS" || p.status === "NOT_STARTED");
+  const activeProjects = (projects.data ?? []).filter(
+    (p) => p.status === "IN_PROGRESS" || p.status === "NOT_STARTED",
+  );
   const isLoading = invoices.isLoading || projects.isLoading;
 
   return (
     <div>
-      <PageHeader title="Your workspace" description="Projects, billing, and account updates for your organization." />
+      <PageHeader
+        title="Your workspace"
+        description="A clear view of your projects, billing, and account updates."
+      />
       <div className="space-y-6 p-6">
         {isLoading ? (
           <TableSkeleton rows={2} cols={3} />
@@ -40,7 +70,11 @@ export default function ClientDashboardPage() {
                 icon={<FolderKanban className="h-4.5 w-4.5" />}
                 label="Projects"
                 value={projects.data?.length ?? 0}
-                sub={activeProjects.length > 0 ? `${activeProjects.length} in progress` : "All wrapped up"}
+                sub={
+                  activeProjects.length > 0
+                    ? `${activeProjects.length} in progress`
+                    : "All wrapped up"
+                }
                 to={`/${tenantSlug}/projects`}
                 accent="text-primary bg-primary/10"
               />
@@ -48,9 +82,19 @@ export default function ClientDashboardPage() {
                 icon={<ReceiptText className="h-4.5 w-4.5" />}
                 label="Open invoices"
                 value={outstanding.length}
-                sub={overdueCount > 0 ? `${overdueCount} overdue` : outstanding.length > 0 ? "All within terms" : "Nothing due"}
+                sub={
+                  overdueCount > 0
+                    ? `${overdueCount} overdue`
+                    : outstanding.length > 0
+                      ? "All within terms"
+                      : "Nothing due"
+                }
                 to={`/${tenantSlug}/invoices`}
-                accent={overdueCount > 0 ? "text-destructive bg-destructive/10" : "text-emerald-600 dark:text-emerald-400 bg-emerald-500/10"}
+                accent={
+                  overdueCount > 0
+                    ? "text-destructive bg-destructive/10"
+                    : "text-emerald-600 dark:text-emerald-400 bg-emerald-500/10"
+                }
               />
               <SummaryCard
                 icon={<FileText className="h-4.5 w-4.5" />}
@@ -69,7 +113,10 @@ export default function ClientDashboardPage() {
                 <CardHeader className="flex flex-row items-center justify-between space-y-0">
                   <CardTitle className="text-base">Billing at a glance</CardTitle>
                   {outstanding.length > 0 && (
-                    <Link to={`/${tenantSlug}/invoices`} className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline">
+                    <Link
+                      to={`/${tenantSlug}/invoices`}
+                      className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline"
+                    >
                       View all <ArrowRight className="h-3 w-3" />
                     </Link>
                   )}
@@ -78,14 +125,18 @@ export default function ClientDashboardPage() {
                   {!outstanding.length ? (
                     <div className="flex flex-col items-center gap-2 py-8 text-center">
                       <CheckCircle2 className="h-8 w-8 text-emerald-500/70" />
-                      <p className="text-sm text-muted-foreground">You're all caught up — no open invoices right now.</p>
+                      <p className="text-sm text-muted-foreground">
+                        You're all caught up — no open invoices right now.
+                      </p>
                     </div>
                   ) : (
                     <div className="space-y-2">
                       {outstanding.slice(0, 4).map((invoice) => {
                         const days = daysUntil(invoice.due_date);
                         const overdue = days < 0;
-                        const status = overdue ? statusMeta.OVERDUE : statusMeta[invoice.status] ?? statusMeta.PENDING;
+                        const status = overdue
+                          ? statusMeta.OVERDUE
+                          : (statusMeta[invoice.status] ?? statusMeta.PENDING);
                         const StatusIcon = status.icon;
                         return (
                           <Link
@@ -99,7 +150,9 @@ export default function ClientDashboardPage() {
                               </span>
                               <span className="truncate">{invoice.invoice_number}</span>
                             </span>
-                            <span className={`inline-flex shrink-0 items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-medium ${status.className}`}>
+                            <span
+                              className={`inline-flex shrink-0 items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-medium ${status.className}`}
+                            >
                               <StatusIcon className="h-3 w-3" />
                               {overdue ? `${Math.abs(days)}d overdue` : `Due in ${days}d`}
                             </span>
@@ -116,14 +169,19 @@ export default function ClientDashboardPage() {
                 <CardHeader className="flex flex-row items-center justify-between space-y-0">
                   <CardTitle className="text-base">Active projects</CardTitle>
                   {activeProjects.length > 0 && (
-                    <Link to={`/${tenantSlug}/projects`} className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline">
+                    <Link
+                      to={`/${tenantSlug}/projects`}
+                      className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline"
+                    >
                       View all <ArrowRight className="h-3 w-3" />
                     </Link>
                   )}
                 </CardHeader>
                 <CardContent>
                   {!activeProjects.length ? (
-                    <p className="py-8 text-center text-sm text-muted-foreground">No active projects right now.</p>
+                    <p className="py-8 text-center text-sm text-muted-foreground">
+                      No active projects right now.
+                    </p>
                   ) : (
                     <div className="space-y-2">
                       {activeProjects.slice(0, 4).map((project) => (
@@ -161,9 +219,26 @@ export default function ClientDashboardPage() {
   );
 }
 
-function SummaryCard({ icon, label, value, sub, to, accent }: { icon: React.ReactNode; label: string; value: React.ReactNode; sub: string; to: string; accent: string }) {
+function SummaryCard({
+  icon,
+  label,
+  value,
+  sub,
+  to,
+  accent,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  value: React.ReactNode;
+  sub: string;
+  to: string;
+  accent: string;
+}) {
   return (
-    <Link to={to} className="group rounded-xl border bg-card p-4 shadow-xs transition-all hover:border-border hover:shadow-sm">
+    <Link
+      to={to}
+      className="group rounded-xl border bg-card p-4 shadow-xs transition-all hover:border-border hover:shadow-sm"
+    >
       <div className="flex items-center justify-between">
         <div className={`grid h-9 w-9 place-items-center rounded-lg ${accent}`}>{icon}</div>
         <ArrowRight className="h-3.5 w-3.5 text-muted-foreground/0 transition-all group-hover:translate-x-0.5 group-hover:text-muted-foreground" />
