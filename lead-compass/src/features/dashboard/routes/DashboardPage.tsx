@@ -107,12 +107,12 @@ function LazyDashboardWidget({
   );
 }
 
-export default function DashboardPage() {
+export default function DashboardPage({ role }: { role?: DashboardRole } = {}) {
   const queryClient = useQueryClient();
 
   const currentUser = useCurrentUser();
 
-  const activeRole = normalizeRole(currentUser?.user?.role);
+  const activeRole = role ?? normalizeRole(currentUser?.user?.role);
 
   const dashboardData = useDashboardData(activeRole, currentUser);
   const handleRefresh = useCallback(() => {

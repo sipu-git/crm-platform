@@ -33,6 +33,7 @@ import {
 } from "@/components/ui/sidebar";
 import { RainbowButton } from "./ui/rainbow-button";
 import { useLogout } from "@/features/auth/hooks/useAuth";
+import { getWorkspaceDashboardPath } from "@/features/auth/utils/workspaces";
 
 const AppSidebar = React.memo(function AppSidebar({
   slug,
@@ -158,7 +159,10 @@ const AppSidebar = React.memo(function AppSidebar({
             <SidebarGroupContent>
               <SidebarMenu>
                 {group.items.map((n) => {
-                  const to = `/${slug}/${n.to}`;
+                  const to =
+                    n.to === "dashboard" && role
+                      ? getWorkspaceDashboardPath(slug, role)
+                      : `/${slug}/${n.to}`;
                   const active = pathname === to || pathname.startsWith(to + "/");
                   const Icon = n.icon;
                   const label = n.label;

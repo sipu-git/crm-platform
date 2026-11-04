@@ -15,6 +15,7 @@ import { profilesApi } from "@/features/profiles/apis/profiles.api";
 import { profilesKeys } from "@/features/profiles/keys/profiles.keys";
 import { useAppDispatch } from "@/store/hooks";
 import { setCurrentTenant } from "@/features/tenant/slice";
+import { getWorkspaceDashboardPath } from "@/features/auth/utils/workspaces";
 
 const EMPTY_FORM: LoginFormValues = { email: "", password: "" };
 
@@ -50,7 +51,7 @@ export default function LoginPage() {
 
     let signedIn = false;
     try {
-      await loginAsync(result.data);
+      const authResult = await loginAsync(result.data);
       signedIn = true;
       const profile = await profilesApi.get();
       const tenantSlug = profile.tenant.slug;
@@ -64,7 +65,7 @@ export default function LoginPage() {
         name: profile.tenant.name,
       }));
       queryClient.setQueryData(profilesKeys.current(), profile);
-      navigate(`/${encodeURIComponent(tenantSlug)}/home`);
+      navigate(getWorkspaceDashboardPath(tenantSlug, authResult.user.role), { replace: true });
     } catch (err: any) {
       if (signedIn) {
         toast.error(err?.response?.data?.message || err?.message || "Unable to load your workspace.");

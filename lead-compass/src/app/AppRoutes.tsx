@@ -8,6 +8,8 @@ import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { setCurrentTenant } from "@/features/tenant/slice";
 import { useAuth } from "@/features/auth/hooks/useAuth";
 import { useProfile } from "@/features/profiles/hooks/useProfile";
+import type { AppRole } from "@/lib/permissionContract";
+import { getWorkspaceDashboardPath, getWorkspaceRole } from "@/features/auth/utils/workspaces";
 import AppShell from "@/components/AppShell";
 
 const LoginPage = lazy(() => import("@/features/auth/routes/login"));
@@ -15,8 +17,20 @@ const ForgotPasswordPage = lazy(() => import("@/features/auth/routes/forgot-pass
 const AcceptInvitePage = lazy(() => import("@/features/users/routes/accept-invite"));
 const SignupWizard = lazy(() => import("@/features/auth/components/SignupWizard"));
 const HomePage = lazy(() => import("@/features/home/routes/HomePage"));
-const DashboardPage = lazy(() => import("@/features/dashboard/routes/DashboardPage"));
 const ClientDashboardPage = lazy(() => import("@/features/dashboard/routes/ClientDashboardPage"));
+const SuperAdminDashboardPage = lazy(
+  () => import("@/features/dashboard/workspaces/SuperAdminDashboardPage"),
+);
+const AdminDashboardPage = lazy(() => import("@/features/dashboard/workspaces/AdminDashboardPage"));
+const ManagerDashboardPage = lazy(
+  () => import("@/features/dashboard/workspaces/ManagerDashboardPage"),
+);
+const SalesRepDashboardPage = lazy(
+  () => import("@/features/dashboard/workspaces/SalesRepDashboardPage"),
+);
+const FinanceDashboardPage = lazy(
+  () => import("@/features/dashboard/workspaces/FinanceDashboardPage"),
+);
 const ProfilePage = lazy(() => import("@/features/profiles/routes/_app.$tenantSlug.profiles"));
 const LeadsPage = lazy(() => import("@/features/leads/routes/_app.$tenantSlug.leads"));
 const LeadDetailPage = lazy(() => import("@/features/leads/routes/_app.$tenantSlug.lead.$leadId"));
@@ -106,12 +120,21 @@ function RequireAuth() {
   return <AppShell tenantSlug={tenantSlug} tenant={profile?.tenant} />;
 }
 
-function RoleDashboard() {
-  const { data: authResult } = useAuth();
-
-  const role = authResult?.user?.role;
-
-  return role === "CLIENT" ? <ClientDashboardPage /> : <DashboardPage />;
+function RoleDashboard({ role }: { role: AppRole }) {
+  switch (role) {
+    case "SUPER_ADMIN":
+      return <SuperAdminDashboardPage />;
+    case "ADMIN":
+      return <AdminDashboardPage />;
+    case "MANAGER":
+      return <ManagerDashboardPage />;
+    case "SALES_REP":
+      return <SalesRepDashboardPage />;
+    case "FINANCE":
+      return <FinanceDashboardPage />;
+    case "CLIENT":
+      return <ClientDashboardPage />;
+  }
 }
 
 function RoleHome() {
@@ -121,11 +144,35 @@ function RoleHome() {
 }
 
 function HomeRedirect() {
+  const { data: authResult, isLoading, isError } = useAuth();
   const token = localStorage.getItem("crm.auth.token");
-
   const slug = localStorage.getItem("crm.tenant.slug") || "acme";
 
-  return <Navigate to={token ? `/${slug}/home` : "/login"} replace />;
+  if (!token) return <Navigate to="/login" replace />;
+  if (isLoading) return <FullPageSpinner />;
+  if (isError || !authResult?.user) return <Navigate to="/login" replace />;
+
+  return <Navigate to={getWorkspaceDashboardPath(slug, authResult.user.role)} replace />;
+}
+
+function RoleDashboardRedirect() {
+  const { tenantSlug = "acme" } = useParams();
+  const { data: authResult } = useAuth();
+
+  if (!authResult?.user) return <Navigate to="/login" replace />;
+  return <Navigate to={getWorkspaceDashboardPath(tenantSlug, authResult.user.role)} replace />;
+}
+
+function WorkspaceDashboard() {
+  const { workspaceRole: workspaceSegment } = useParams();
+  const { data: authResult } = useAuth();
+  const workspaceRole = getWorkspaceRole(workspaceSegment);
+
+  if (!workspaceRole || authResult?.user?.role !== workspaceRole) {
+    return <Navigate to="/403" replace />;
+  }
+
+  return <RoleDashboard role={workspaceRole} />;
 }
 
 export function AppRoutes() {
@@ -146,7 +193,8 @@ export function AppRoutes() {
           <Route index element={<Navigate to="home" replace />} />
           <Route path="home" element={<RoleHome />} />
           <Route path="profile" element={<ProfilePage />} />
-          <Route path="dashboard" element={<RoleDashboard />} />
+          <Route path="dashboard" element={<RoleDashboardRedirect />} />
+          <Route path="workspace/:workspaceRole/dashboard" element={<WorkspaceDashboard />} />
 
           <Route
             path="leads"
