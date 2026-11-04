@@ -24,12 +24,13 @@ function statusCode(error: unknown): number | undefined {
 
 function isRetryable(error: unknown): boolean {
   if (error instanceof InvalidStructuredOutputError) return true;
+  const status = statusCode(error);
+  // A brief retry can recover from Gemini's transient capacity 503s. Do not
+  // retry timeouts: a second full timeout can exceed the client's request limit.
+  if (status === 429 || status === 503) return true;
   if (error instanceof Error) {
-    if (error.name === 'TimeoutError' || error.name === 'AbortError') return true;
     const msg = error.message.toLowerCase();
     if (
-      msg.includes('timeout') ||
-      msg.includes('aborted') ||
       msg.includes('high demand') ||
       msg.includes('temporarily') ||
       msg.includes('503') ||
@@ -38,8 +39,7 @@ function isRetryable(error: unknown): boolean {
       return true;
     }
   }
-  const status = statusCode(error);
-  return status === 429 || (status !== undefined && status >= 500 && status <= 599);
+  return false;
 }
 
 function pause(milliseconds: number): Promise<void> {

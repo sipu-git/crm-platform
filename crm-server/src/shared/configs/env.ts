@@ -31,7 +31,7 @@ export const env = {
     modelId: (process.env.GEMINI_MODEL_ID ?? 'gemini-3.5-flash-lite').trim(),
     // Keep the model timeout above the old 7-second setting, which aborted valid Gemini calls.
     timeoutMs: Math.max(Number(process.env.GEMINI_TIMEOUT_MS ?? 15000), 15000),
-    maxRetries: Number(process.env.GEMINI_MAX_RETRIES ?? 0),
+    maxRetries: Number(process.env.GEMINI_MAX_RETRIES ?? 1),
   },
 };
 
