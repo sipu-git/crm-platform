@@ -37,6 +37,12 @@ export const notificationRepository = {
     });
   },
 
+  findByExternalRef(tenantId: string, externalRef: string) {
+    return prisma.notification.findFirst({
+      where: { tenant_id: tenantId, external_ref: externalRef },
+    });
+  },
+
   create(tenantId: string, userId: string, input: CreateNotificationInput) {
     return prisma.notification.create({
       data: {
@@ -94,6 +100,4 @@ export const notificationRepository = {
     })
 
   }
-
 };
-

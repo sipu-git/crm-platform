@@ -1,0 +1,46 @@
+model CalendarEvent {
+    id          String   @id @default(cuid())
+    tenant_id   String
+    created_by  String?
+    summary     String
+    description String?
+    location    String?
+    start_at    DateTime @db.Timestamptz(3)
+    end_at      DateTime @db.Timestamptz(3)
+    time_zone   String   @default("UTC")
+    created_at  DateTime @default(now())
+    updated_at  DateTime @updatedAt
+
+    tenant              Tenant                    @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
+    creator             User?                     @relation("CalendarEventCreator", fields: [created_by], references: [id], onDelete: SetNull)
+    reminderDeliveries  CalendarReminderDelivery[]
+
+    @@index([tenant_id, start_at])
+}
+
+model CalendarReminderDelivery {
+    id               String    @id @default(cuid())
+    event_id         String
+    tenant_id        String
+    recipient_id     String
+    channel          String
+    push_notification_id String? @unique
+    status           String    @default("PENDING")
+    due_at           DateTime  @db.Timestamptz(3)
+    next_attempt_at  DateTime  @db.Timestamptz(3)
+    attempts         Int       @default(0)
+    claimed_at       DateTime? @db.Timestamptz(3)
+    sent_at          DateTime? @db.Timestamptz(3)
+    last_error       String?
+    created_at       DateTime  @default(now())
+    updated_at       DateTime  @updatedAt
+
+    event     CalendarEvent @relation(fields: [event_id], references: [id], onDelete: Cascade)
+    tenant    Tenant        @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
+    recipient User          @relation(fields: [recipient_id], references: [id], onDelete: Cascade)
+    pushNotification Notification? @relation("CalendarReminderNotification", fields: [push_notification_id], references: [id], onDelete: SetNull)
+
+    @@unique([event_id, recipient_id, channel])
+    @@index([status, next_attempt_at])
+    @@index([event_id])
+}

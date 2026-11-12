@@ -31,6 +31,8 @@ model User {
     projectMemberships ProjectMember[]
     sentInvites       Invite[] @relation("InviteSender")
     acceptedInvites   Invite[] @relation("InviteAcceptedUser")
+    createdCalendarEvents CalendarEvent[] @relation("CalendarEventCreator")
+    calendarReminderDeliveries CalendarReminderDelivery[]
 
     @@unique([tenantId, email])
     @@index([tenantId])

@@ -5,15 +5,6 @@ import { ApiError } from '../../../../shared/utils/ApiError.js';
 import { CommunicationChannel, CommunicationDirection, CommunicationStatus, MessageType } from '../../../../../generated/prisma/enums.js';
 import { extractBody, parseFromEmail } from './utils/parser.util.js';
 
-export interface SendGmailOptions {
-  userId: string;
-  to: string;
-  subject: string;
-  body: string;
-  /** thread to reply in (optional) */
-  threadId?: string;
-}
-
 export interface GmailAccountStatus {
   connected: boolean;
   email?: string;
@@ -152,36 +143,6 @@ export const gmailService = {
     }
 
     return { synced, skipped };
-  },
-
-  async sendEmail({ userId, to, subject, body, threadId }: SendGmailOptions) {
-    const account = await this.getAccount(userId);
-
-    const authClient = await googleAccountService.getAuthorizedOAuth2Client(userId);
-    const gmail = google.gmail({ auth: authClient, version: 'v1' });
-
-    // Build RFC 2822-compliant message
-    const messageParts = [
-      `From: ${account.email}`,
-      `To: ${to}`,
-      `Subject: ${subject}`,
-      'MIME-Version: 1.0',
-      'Content-Type: text/plain; charset=UTF-8',
-      '',
-      body,
-    ];
-    const rawMessage = messageParts.join('\r\n');
-    const encodedMessage = Buffer.from(rawMessage).toString('base64url');
-
-    const response = await gmail.users.messages.send({
-      userId: 'me',
-      requestBody: {
-        raw: encodedMessage,
-        ...(threadId ? { threadId } : {}),
-      },
-    });
-
-    return response.data;
   },
 
   /**

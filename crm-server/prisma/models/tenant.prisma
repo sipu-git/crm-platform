@@ -21,6 +21,8 @@ model Tenant {
     invites        Invite[]
     projectMembers ProjectMember[]
     aiAutomationRuns AiAutomationRun[]
+    calendarEvents CalendarEvent[]
+    calendarReminderDeliveries CalendarReminderDelivery[]
     created_at     DateTime         @default(now())
 
     // --- new fields ---

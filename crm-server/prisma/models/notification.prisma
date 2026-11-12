@@ -14,6 +14,7 @@ model Notification {
 
     tenant    Tenant @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
     recipient User   @relation(fields: [recipient_id], references: [id], onDelete: Cascade)
+    calendarReminderDelivery CalendarReminderDelivery? @relation("CalendarReminderNotification")
 
     @@index([tenant_id])
 }

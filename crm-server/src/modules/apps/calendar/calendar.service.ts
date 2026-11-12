@@ -1,282 +1,235 @@
-import { google } from 'googleapis';
-import { googleAccountService } from '../../../shared/integrations/google/google.account.service.js';
-import { ApiError } from '../../../shared/utils/ApiError.js';
-import { CreateEventInput, ListEventsQuery, UpdateEventInput } from './calendar.schema.js';
+import { prisma } from "../../../../lib/prisma.js";
+import { ApiError } from "../../../shared/utils/ApiError.js";
+import type { PrismaClientTx } from "../../../shared/utils/prisma.types.js";
+import type {
+  CreateEventInput,
+  ListEventsQuery,
+  UpdateEventInput,
+} from "./calendar.schema.js";
 
-export const calendarService = {
-  /**
-   * Get an initialized google.calendar client for a user.
-   */
-  async getCalendarClient(userId: string) {
-    const authClient = await googleAccountService.getAuthorizedOAuth2Client(userId);
-    return google.calendar({ version: 'v3', auth: authClient });
-  },
+const DAY_MS = 24 * 60 * 60 * 1000;
+const REMINDER_CHANNELS = ["web-push", "email"] as const;
 
-  /**
-   * List upcoming calendar events for a user.
-   */
-  async listEvents(userId: string, query: ListEventsQuery) {
-    const calendar = await this.getCalendarClient(userId);
-    const calendarId = query.calendarId || 'primary';
-
-    const response = await calendar.events.list({
-      calendarId,
-      timeMin: query.timeMin ?? new Date().toISOString(),
-      ...(query.timeMax ? { timeMax: query.timeMax } : {}),
-      maxResults: query.maxResults ?? 50,
-      singleEvents: true,
-      orderBy: 'startTime',
-      ...(query.q ? { q: query.q } : {}),
-    });
-
-    const events = response.data.items ?? [];
-    return events.map((event) => ({
-      id: event.id,
-      summary: event.summary ?? '(No Title)',
-      description: event.description ?? '',
-      location: event.location ?? '',
-      status: event.status ?? 'confirmed',
-      htmlLink: event.htmlLink ?? '',
-      hangoutLink: event.hangoutLink ?? event.conferenceData?.entryPoints?.[0]?.uri ?? null,
-      start: event.start,
-      end: event.end,
-      attendees: event.attendees ?? [],
-      created: event.created,
-      updated: event.updated,
-    }));
-  },
-
-  /**
-   * Get details of a specific event.
-   */
-  async getEvent(userId: string, eventId: string, calendarId = 'primary') {
-    const calendar = await this.getCalendarClient(userId);
-    try {
-      const response = await calendar.events.get({
-        calendarId,
-        eventId,
-      });
-      return response.data;
-    } catch (err: any) {
-      if (err.status === 404 || err.code === 404) {
-        throw new ApiError(404, `Calendar event with ID "${eventId}" not found`);
-      }
-      throw err;
-    }
-  },
-
-  
-  async createEvent(userId: string, input: CreateEventInput) {
-    const calendar = await this.getCalendarClient(userId);
-    const calendarId = input.calendarId || 'primary';
-    const timeZone = input.timeZone || 'UTC';
-
-    const requestBody: any = {
-      summary: input.summary,
-      description: input.description,
-      location: input.location,
-      start: {
-        dateTime: input.startDateTime,
-        timeZone,
-      },
-      end: {
-        dateTime: input.endDateTime,
-        timeZone,
-      },
-      ...(input.attendees?.length
-        ? { attendees: input.attendees.map((email) => ({ email })) }
-        : {}),
-    };
-
-    if (input.createMeetLink) {
-      requestBody.conferenceData = {
-        createRequest: {
-          requestId: `meet-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
-          conferenceSolutionKey: {
-            type: 'hangoutsMeet',
-          },
-        },
-      };
-    }
-
-    const response = await calendar.events.insert({
-      calendarId,
-      requestBody,
-      conferenceDataVersion: input.createMeetLink ? 1 : 0,
-    });
-
-    const event = response.data;
-    return {
-      id: event.id,
-      summary: event.summary,
-      description: event.description,
-      location: event.location,
-      htmlLink: event.htmlLink,
-      hangoutLink: event.hangoutLink ?? event.conferenceData?.entryPoints?.[0]?.uri ?? null,
-      start: event.start,
-      end: event.end,
-      attendees: event.attendees,
-    };
-  },
-
-  /**
-   * Update an existing event on Google Calendar.
-   */
-  async updateEvent(userId: string, eventId: string, input: UpdateEventInput) {
-    const calendar = await this.getCalendarClient(userId);
-    const calendarId = input.calendarId || 'primary';
-
-    // Get existing event to patch fields cleanly
-    const existing = await this.getEvent(userId, eventId, calendarId);
-
-    const timeZone = input.timeZone || existing.start?.timeZone || 'UTC';
-
-    const requestBody: any = {
-      ...existing,
-      ...(input.summary !== undefined ? { summary: input.summary } : {}),
-      ...(input.description !== undefined ? { description: input.description } : {}),
-      ...(input.location !== undefined ? { location: input.location } : {}),
-      ...(input.startDateTime ? { start: { dateTime: input.startDateTime, timeZone } } : {}),
-      ...(input.endDateTime ? { end: { dateTime: input.endDateTime, timeZone } } : {}),
-      ...(input.attendees ? { attendees: input.attendees.map((email) => ({ email })) } : {}),
-    };
-
-    if (input.createMeetLink && !existing.conferenceData) {
-      requestBody.conferenceData = {
-        createRequest: {
-          requestId: `meet-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
-          conferenceSolutionKey: {
-            type: 'hangoutsMeet',
-          },
-        },
-      };
-    }
-
-    const response = await calendar.events.update({
-      calendarId,
-      eventId,
-      requestBody,
-      conferenceDataVersion: input.createMeetLink ? 1 : 0,
-    });
-
-    const event = response.data;
-    return {
-      id: event.id,
-      summary: event.summary,
-      description: event.description,
-      location: event.location,
-      htmlLink: event.htmlLink,
-      hangoutLink: event.hangoutLink ?? event.conferenceData?.entryPoints?.[0]?.uri ?? null,
-      start: event.start,
-      end: event.end,
-      attendees: event.attendees,
-    };
-  },
-
-  /**
-   * Delete an event from Google Calendar.
-   */
-  async deleteEvent(userId: string, eventId: string, calendarId = 'primary') {
-    const calendar = await this.getCalendarClient(userId);
-    await calendar.events.delete({
-      calendarId,
-      eventId,
-    });
-    return { deleted: true, eventId };
-  },
-
-  /**
-   * List all calendars accessible by the user.
-   */
-  async listCalendars(userId: string) {
-    const calendar = await this.getCalendarClient(userId);
-    const response = await calendar.calendarList.list();
-    const calendars = response.data.items ?? [];
-    return calendars.map((c) => ({
-      id: c.id,
-      summary: c.summary,
-      description: c.description,
-      primary: c.primary ?? false,
-      timeZone: c.timeZone,
-      accessRole: c.accessRole,
-    }));
-  },
-
-  /**
-   * List public holiday / festival events directly from Google Calendar APIs.
-   */
-  async listHolidays(userId: string, query: ListEventsQuery) {
-    const calendar = await this.getCalendarClient(userId);
-
-    // 1. Try to discover user's subscribed holiday calendars
-    let holidayCalendarIds: string[] = [];
-    try {
-      const listRes = await calendar.calendarList.list();
-      const items = listRes.data.items ?? [];
-      const userHolidayCals = items
-        .filter((c) => c.id?.toLowerCase().includes('holiday') || c.summary?.toLowerCase().includes('holiday'))
-        .map((c) => c.id!)
-        .filter(Boolean);
-
-      if (userHolidayCals.length > 0) {
-        holidayCalendarIds = userHolidayCals;
-      }
-    } catch {
-      // Ignore list error
-    }
-
-    // Default to standard Google public holiday calendars if none found
-    if (holidayCalendarIds.length === 0) {
-      holidayCalendarIds = [
-        'en.indian#holiday@group.v.calendar.google.com',
-        'en.usa#holiday@group.v.calendar.google.com',
-      ];
-    }
-
-    const allHolidays: any[] = [];
-    const seenEventKeys = new Set<string>();
-
-    for (const calId of holidayCalendarIds) {
-      try {
-        const response = await calendar.events.list({
-          calendarId: calId,
-          timeMin: query.timeMin ?? new Date().toISOString(),
-          ...(query.timeMax ? { timeMax: query.timeMax } : {}),
-          maxResults: query.maxResults ?? 50,
-          singleEvents: true,
-          orderBy: 'startTime',
-          ...(query.q ? { q: query.q } : {}),
-        });
-
-        const items = response.data.items ?? [];
-        for (const event of items) {
-          const key = `${event.summary}-${event.start?.date || event.start?.dateTime}`;
-          if (seenEventKeys.has(key)) continue;
-          seenEventKeys.add(key);
-
-          allHolidays.push({
-            id: `holiday-${event.id}`,
-            summary: event.summary ?? '(Public Holiday)',
-            description: event.description ?? 'Public Holiday',
-            location: event.location ?? '',
-            status: event.status ?? 'confirmed',
-            htmlLink: event.htmlLink ?? '',
-            hangoutLink: null,
-            start: event.start,
-            end: event.end,
-            created: event.created,
-            updated: event.updated,
-            isHoliday: true,
-            category: 'holiday',
-          });
-        }
-      } catch {
-        // Ignore calendar fetch failure for unsupported or restricted calendars
-      }
-    }
-
-    return allHolidays;
-  },
+const eventInclude = {
+  creator: { select: { id: true, full_name: true } },
 };
 
+function toCalendarEvent(event: {
+  id: string;
+  summary: string;
+  description: string | null;
+  location: string | null;
+  start_at: Date;
+  end_at: Date;
+  time_zone: string;
+  created_at: Date;
+  updated_at: Date;
+  creator: { id: string; full_name: string } | null;
+}) {
+  return {
+    id: event.id,
+    summary: event.summary,
+    description: event.description ?? "",
+    location: event.location ?? "",
+    status: "confirmed",
+    start: {
+      dateTime: event.start_at.toISOString(),
+      timeZone: event.time_zone,
+    },
+    end: { dateTime: event.end_at.toISOString(), timeZone: event.time_zone },
+    createdBy: event.creator
+      ? { id: event.creator.id, name: event.creator.full_name }
+      : null,
+    created: event.created_at.toISOString(),
+    updated: event.updated_at.toISOString(),
+  };
+}
 
+async function scheduleTenantReminders(
+  tx: PrismaClientTx,
+  event: { id: string; tenant_id: string; start_at: Date },
+) {
+  const now = new Date();
+  if (event.start_at <= now) {
+    await tx.calendarReminderDelivery.updateMany({
+      where: {
+        event_id: event.id,
+        status: { in: ["PENDING", "FAILED", "CANCELLED"] },
+      },
+      data: { status: "CANCELLED" },
+    });
+    return;
+  }
+
+  const dueAt = new Date(
+    Math.max(event.start_at.getTime() - DAY_MS, now.getTime()),
+  );
+  await tx.calendarReminderDelivery.updateMany({
+    where: {
+      event_id: event.id,
+      status: { in: ["PENDING", "FAILED", "CANCELLED"] },
+    },
+    data: {
+      status: "PENDING",
+      due_at: dueAt,
+      next_attempt_at: dueAt,
+      attempts: 0,
+      claimed_at: null,
+      sent_at: null,
+      last_error: null,
+    },
+  });
+
+  const users = await tx.user.findMany({
+    where: { tenantId: event.tenant_id },
+    select: { id: true },
+  });
+  if (!users.length) return;
+
+  await tx.calendarReminderDelivery.createMany({
+    data: users.flatMap((user) =>
+      REMINDER_CHANNELS.map((channel) => ({
+        event_id: event.id,
+        tenant_id: event.tenant_id,
+        recipient_id: user.id,
+        channel,
+        due_at: dueAt,
+        next_attempt_at: dueAt,
+      })),
+    ),
+    skipDuplicates: true,
+  });
+}
+
+export const calendarService = {
+  async listEvents(tenantId: string, query: ListEventsQuery) {
+    const timeMin = query.timeMin ? new Date(query.timeMin) : undefined;
+    const timeMax = query.timeMax ? new Date(query.timeMax) : undefined;
+    if (timeMin && timeMax && timeMin >= timeMax) {
+      throw ApiError.badRequest("timeMax must be later than timeMin");
+    }
+
+    const events = await prisma.calendarEvent.findMany({
+      where: {
+        tenant_id: tenantId,
+        ...(timeMin || timeMax
+          ? {
+              AND: [
+                ...(timeMin ? [{ end_at: { gt: timeMin } }] : []),
+                ...(timeMax ? [{ start_at: { lt: timeMax } }] : []),
+              ],
+            }
+          : {}),
+        ...(query.q
+          ? {
+              OR: [
+                {
+                  summary: { contains: query.q, mode: "insensitive" as const },
+                },
+                {
+                  description: {
+                    contains: query.q,
+                    mode: "insensitive" as const,
+                  },
+                },
+                {
+                  location: { contains: query.q, mode: "insensitive" as const },
+                },
+              ],
+            }
+          : {}),
+      },
+      include: eventInclude,
+      orderBy: { start_at: "asc" },
+      take: query.maxResults,
+    });
+    return events.map(toCalendarEvent);
+  },
+
+  async getEvent(tenantId: string, eventId: string) {
+    const event = await prisma.calendarEvent.findFirst({
+      where: { id: eventId, tenant_id: tenantId },
+      include: eventInclude,
+    });
+    if (!event) throw new ApiError(404, "Calendar event not found");
+    return toCalendarEvent(event);
+  },
+
+  async createEvent(tenantId: string, userId: string, input: CreateEventInput) {
+    const startAt = new Date(input.startDateTime);
+    const endAt = new Date(input.endDateTime);
+    const event = await prisma.$transaction(async (tx) => {
+      const created = await tx.calendarEvent.create({
+        data: {
+          tenant_id: tenantId,
+          created_by: userId,
+          summary: input.summary,
+          description: input.description || null,
+          location: input.location || null,
+          start_at: startAt,
+          end_at: endAt,
+          time_zone: input.timeZone,
+        },
+      });
+      await scheduleTenantReminders(tx, created);
+      return tx.calendarEvent.findFirstOrThrow({
+        where: { id: created.id, tenant_id: tenantId },
+        include: eventInclude,
+      });
+    });
+    return toCalendarEvent(event);
+  },
+
+  async updateEvent(
+    tenantId: string,
+    eventId: string,
+    input: UpdateEventInput,
+  ) {
+    const existing = await prisma.calendarEvent.findFirst({
+      where: { id: eventId, tenant_id: tenantId },
+    });
+    if (!existing) throw new ApiError(404, "Calendar event not found");
+
+    const startAt = input.startDateTime
+      ? new Date(input.startDateTime)
+      : existing.start_at;
+    const endAt = input.endDateTime
+      ? new Date(input.endDateTime)
+      : existing.end_at;
+    if (endAt <= startAt) {
+      throw ApiError.badRequest("End time must be after start time");
+    }
+
+    const event = await prisma.$transaction(async (tx) => {
+      const updated = await tx.calendarEvent.update({
+        where: { id: existing.id },
+        data: {
+          ...(input.summary !== undefined ? { summary: input.summary } : {}),
+          ...(input.description !== undefined
+            ? { description: input.description || null }
+            : {}),
+          ...(input.location !== undefined
+            ? { location: input.location || null }
+            : {}),
+          ...(input.startDateTime ? { start_at: startAt } : {}),
+          ...(input.endDateTime ? { end_at: endAt } : {}),
+          ...(input.timeZone ? { time_zone: input.timeZone } : {}),
+        },
+      });
+      await scheduleTenantReminders(tx, updated);
+      return tx.calendarEvent.findFirstOrThrow({
+        where: { id: updated.id, tenant_id: tenantId },
+        include: eventInclude,
+      });
+    });
+    return toCalendarEvent(event);
+  },
+
+  async deleteEvent(tenantId: string, eventId: string) {
+    const result = await prisma.calendarEvent.deleteMany({
+      where: { id: eventId, tenant_id: tenantId },
+    });
+    if (result.count === 0) throw new ApiError(404, "Calendar event not found");
+    return { deleted: true, eventId };
+  },
+};

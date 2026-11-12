@@ -11,7 +11,7 @@ import { toWhatsAppNumber } from "../../shared/utils/phoneZone.js";
 import { SendCommunicationDto } from "./dto/communication.dto.js";
 import { SendCommunicationContext } from "./dto/send-communication.dto.js";
 import { whatsAppService } from "./integrations/whatsapp/services/whatsapp.service.js";
-import { gmailService } from "./integrations/gmail/gmail.service.js";
+import { sendTransactionalEmail } from "../mail/services/transactional-email.service.js";
 
 const NOT_YET_IMPLEMENTED = new Set<CommunicationChannel>([
   CommunicationChannel.CALL,
@@ -77,7 +77,7 @@ export const communicationService = {
       throw new ApiError(400, "No recipient email address available for this lead — add one before sending email");
     }
     if (!ctx.createdBy) {
-      throw new ApiError(401, "Authentication required to send emails via Gmail");
+      throw new ApiError(401, "Authentication required to send emails");
     }
 
     const communication = await prisma.communications.create({
@@ -100,8 +100,7 @@ export const communicationService = {
     await redisService.delete(`communications-${ctx.tenantId}-${ctx.leadId}`);
 
     try {
-      const response = await gmailService.sendEmail({
-        userId: ctx.createdBy,
+      const response = await sendTransactionalEmail({
         to,
         subject: data.subject || "Message from CRM",
         body: data.body ?? "",
@@ -111,8 +110,8 @@ export const communicationService = {
         where: { id: communication.id },
         data: {
           status: CommunicationStatus.SENT,
-          provider_message_id: response.id ?? null,
-          metaData: response as any,
+          provider_message_id: response.messageId ?? null,
+          metaData: { messageId: response.messageId },
         },
       });
     } catch (err) {

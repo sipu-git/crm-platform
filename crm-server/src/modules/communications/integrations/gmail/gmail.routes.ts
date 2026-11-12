@@ -124,29 +124,6 @@ router.get('/inbox', asyncHandler(async (req: Request, res: Response) => {
     return res.status(200).json(successResponse('Inbox fetched', messages));
 }));
 
-/** POST /gmail/send  — send an email via Gmail API */
-router.post('/send', asyncHandler(async (req: Request, res: Response) => {
-    const { to, subject, body, threadId } = req.body as {
-        to: string;
-        subject: string;
-        body: string;
-        threadId?: string;
-    };
-
-    if (!to) throw new ApiError(400, '"to" email address is required');
-    if (!subject) throw new ApiError(400, '"subject" is required');
-    if (!body) throw new ApiError(400, '"body" is required');
-
-    const result = await gmailService.sendEmail({
-        userId: req.auth!.userId,
-        to,
-        subject,
-        body,
-        threadId,
-    });
-    return res.status(201).json(successResponse('Email sent successfully', result));
-}));
-
 router.post('/sync', asyncHandler(async (req: Request, res: Response) => {
     const result = await gmailService.syncInbox(req.auth!.userId, req.auth!.tenantId);
     return res.status(200).json(successResponse('Inbox synced', result));
