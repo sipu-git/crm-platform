@@ -12,10 +12,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Switch } from "@/components/ui/switch";
-import { Video, Calendar, Clock, MapPin, AlignLeft, Users } from "lucide-react";
+import { Calendar, Clock, MapPin, AlignLeft, Bell } from "lucide-react";
 import { toast } from "sonner";
 import { format, addHours, parseISO } from "date-fns";
+import { handleApiError } from "@/lib/apiError";
 
 interface EventDialogProps {
   open: boolean;
@@ -37,8 +37,6 @@ export default function EventDialog({
   const [location, setLocation] = useState("");
   const [startDateTime, setStartDateTime] = useState("");
   const [endDateTime, setEndDateTime] = useState("");
-  const [attendeesInput, setAttendeesInput] = useState("");
-  const [createMeetLink, setCreateMeetLink] = useState(true);
 
   useEffect(() => {
     if (!open) return;
@@ -62,14 +60,6 @@ export default function EventDialog({
       } else {
         setEndDateTime(format(addHours(new Date(), 1), "yyyy-MM-dd'T'HH:mm"));
       }
-
-      if (eventToEdit.attendees) {
-        setAttendeesInput(eventToEdit.attendees.map((a) => a.email).join(", "));
-      } else {
-        setAttendeesInput("");
-      }
-
-      setCreateMeetLink(Boolean(eventToEdit.hangoutLink));
     } else {
       // New Event
       const baseDate = initialDate || new Date();
@@ -81,8 +71,6 @@ export default function EventDialog({
       setLocation("");
       setStartDateTime(startDateStr);
       setEndDateTime(endDateStr);
-      setAttendeesInput("");
-      setCreateMeetLink(true);
     }
   }, [open, eventToEdit, initialDate]);
 
@@ -107,11 +95,6 @@ export default function EventDialog({
       return;
     }
 
-    const attendees = attendeesInput
-      .split(",")
-      .map((s) => s.trim())
-      .filter((s) => s.length > 0 && s.includes("@"));
-
     const payload: CreateCalendarEventInput = {
       summary: summary.trim(),
       description: description.trim() || undefined,
@@ -119,8 +102,6 @@ export default function EventDialog({
       startDateTime: startIso,
       endDateTime: endIso,
       timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC",
-      attendees: attendees.length ? attendees : undefined,
-      createMeetLink,
     };
 
     try {
@@ -132,8 +113,8 @@ export default function EventDialog({
         toast.success("Calendar event created!");
       }
       onOpenChange(false);
-    } catch (err: any) {
-      toast.error(err?.response?.data?.message || "Failed to save calendar event.");
+    } catch (error: unknown) {
+      toast.error(handleApiError(error));
     }
   };
 
@@ -167,7 +148,10 @@ export default function EventDialog({
           {/* Date Times */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="space-y-1.5">
-              <Label htmlFor="startDateTime" className="text-xs font-semibold flex items-center gap-1">
+              <Label
+                htmlFor="startDateTime"
+                className="text-xs font-semibold flex items-center gap-1"
+              >
                 <Clock className="h-3.5 w-3.5 text-muted-foreground" /> Start Time
               </Label>
               <Input
@@ -179,7 +163,10 @@ export default function EventDialog({
               />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="endDateTime" className="text-xs font-semibold flex items-center gap-1">
+              <Label
+                htmlFor="endDateTime"
+                className="text-xs font-semibold flex items-center gap-1"
+              >
                 <Clock className="h-3.5 w-3.5 text-muted-foreground" /> End Time
               </Label>
               <Input
@@ -192,39 +179,11 @@ export default function EventDialog({
             </div>
           </div>
 
-          {/* Google Meet Link Switch */}
-          <div className="flex items-center justify-between rounded-lg border bg-blue-50/50 p-3 dark:bg-blue-950/20 border-blue-200/60 dark:border-blue-900/50">
-            <div className="flex items-center gap-2.5">
-              <div className="grid h-8 w-8 place-items-center rounded-full bg-blue-600 text-white">
-                <Video className="h-4 w-4" />
-              </div>
-              <div>
-                <Label htmlFor="createMeet" className="text-xs font-semibold cursor-pointer">
-                  Add Google Meet Video Link
-                </Label>
-                <p className="text-[11px] text-muted-foreground">
-                  Automatically generates a video conference URL for attendees.
-                </p>
-              </div>
-            </div>
-            <Switch
-              id="createMeet"
-              checked={createMeetLink}
-              onCheckedChange={setCreateMeetLink}
-            />
-          </div>
-
-          {/* Attendees */}
-          <div className="space-y-1.5">
-            <Label htmlFor="attendees" className="text-xs font-semibold flex items-center gap-1">
-              <Users className="h-3.5 w-3.5 text-muted-foreground" /> Attendees (comma separated emails)
-            </Label>
-            <Input
-              id="attendees"
-              placeholder="client@company.com, sales@ourcrm.com"
-              value={attendeesInput}
-              onChange={(e) => setAttendeesInput(e.target.value)}
-            />
+          <div className="flex items-start gap-2 rounded-lg border border-primary/15 bg-primary/5 p-3 text-xs text-muted-foreground">
+            <Bell className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+            <p>
+              Workspace members receive an email and web-push reminder one day before this event.
+            </p>
           </div>
 
           {/* Location */}
@@ -264,11 +223,7 @@ export default function EventDialog({
               Cancel
             </Button>
             <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting
-                ? "Saving..."
-                : eventToEdit
-                ? "Update Event"
-                : "Create Event"}
+              {isSubmitting ? "Saving..." : eventToEdit ? "Update Event" : "Create Event"}
             </Button>
           </DialogFooter>
         </form>
@@ -276,4 +231,3 @@ export default function EventDialog({
     </Dialog>
   );
 }
-

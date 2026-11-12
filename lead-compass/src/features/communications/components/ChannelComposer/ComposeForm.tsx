@@ -7,29 +7,20 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
-import { CommunicationChannel, GmailAccountStatus, MessageType } from "@/features/communications/communication.types";
-import { GmailConnectBanner } from "./GmailConnectBanner";
+import { CommunicationChannel, MessageType } from "@/features/communications/communication.types";
 import { CHANNEL_META, MAX_CHARS, MESSAGE_TYPE_OPTIONS } from "@/features/communications/utils/constants";
 import { AttachmentPicker } from "./AttachmentPicker";
 import { QuickReplies } from "./QuickReplies";
 import { AIEmailDraftModal } from "../AIEmailDraftModal";
 
-export function ComposeForm({
-  channel,
-  contactEmail,
-  contactPhone,
+export function ComposeForm({channel,contactEmail,contactPhone,
   messageType,
-  onMessageTypeChange,
-  subject,
-  onSubjectChange,
+  onMessageTypeChange,subject,onSubjectChange,
   body,
   onBodyChange,
   attachment,
   onAttachmentPick,
   onAttachmentRemove,
-  gmailStatus,
-  connectingGmail,
-  onConnectGmail,
   sending,
   canSend,
   overLimit,
@@ -50,9 +41,6 @@ export function ComposeForm({
   attachment: File | null;
   onAttachmentPick: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onAttachmentRemove: () => void;
-  gmailStatus?: GmailAccountStatus | null;
-  connectingGmail: boolean;
-  onConnectGmail: () => void;
   sending: boolean;
   canSend: boolean;
   overLimit: boolean;
@@ -95,7 +83,6 @@ export function ComposeForm({
 
       {isEmail && (
         <>
-          <GmailConnectBanner gmailStatus={gmailStatus} connecting={connectingGmail} onConnect={onConnectGmail} />
           <div className="space-y-1.5">
             <Label htmlFor="subject" className="text-xs">Subject</Label>
             <Input id="subject" value={subject} onChange={(e) => onSubjectChange(e.target.value)} placeholder="Subject…" />

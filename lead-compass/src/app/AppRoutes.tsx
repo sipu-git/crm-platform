@@ -10,6 +10,7 @@ import { useAuth } from "@/features/auth/hooks/useAuth";
 import { useProfile } from "@/features/profiles/hooks/useProfile";
 import type { AppRole } from "@/lib/permissionContract";
 import { getWorkspaceDashboardPath, getWorkspaceRole } from "@/features/auth/utils/workspaces";
+import { CALENDAR_ACCESS_ROLES } from "@/app/navigation/role-navigation";
 import AppShell from "@/components/AppShell";
 
 const LoginPage = lazy(() => import("@/features/auth/routes/login"));
@@ -281,7 +282,7 @@ export function AppRoutes() {
           <Route
             path="calendar"
             element={
-              <ProtectedRoute resource="activities">
+              <ProtectedRoute roles={CALENDAR_ACCESS_ROLES}>
                 <CalendarPage />
               </ProtectedRoute>
             }

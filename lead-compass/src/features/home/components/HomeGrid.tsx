@@ -1,15 +1,36 @@
-import { lazy, memo, Suspense } from "react";
+import { lazy, memo } from "react";
 import { format } from "date-fns";
 import { CalendarDays } from "lucide-react";
 import type { TaskItem } from "@/features/dashboard/types/dashboard.types";
 import type { Deal } from "@/features/deals/deal.types";
 import type { Invoice } from "@/features/invoices/types/invoices.type";
-import { AttentionWidget } from "@/features/home/components/widgets/AttentionWidget";
-import { CRMAssistantWidget } from "@/features/home/components/widgets/CRMAssistantWidget";
-import { ContinueWidget } from "@/features/home/components/widgets/ContinueWidget";
-import { FavoritesWidget } from "@/features/home/components/widgets/FavoritesWidget";
 import type { HomeFavorite, RecentRecord } from "@/features/home/components/widgets/types";
 import { dispatchAssistant } from "@/features/home/home.utils";
+import { DeferredChunk } from "@/features/home/components/DeferredWidget";
+
+const AttentionWidget = lazy(() =>
+  import("@/features/home/components/widgets/AttentionWidget").then((module) => ({
+    default: module.AttentionWidget,
+  })),
+);
+
+const FavoritesWidget = lazy(() =>
+  import("@/features/home/components/widgets/FavoritesWidget").then((module) => ({
+    default: module.FavoritesWidget,
+  })),
+);
+
+const CRMAssistantWidget = lazy(() =>
+  import("@/features/home/components/widgets/CRMAssistantWidget").then((module) => ({
+    default: module.CRMAssistantWidget,
+  })),
+);
+
+const ContinueWidget = lazy(() =>
+  import("@/features/home/components/widgets/ContinueWidget").then((module) => ({
+    default: module.ContinueWidget,
+  })),
+);
 
 const CalendarUpcomingWidget = lazy(() =>
   import("@/features/dashboard/components/widgets/CalendarUpcomingWidget").then((module) => ({
@@ -65,35 +86,41 @@ function HomeGrid({
       </div>
       <div className="grid grid-cols-1 items-stretch gap-4 xl:grid-cols-12">
         <div className="xl:col-span-7">
-          <AttentionWidget
-            tasks={tasks}
-            deals={deals}
-            invoices={invoices}
-            unreadEmails={unreadEmails}
-            isLoading={isLoading}
-            gmailConnected={gmailConnected}
-            onConnectGmail={onConnectGmail}
-            showEmail={showEmail}
-            showTasks={showTasks}
-            showDeals={showDeals}
-            showInvoices={showInvoices}
-          />
+          <DeferredChunk minHeight={300}>
+            <AttentionWidget
+              tasks={tasks}
+              deals={deals}
+              invoices={invoices}
+              unreadEmails={unreadEmails}
+              isLoading={isLoading}
+              gmailConnected={gmailConnected}
+              onConnectGmail={onConnectGmail}
+              showEmail={showEmail}
+              showTasks={showTasks}
+              showDeals={showDeals}
+              showInvoices={showInvoices}
+            />
+          </DeferredChunk>
         </div>
         <div className="xl:col-span-5">
-          <Suspense
-            fallback={<div className="min-h-[350px] animate-pulse rounded-xl border bg-card/60" />}
-          >
+          <DeferredChunk minHeight={300}>
             {showTasks && <CalendarUpcomingWidget title="Today" todayOnly />}
-          </Suspense>
+          </DeferredChunk>
         </div>
         <div className="xl:col-span-4">
-          <FavoritesWidget key={tenantSlug} tenantSlug={tenantSlug} items={favoriteItems} />
+          <DeferredChunk minHeight={230}>
+            <FavoritesWidget key={tenantSlug} tenantSlug={tenantSlug} items={favoriteItems} />
+          </DeferredChunk>
         </div>
         <div className="xl:col-span-4">
-          <CRMAssistantWidget onOpen={dispatchAssistant} />
+          <DeferredChunk minHeight={230}>
+            <CRMAssistantWidget onOpen={dispatchAssistant} />
+          </DeferredChunk>
         </div>
         <div className="xl:col-span-4">
-          <ContinueWidget records={recentRecords} isLoading={isLoading} />
+          <DeferredChunk minHeight={230}>
+            <ContinueWidget records={recentRecords} isLoading={isLoading} />
+          </DeferredChunk>
         </div>
       </div>
     </section>

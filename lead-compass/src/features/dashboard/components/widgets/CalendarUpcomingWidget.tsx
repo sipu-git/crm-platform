@@ -4,16 +4,11 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, Clock, Video, Plus, ArrowRight, VideoOff } from "lucide-react";
-import { useCalendarEvents, useCalendarHolidays } from "@/features/calendar/hooks/useCalendar";
-import { decorateGoogleHolidays } from "@/features/calendar/utils/festivals";
+import { Calendar, Clock, Plus, ArrowRight, CalendarDays } from "lucide-react";
+import { useCalendarEvents } from "@/features/calendar/hooks/useCalendar";
 import { format, parseISO, startOfDay, endOfDay } from "date-fns";
 
-const EventDialog = lazy(() =>
-  import("@/features/calendar/components/EventDialog").then((m) => ({
-    default: m.EventDialog,
-  }))
-);
+const EventDialog = lazy(() => import("@/features/calendar/components/EventDialog"));
 
 /**
  * Stable date key that only changes when the calendar day rolls over.
@@ -55,35 +50,17 @@ export function CalendarUpcomingWidget({
     data: events = [],
     isLoading: eventsLoading,
     isFetching: eventsFetching,
-  } = useCalendarEvents(filters, {
-    staleTime: 5 * 60 * 1000,
-    gcTime: 30 * 60 * 1000,
-    refetchOnMount: false,
-    refetchOnWindowFocus: false,
-  });
-
-  const {
-    data: rawHolidays = [],
-    isLoading: holidaysLoading,
-    isFetching: holidaysFetching,
-  } = useCalendarHolidays(filters, {
-    staleTime: 5 * 60 * 1000,
-    gcTime: 30 * 60 * 1000,
-    refetchOnMount: false,
-    refetchOnWindowFocus: false,
-  });
-
-  const decoratedHolidays = useMemo(() => decorateGoogleHolidays(rawHolidays), [rawHolidays]);
+    isError: eventsError,
+  } = useCalendarEvents({ ...filters, maxResults: todayOnly ? 20 : 100 });
 
   const upcomingEvents = useMemo(() => {
-    const combined = [...events, ...decoratedHolidays];
-    return combined.slice(0, 4);
-  }, [events, decoratedHolidays]);
+    return events.slice(0, 4);
+  }, [events]);
 
   // Only show skeleton on FIRST load (no cached data yet).
   // Subsequent background refetches show stale data with no skeleton.
-  const isFirstLoad = eventsLoading || holidaysLoading;
-  const isFetching = eventsFetching || holidaysFetching;
+  const isFirstLoad = eventsLoading;
+  const isFetching = eventsFetching;
 
   if (isFirstLoad) {
     return (
@@ -115,7 +92,10 @@ export function CalendarUpcomingWidget({
             <div className="flex items-center gap-2">
               <CardTitle className="text-base font-semibold">{title}</CardTitle>
               {upcomingEvents.length > 0 && (
-                <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20 text-[10px]">
+                <Badge
+                  variant="outline"
+                  className="bg-primary/5 text-primary border-primary/20 text-[10px]"
+                >
                   {upcomingEvents.length} Scheduled
                 </Badge>
               )}
@@ -125,7 +105,7 @@ export function CalendarUpcomingWidget({
               )}
             </div>
             <CardDescription className="text-xs">
-              {todayOnly ? "Your calendar for today" : "Synchronized Google Calendar meetings & video calls"}
+              {todayOnly ? "Your calendar for today" : "Upcoming events in your workspace"}
             </CardDescription>
           </div>
           <div className="flex items-center gap-1.5">
@@ -134,11 +114,17 @@ export function CalendarUpcomingWidget({
               size="icon"
               className="h-8 w-8"
               onClick={() => setNewEventOpen(true)}
-              title="Schedule Meeting"
+              title="Schedule Event"
             >
               <Plus className="h-4 w-4" />
             </Button>
-            <Button variant="ghost" size="icon" className="h-8 w-8" asChild title="View Full Calendar">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8"
+              asChild
+              title="View Full Calendar"
+            >
               <Link to={`/${tenantSlug}/calendar`}>
                 <ArrowRight className="h-4 w-4" />
               </Link>
@@ -150,11 +136,18 @@ export function CalendarUpcomingWidget({
           {upcomingEvents.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-10 text-center text-muted-foreground space-y-2">
               <div className="grid h-10 w-10 place-items-center rounded-full bg-muted/60">
-                <VideoOff className="h-5 w-5 text-muted-foreground/60" />
+                <CalendarDays className="h-5 w-5 text-muted-foreground/60" />
               </div>
-              <p className="text-xs font-semibold text-foreground">No Upcoming meetings</p>
-              <p className="text-[11px] text-muted-foreground max-w-xs">
-                Your schedule is clear. Click below to schedule a call with clients.
+              <p className="text-xs font-semibold text-foreground">
+                {eventsError ? "Calendar events could not be loaded" : "No upcoming events"}
+              </p>
+              <p
+                className="text-[11px] text-muted-foreground max-w-xs"
+                role={eventsError ? "alert" : undefined}
+              >
+                {eventsError
+                  ? "Open the calendar page and refresh to try again."
+                  : "Your schedule is clear. Add an event to your workspace calendar."}
               </p>
               <Button
                 variant="outline"
@@ -183,8 +176,6 @@ export function CalendarUpcomingWidget({
                 }
               }
 
-              const hasMeet = Boolean(ev.hangoutLink);
-
               return (
                 <div
                   key={ev.id}
@@ -195,11 +186,6 @@ export function CalendarUpcomingWidget({
                       <span className="text-xs font-semibold truncate text-foreground">
                         {ev.summary}
                       </span>
-                      {hasMeet && (
-                        <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950 dark:text-blue-300 dark:border-blue-800 text-[10px] shrink-0 gap-1 px-1.5 py-0">
-                          <Video className="h-2.5 w-2.5 text-blue-600 dark:text-blue-400" /> Meet
-                        </Badge>
-                      )}
                     </div>
                     <div className="flex items-center gap-3 text-[11px] text-muted-foreground">
                       <span className="flex items-center gap-1">
@@ -213,21 +199,9 @@ export function CalendarUpcomingWidget({
                     </div>
                   </div>
 
-                  {ev.hangoutLink ? (
-                    <a
-                      href={ev.hangoutLink}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white shadow-xs hover:bg-blue-700 transition-colors shrink-0"
-                    >
-                      <Video className="h-3.5 w-3.5" />
-                      Join
-                    </a>
-                  ) : (
-                    <Button variant="ghost" size="sm" asChild className="text-xs h-8 shrink-0">
-                      <Link to={`/${tenantSlug}/calendar`}>View</Link>
-                    </Button>
-                  )}
+                  <Button variant="ghost" size="sm" asChild className="text-xs h-8 shrink-0">
+                    <Link to={`/${tenantSlug}/calendar`}>View</Link>
+                  </Button>
                 </div>
               );
             })
@@ -237,10 +211,7 @@ export function CalendarUpcomingWidget({
 
       {newEventOpen && (
         <Suspense fallback={null}>
-          <EventDialog
-            open={newEventOpen}
-            onOpenChange={setNewEventOpen}
-          />
+          <EventDialog open={newEventOpen} onOpenChange={setNewEventOpen} />
         </Suspense>
       )}
     </>

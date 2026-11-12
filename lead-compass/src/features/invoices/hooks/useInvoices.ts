@@ -1,6 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { invoicesKeys } from "../keys/invoices.keys";
-import type { CreateInvoiceInput, Invoice, ListInvoicesQuery, UpdateInvoiceInput } from "../types/invoices.type";
+import type {
+  CreateInvoiceInput,
+  Invoice,
+  ListInvoicesQuery,
+  UpdateInvoiceInput,
+} from "../types/invoices.type";
 import type { CreateInvoiceItemInput, UpdateInvoiceItemInput } from "../types/items.types";
 import { invoiceApi } from "../apis/invoices.api";
 import { useAuthPayload } from "@/features/auth/hooks/useAuthPayload";
@@ -11,24 +16,25 @@ const cache = {
   // refetchIntervalInBackground: true
 };
 
-export function useInvoices(filters?: ListInvoicesQuery) {
-  const auth = useAuthPayload()
+export function useInvoices(filters?: ListInvoicesQuery, options: { enabled?: boolean } = {}) {
+  const auth = useAuthPayload();
   const role = auth?.user.role;
 
   return useQuery({
     queryKey: filters ? invoicesKeys.list(filters) : invoicesKeys.lists(),
-    ...cache, queryFn: () => role === "CLIENT" ? invoiceApi.listOwn() : invoiceApi.list(filters),
-
+    ...cache,
+    queryFn: () => (role === "CLIENT" ? invoiceApi.listOwn() : invoiceApi.list(filters)),
+    enabled: options.enabled,
   });
 }
 
 export function useInvoiceById(id: string) {
-  const auth = useAuthPayload()
+  const auth = useAuthPayload();
   const role = auth?.user.role;
 
   return useQuery({
     queryKey: invoicesKeys.detail(id),
-    queryFn: () => role === "CLIENT" ? invoiceApi.getOwnById(id) : invoiceApi.getById(id),
+    queryFn: () => (role === "CLIENT" ? invoiceApi.getOwnById(id) : invoiceApi.getById(id)),
     enabled: !!id,
     ...cache,
   });
@@ -52,8 +58,7 @@ export function useInvoiceMutation() {
       qc.invalidateQueries({ queryKey: ["dashboard", "revenue"] }),
     ]);
 
-  const patch = (invoice: Invoice) =>
-    qc.setQueryData(invoicesKeys.detail(invoice.id), invoice);
+  const patch = (invoice: Invoice) => qc.setQueryData(invoicesKeys.detail(invoice.id), invoice);
 
   return {
     create: useMutation({
@@ -90,13 +95,8 @@ export function useInvoiceMutation() {
     }),
 
     createItem: useMutation({
-      mutationFn: ({
-        invoiceId,
-        value,
-      }: {
-        invoiceId: string;
-        value: CreateInvoiceItemInput;
-      }) => invoiceApi.createItem(invoiceId, value),
+      mutationFn: ({ invoiceId, value }: { invoiceId: string; value: CreateInvoiceItemInput }) =>
+        invoiceApi.createItem(invoiceId, value),
       onSuccess: (_, { invoiceId }) =>
         qc.invalidateQueries({ queryKey: invoicesKeys.detail(invoiceId) }),
     }),
@@ -116,13 +116,8 @@ export function useInvoiceMutation() {
     }),
 
     deleteItem: useMutation({
-      mutationFn: ({
-        invoiceId,
-        itemId,
-      }: {
-        invoiceId: string;
-        itemId: string;
-      }) => invoiceApi.deleteItem(invoiceId, itemId),
+      mutationFn: ({ invoiceId, itemId }: { invoiceId: string; itemId: string }) =>
+        invoiceApi.deleteItem(invoiceId, itemId),
       onSuccess: (_, { invoiceId }) =>
         qc.invalidateQueries({ queryKey: invoicesKeys.detail(invoiceId) }),
     }),

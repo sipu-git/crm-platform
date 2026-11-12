@@ -19,18 +19,23 @@ const HOME_CACHE = {
 };
 
 /** Daily work data used by Home, kept out of the analytics Dashboard queries. */
-export function useHomeData(role: DashboardRole) {
+export function useHomeData(
+  role: DashboardRole,
+  options: { tasksEnabled?: boolean; recentEnabled?: boolean } = {},
+) {
   const { tenantSlug = "" } = useParams<{ tenantSlug: string }>();
 
   const tasks = useQuery({
     queryKey: ["dashboard", "tasks", role, tenantSlug],
     queryFn: () => dashboardApi.getTasks(role, tenantSlug),
+    enabled: options.tasksEnabled ?? true,
     ...HOME_CACHE,
   });
 
   const recent = useQuery({
     queryKey: ["dashboard", "recent", role, tenantSlug],
     queryFn: () => dashboardApi.getRecent(role, tenantSlug),
+    enabled: options.recentEnabled ?? true,
     ...HOME_CACHE,
   });
 

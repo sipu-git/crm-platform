@@ -1,10 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useParams, useSearchParams } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { toast } from "sonner";
-import { sendMessage, viewCommunications, fetchGmailStatus } from "@/features/communications/communication.slice";
-import { communicationApis } from "@/features/communications/communication.service";
+import { sendMessage, viewCommunications } from "@/features/communications/communication.slice";
 import { Communication, CommunicationChannel, CommunicationPayload, MessageType } from "@/features/communications/communication.types";
 import { useCommunicationsPolling } from "@/features/communications/hooks/use-communication-polling";
 import { MAX_CHARS } from "@/features/communications/utils/constants";
@@ -19,12 +18,11 @@ const EMPTY_HISTORY: Communication[] = [];
 export default function Communications() {
   const dispatch = useAppDispatch();
   const { tenantSlug = "", leadId = "" } = useParams();
-  const [searchParams, setSearchParams] = useSearchParams();
 
   const { data: lead } = useLead(leadId);
   const history: Communication[] = useAppSelector((s) => s.communications?.data?.communications ?? EMPTY_HISTORY);
   const historyLoading = useAppSelector((s) => s.communications?.loading ?? false);
-  const { data, gmailStatus } = useAppSelector((s) => s.communications);
+  const { data } = useAppSelector((s) => s.communications);
 
   const [channel, setChannel] = useState<CommunicationChannel>("WHATSAPP");
   const [messageType, setMessageType] = useState<MessageType>("TEXT");
@@ -33,41 +31,11 @@ export default function Communications() {
   const [attachment, setAttachment] = useState<File | null>(null);
   const [sending, setSending] = useState(false);
   const [filter, setFilter] = useState<CommunicationChannel | "ALL">("ALL");
-  const [connectingGmail, setConnectingGmail] = useState(false);
 
   const scrollRef = useRef<HTMLDivElement | null>(null);
 
   useCommunicationsPolling(leadId);
   useNewReplyToast(history, lead?.contact?.first_name);
-
-  useEffect(() => {
-    dispatch(fetchGmailStatus());
-  }, [dispatch]);
-
-  useEffect(() => {
-    if (searchParams.get("connected") === "true") {
-      toast.success("Gmail connected");
-      dispatch(fetchGmailStatus());
-      setSearchParams(
-        (prev) => {
-          prev.delete("connected");
-          return prev;
-        },
-        { replace: true },
-      );
-    }
-    const error = searchParams.get("error");
-    if (error) {
-      toast.error(`Failed to connect Gmail (${error})`);
-      setSearchParams(
-        (prev) => {
-          prev.delete("error");
-          return prev;
-        },
-        { replace: true },
-      );
-    }
-  }, [searchParams, dispatch, setSearchParams]);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
@@ -97,21 +65,6 @@ export default function Communications() {
     setBody("");
     setSubject("");
     setAttachment(null);
-  };
-
-  const handleConnectGmail = async () => {
-    if (connectingGmail) return;
-    setConnectingGmail(true);
-    try {
-      const returnTo = `/${tenantSlug}/communications/${leadId}`;
-      const response = await communicationApis.getGmailConnectUrl(returnTo);
-      const url = response.data?.data?.url ?? response.data?.url;
-      if (!url) throw new Error("No auth URL returned from server");
-      window.location.href = url;
-    } catch (err) {
-      console.error("Failed to get Gmail auth URL", err);
-      setConnectingGmail(false);
-    }
   };
 
   const handleSend = async () => {
@@ -178,9 +131,6 @@ export default function Communications() {
             attachment={attachment}
             onAttachmentPick={handleAttachmentPick}
             onAttachmentRemove={() => setAttachment(null)}
-            gmailStatus={gmailStatus}
-            connectingGmail={connectingGmail}
-            onConnectGmail={handleConnectGmail}
             sending={sending}
             canSend={canSend}
             overLimit={overLimit}

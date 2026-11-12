@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import type { CalendarEvent } from "../types";
 import { Badge } from "@/components/ui/badge";
-import { Video, Clock } from "lucide-react";
+import { Clock } from "lucide-react";
 import {
   format,
   startOfMonth,
@@ -104,13 +104,11 @@ export default function CalendarMonthView({
                 )}
               </div>
 
-              {/* Day event list */}
               <div className="space-y-1 overflow-y-auto max-h-[85px] no-scrollbar">
-                {dayEvents.map((ev) => {
+                {dayEvents.slice(0, 3).map((ev) => {
                   const startTime = ev.start?.dateTime
                     ? format(parseISO(ev.start.dateTime), "p")
                     : "All day";
-                  const hasMeet = Boolean(ev.hangoutLink);
 
                   return (
                     <div
@@ -122,14 +120,9 @@ export default function CalendarMonthView({
                       className="group flex flex-col gap-0.5 rounded-md border border-primary/20 bg-primary/5 p-1.5 text-[11px] hover:bg-primary/10 transition-colors"
                       title={`${ev.summary} (${startTime})`}
                     >
-                      <div className="flex items-center justify-between gap-1">
-                        <span className="font-semibold truncate text-foreground leading-tight">
-                          {ev.summary}
-                        </span>
-                        {hasMeet && (
-                          <Video className="h-3 w-3 shrink-0 text-blue-600 dark:text-blue-400" />
-                        )}
-                      </div>
+                      <span className="font-semibold truncate text-foreground leading-tight">
+                        {ev.summary}
+                      </span>
                       <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
                         <Clock className="h-2.5 w-2.5 shrink-0" />
                         <span className="truncate">{startTime}</span>
@@ -137,6 +130,11 @@ export default function CalendarMonthView({
                     </div>
                   );
                 })}
+                {dayEvents.length > 3 && (
+                  <p className="px-1 text-[10px] font-medium text-muted-foreground">
+                    +{dayEvents.length - 3} more
+                  </p>
+                )}
               </div>
             </div>
           );
@@ -145,4 +143,3 @@ export default function CalendarMonthView({
     </div>
   );
 }
-

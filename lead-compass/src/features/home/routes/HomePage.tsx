@@ -2,28 +2,33 @@ import { lazy, Suspense, useCallback, useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { FileText, Users } from "lucide-react";
+import type { Deal } from "@/features/deals/deal.types";
 import { useCurrentUser } from "@/features/auth/hooks/useCurrentUsers";
 import { usePermission } from "@/features/auth/hooks/use-permission";
 import { normalizeRole } from "@/features/dashboard/configs/dashboard.config";
 import type { WidgetScope } from "@/features/dashboard/types/dashboard.types";
-import type { Deal } from "@/features/deals/deal.types";
 import type { Invoice } from "@/features/invoices/types/invoices.type";
 import { useDeals } from "@/features/deals/hooks/useDeals";
 import { useInvoices } from "@/features/invoices/hooks/useInvoices";
 import { useHomeData } from "@/features/home/hooks/useHomeData";
 import { communicationApis } from "@/features/communications/communication.service";
 import type { GmailAccountStatus } from "@/features/communications/communication.types";
-import { QuickActionsSection } from "@/features/home/components/widgets/QuickActionsSection";
 import HomeHeader, { type HomePrimaryAction } from "@/features/home/components/HomeHeader";
-import HomeGrid from "@/features/home/components/HomeGrid";
-import RecentActivitySection from "@/features/home/components/RecentActivitySection";
-import {
-  countUnreadEmails,
-  createHomeFavoriteItems,
-  emailPayload,
-  makeRecentRecords,
-} from "@/features/home/home.utils";
+import { DeferredChunk } from "@/features/home/components/DeferredWidget";
+import {countUnreadEmails,createHomeFavoriteItems,emailPayload,makeRecentRecords} from "@/features/home/home.utils";
 import { toast } from "sonner";
+
+const QuickActionsSection = lazy(() =>
+  import("@/features/home/components/widgets/QuickActionsSection").then((module) => ({
+    default: module.QuickActionsSection,
+  })),
+);
+
+const HomeGrid = lazy(() => import("@/features/home/components/HomeGrid"));
+
+const RecentActivitySection = lazy(
+  () => import("@/features/home/components/RecentActivitySection"),
+);
 
 const EMPTY_DEALS: Deal[] = [];
 const EMPTY_INVOICES: Invoice[] = [];
@@ -48,10 +53,35 @@ function HomePage() {
   const { canSeeModule } = usePermission();
   const [isLeadDialogOpen, setLeadDialogOpen] = useState(false);
   const [isInvoiceDialogOpen, setInvoiceDialogOpen] = useState(false);
-  const { tasks, activities, leads, isLoading: homeLoading } = useHomeData(activeRole);
-  const dealsQuery = useDeals();
-  const invoicesQuery = useInvoices();
+  const [isHomeWidgetsNearViewport, setHomeWidgetsNearViewport] = useState(false);
+  const onHomeWidgetsVisible = useCallback(() => setHomeWidgetsNearViewport(true), []);
+
+  const canSeeLeads = canSeeModule("leads");
+  const canSeeDeals = canSeeModule("deals");
+  const canSeeInvoices = canSeeModule("invoices");
+  const canSeeActivities = canSeeModule("activities");
+  const canSeeContacts = canSeeModule("contacts");
+  const canSeeCompanies = canSeeModule("company");
+  const canSeeProjects = canSeeModule("projects");
   const canSeeCommunications = canSeeModule("communications");
+
+  const {
+    tasks,
+    activities,
+    leads,
+    isLoading: homeLoading,
+  } = useHomeData(activeRole, {
+    tasksEnabled: isHomeWidgetsNearViewport && canSeeActivities,
+    recentEnabled:
+      isHomeWidgetsNearViewport &&
+      (canSeeActivities || canSeeLeads || canSeeDeals || canSeeInvoices),
+  });
+  const dealsQuery = useDeals(undefined, {
+    enabled: isHomeWidgetsNearViewport && canSeeDeals,
+  });
+  const invoicesQuery = useInvoices(undefined, {
+    enabled: isHomeWidgetsNearViewport && canSeeInvoices,
+  });
 
   const gmailStatusQuery = useQuery({
     queryKey: ["communications", "gmail-status"],
@@ -59,13 +89,13 @@ function HomePage() {
       emailPayload(await communicationApis.getGmailStatus()) as GmailAccountStatus,
     staleTime: 1000 * 60 * 5,
     retry: 1,
-    enabled: canSeeCommunications,
+    enabled: isHomeWidgetsNearViewport && canSeeCommunications,
   });
   const gmailConnected = Boolean(gmailStatusQuery.data?.connected);
   const gmailInboxQuery = useQuery({
     queryKey: ["communications", "gmail-inbox", "home"],
     queryFn: async () => emailPayload(await communicationApis.getGmailInbox(20)),
-    enabled: gmailConnected,
+    enabled: isHomeWidgetsNearViewport && gmailConnected,
     staleTime: 1000 * 60,
     retry: 1,
   });
@@ -80,14 +110,6 @@ function HomePage() {
     () => countUnreadEmails(gmailInboxQuery.data),
     [gmailInboxQuery.data],
   );
-
-  const canSeeLeads = canSeeModule("leads");
-  const canSeeDeals = canSeeModule("deals");
-  const canSeeInvoices = canSeeModule("invoices");
-  const canSeeActivities = canSeeModule("activities");
-  const canSeeContacts = canSeeModule("contacts");
-  const canSeeCompanies = canSeeModule("company");
-  const canSeeProjects = canSeeModule("projects");
 
   const favoriteItems = useMemo(
     () =>
@@ -161,44 +183,51 @@ function HomePage() {
           primaryAction={primaryAction}
         />
 
-        <QuickActionsSection
-          tenantSlug={tenantSlug}
-          deals={deals}
-          canCreateLead={canSeeLeads}
-          canManageDeals={canSeeDeals}
-          canManageInvoices={canSeeInvoices}
-          canManageActivities={canSeeActivities}
-          canManageContacts={canSeeContacts}
-          canManageCompanies={canSeeCompanies}
-          canManageProjects={canSeeProjects}
-          onNewLead={openLeadDialog}
-          onNewInvoice={openInvoiceDialog}
-        />
+        <Suspense
+          fallback={<div className="min-h-[190px] animate-pulse rounded-xl border bg-card/60" />}
+        >
+          <QuickActionsSection
+            tenantSlug={tenantSlug}
+            canCreateLead={canSeeLeads}
+            canManageDeals={canSeeDeals}
+            canManageInvoices={canSeeInvoices}
+            canManageActivities={canSeeActivities}
+            canManageContacts={canSeeContacts}
+            canManageCompanies={canSeeCompanies}
+            canManageProjects={canSeeProjects}
+            onNewLead={openLeadDialog}
+            onNewInvoice={openInvoiceDialog}
+          />
+        </Suspense>
 
-        <HomeGrid
-          tenantSlug={tenantSlug}
-          tasks={tasks}
-          deals={deals}
-          invoices={allInvoices}
-          unreadEmails={unreadEmails}
-          gmailConnected={gmailConnected}
-          isLoading={isLoadingRecords}
-          showEmail={canSeeCommunications}
-          recentRecords={recentRecords}
-          favoriteItems={favoriteItems}
-          onConnectGmail={handleConnectGmail}
-          showTasks={canSeeActivities}
-          showDeals={canSeeDeals}
-          showInvoices={canSeeInvoices}
-        />
+        <DeferredChunk minHeight={700} onVisible={onHomeWidgetsVisible}>
+          <HomeGrid
+            tenantSlug={tenantSlug}
+            tasks={tasks}
+            deals={deals}
+            invoices={allInvoices}
+            unreadEmails={unreadEmails}
+            gmailConnected={gmailConnected}
+            isLoading={isLoadingRecords}
+            showEmail={canSeeCommunications}
+            recentRecords={recentRecords}
+            favoriteItems={favoriteItems}
+            onConnectGmail={handleConnectGmail}
+            showTasks={canSeeActivities}
+            showDeals={canSeeDeals}
+            showInvoices={canSeeInvoices}
+          />
+        </DeferredChunk>
 
         {canSeeActivities && (
-          <RecentActivitySection
-            tenantSlug={tenantSlug}
-            activities={activities}
-            isLoading={homeLoading}
-            scope={activityScope}
-          />
+          <DeferredChunk minHeight={300} onVisible={onHomeWidgetsVisible}>
+            <RecentActivitySection
+              tenantSlug={tenantSlug}
+              activities={activities}
+              isLoading={homeLoading}
+              scope={activityScope}
+            />
+          </DeferredChunk>
         )}
       </div>
 

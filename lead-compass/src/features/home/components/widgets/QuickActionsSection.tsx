@@ -19,6 +19,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { useDeals } from "@/features/deals/hooks/useDeals";
 import type { Deal } from "@/features/deals/deal.types";
 import {
   Dialog,
@@ -43,7 +44,6 @@ const ActivityFormDialog = lazy(() =>
 
 export const QuickActionsSection = React.memo(function QuickActionsSection({
   tenantSlug,
-  deals,
   canCreateLead,
   canManageDeals,
   canManageInvoices,
@@ -55,7 +55,6 @@ export const QuickActionsSection = React.memo(function QuickActionsSection({
   onNewInvoice,
 }: {
   tenantSlug: string;
-  deals: Deal[];
   canCreateLead: boolean;
   canManageDeals: boolean;
   canManageInvoices: boolean;
@@ -69,6 +68,8 @@ export const QuickActionsSection = React.memo(function QuickActionsSection({
   const navigate = useNavigate();
   const [taskPickerOpen, setTaskPickerOpen] = useState(false);
   const [selectedDeal, setSelectedDeal] = useState<Deal | null>(null);
+  const dealsQuery = useDeals(undefined, { enabled: taskPickerOpen });
+  const deals = dealsQuery.data ?? [];
 
   const actions = [
     ...(canCreateLead
@@ -209,7 +210,13 @@ export const QuickActionsSection = React.memo(function QuickActionsSection({
               Tasks are attached to a deal so the follow-up stays with the customer record.
             </DialogDescription>
           </DialogHeader>
-          {deals.length ? (
+          {dealsQuery.isLoading ? (
+            <p className="py-4 text-center text-sm text-muted-foreground">Loading deals…</p>
+          ) : dealsQuery.isError ? (
+            <p className="py-4 text-center text-sm text-destructive">
+              Could not load deals. Close this dialog and try again.
+            </p>
+          ) : deals.length ? (
             <Select
               onValueChange={(id) => {
                 const deal = deals.find((item) => item.id === id) ?? null;

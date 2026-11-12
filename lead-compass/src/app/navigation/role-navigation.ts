@@ -1,6 +1,23 @@
-import {BarChart3,Bell,Building,Building2,Calendar,ContactRound,FileText,
-  FolderKanban,House,Kanban,ListTodo,ReceiptText,Settings,ShieldCheck,Users,
-  Users2,UserRound,type LucideIcon} from "lucide-react";
+import {
+  BarChart3,
+  Bell,
+  Building,
+  Building2,
+  Calendar,
+  ContactRound,
+  FileText,
+  FolderKanban,
+  House,
+  Kanban,
+  ListTodo,
+  ReceiptText,
+  Settings,
+  ShieldCheck,
+  Users,
+  Users2,
+  UserRound,
+  type LucideIcon,
+} from "lucide-react";
 import type { AppRole } from "@/lib/permissionContract";
 
 export interface NavigationItem {
@@ -15,6 +32,15 @@ export interface NavigationGroup {
   label: string;
   items: readonly NavigationItem[];
 }
+
+export const CALENDAR_ACCESS_ROLES = [
+  "SUPER_ADMIN",
+  "ADMIN",
+  "MANAGER",
+  "SALES_REP",
+  "FINANCE",
+  "CLIENT",
+] as const satisfies readonly AppRole[];
 
 const overview: NavigationGroup = {
   label: "Overview",
@@ -40,7 +66,7 @@ const adminNavigation: readonly NavigationGroup[] = [
     label: "Operations",
     items: [
       { to: "activities", label: "Activities", icon: ListTodo, resource: "activities" },
-      { to: "calendar", label: "Calendar", icon: Calendar, resource: "activities" },
+      { to: "calendar", label: "Calendar", icon: Calendar },
       { to: "projects", label: "Projects", icon: FolderKanban, resource: "projects" },
       { to: "invoices", label: "Invoices", icon: FileText, resource: "invoices" },
     ],
@@ -77,7 +103,7 @@ const managerNavigation: readonly NavigationGroup[] = [
     label: "Operations",
     items: [
       { to: "activities", label: "Activities", icon: ListTodo, resource: "activities" },
-      { to: "calendar", label: "Calendar", icon: Calendar, resource: "activities" },
+      { to: "calendar", label: "Calendar", icon: Calendar },
       { to: "projects", label: "Projects", icon: FolderKanban, resource: "projects" },
       { to: "invoices", label: "Invoices", icon: FileText, resource: "invoices" },
     ],
@@ -100,7 +126,7 @@ const salesNavigation: readonly NavigationGroup[] = [
       { to: "leads", label: "My assigned leads", icon: Users, resource: "leads" },
       { to: "deals", label: "My deals", icon: Kanban, resource: "deals" },
       { to: "activities", label: "My activities", icon: ListTodo, resource: "activities" },
-      { to: "calendar", label: "Calendar", icon: Calendar, resource: "activities" },
+      { to: "calendar", label: "Calendar", icon: Calendar },
       { to: "enquires", label: "Enquiries", icon: Users, resource: "enquires" },
     ],
   },
@@ -121,6 +147,10 @@ const salesNavigation: readonly NavigationGroup[] = [
 
 const financeNavigation: readonly NavigationGroup[] = [
   overview,
+  {
+    label: "Operations",
+    items: [{ to: "calendar", label: "Calendar", icon: Calendar }],
+  },
   {
     label: "Finance",
     items: [
@@ -144,6 +174,7 @@ const clientNavigation: readonly NavigationGroup[] = [
   {
     label: "My account",
     items: [
+      { to: "calendar", label: "Calendar", icon: Calendar },
       { to: "company-detail", label: "Company profile", icon: Building, resource: "company" },
       { to: "projects", label: "Projects", icon: FolderKanban, resource: "projects" },
       { to: "invoices", label: "Billing", icon: ReceiptText, resource: "invoices" },

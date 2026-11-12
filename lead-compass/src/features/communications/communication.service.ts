@@ -1,5 +1,5 @@
 import { api } from "@/api/client";
-import { SendGmailPayload } from "./communication.types";
+import { SendEmailPayload } from "./communication.types";
 
 const subUrl = "/communications";
 export const communicationApis = {
@@ -11,7 +11,7 @@ export const communicationApis = {
     disconnectGmailAccount: (accountId: string) => api.delete(`${subUrl}/gmail/accounts/${accountId}`),
     getGmailInbox: (limit = 20) => api.get(`${subUrl}/gmail/inbox?limit=${limit}`),
     syncGmailMessages: () => api.post(`${subUrl}/gmail/sync`),
-    sendGmailDirect: (data: SendGmailPayload) => api.post(`${subUrl}/gmail/send`, data),
+    sendTransactionalEmail: (data: SendEmailPayload) => api.post(`${subUrl}/email/send`, data),
     getGmailConnectUrl: (returnTo?: string) =>
         api.get(`${subUrl}/gmail/connect`, { params: returnTo ? { returnTo } : undefined }),
 };

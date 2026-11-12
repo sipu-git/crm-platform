@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
-import { useNavigate, useParams, useSearchParams } from "react-router-dom";
+import { useMemo, useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -17,7 +17,6 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { EnquiryStatus } from "@/features/enquiries/types/enquiry.types";
 import { communicationApis } from "@/features/communications/communication.service";
-import type { GmailAccountStatus } from "@/features/communications/communication.types";
 import { handleApiError } from "@/lib/apiError";
 
 const STATUS_TONE: Record<EnquiryStatus, string> = {
@@ -67,80 +66,17 @@ function formatProjectType(value?: string) {
 }
 
 export default function EnquiryDetailPage() {
-  const { id = "", tenantSlug = "" } = useParams();
+  const { id = "" } = useParams();
   const navigate = useNavigate();
-  const [searchParams, setSearchParams] = useSearchParams();
   const { data: enquiry, isLoading, isError, error } = useEnquiry(id);
   const { mutate: approve, isPending: isApprovePending } = useApproveEnquiry();
   const { mutate: reject, isPending: isRejectPending } = useRejectEnquiry();
   const analyzeMutation = useAnalyzeEnquiryMutation();
-  const [gmailStatus, setGmailStatus] = useState<GmailAccountStatus | null>(null);
-  const [isGmailStatusLoading, setIsGmailStatusLoading] = useState(true);
-  const [isConnectingGmail, setIsConnectingGmail] = useState(false);
   const [isSendingReply, setIsSendingReply] = useState(false);
   const [replySubject, setReplySubject] = useState("");
   const [replyBody, setReplyBody] = useState("");
 
   const isPending = isApprovePending || isRejectPending;
-
-  useEffect(() => {
-    let active = true;
-
-    communicationApis.getGmailStatus()
-      .then(({ data }) => {
-        if (active) setGmailStatus(data.data);
-      })
-      .catch((err: unknown) => {
-        if (active) {
-          setGmailStatus(null);
-          toast.error(`Unable to check Gmail connection: ${handleApiError(err)}`);
-        }
-      })
-      .finally(() => {
-        if (active) setIsGmailStatusLoading(false);
-      });
-
-    return () => {
-      active = false;
-    };
-  }, []);
-
-  useEffect(() => {
-    const connected = searchParams.get("connected");
-    const connectionError = searchParams.get("error");
-
-    if (connected === "true") {
-      toast.success("Gmail connected");
-    }
-
-    if (connectionError) {
-      toast.error(`Failed to connect Gmail (${connectionError})`);
-    }
-
-    if (connected || connectionError) {
-      setSearchParams((previous) => {
-        previous.delete("connected");
-        previous.delete("error");
-        return previous;
-      }, { replace: true });
-    }
-  }, [searchParams, setSearchParams]);
-
-  const handleConnectGmail = async () => {
-    if (isConnectingGmail) return;
-    setIsConnectingGmail(true);
-
-    try {
-      const returnTo = `/${tenantSlug}/enquires/${id}`;
-      const response = await communicationApis.getGmailConnectUrl(returnTo);
-      const url = response.data?.data?.url;
-      if (!url) throw new Error("No Gmail authorization URL was returned.");
-      window.location.assign(url);
-    } catch (err) {
-      toast.error(`Unable to connect Gmail: ${handleApiError(err)}`);
-      setIsConnectingGmail(false);
-    }
-  };
 
   const handleSendReply = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -151,7 +87,7 @@ export default function EnquiryDetailPage() {
 
     setIsSendingReply(true);
     try {
-      await communicationApis.sendGmailDirect({ to: recipient, subject, body });
+      await communicationApis.sendTransactionalEmail({ to: recipient, subject, body });
       toast.success("Email response sent.");
       setReplyBody("");
     } catch (err) {
@@ -404,29 +340,11 @@ export default function EnquiryDetailPage() {
               <CardContent className="space-y-4">
                 <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border p-3 text-sm">
                   <div className="min-w-0">
-                    <p className="font-medium">
-                      {isGmailStatusLoading
-                        ? "Checking Gmail connection…"
-                        : gmailStatus?.connected
-                          ? `Sending via ${gmailStatus.email || "connected Gmail"}`
-                          : "Connect Gmail to send an email response"}
+                    <p className="font-medium">Sending via Brevo</p>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      Your response will be sent from the sender configured for this application.
                     </p>
-                    {!isGmailStatusLoading && !gmailStatus?.connected && (
-                      <p className="mt-1 text-xs text-muted-foreground">
-                        Your response will be sent to the enquiry contact’s email address.
-                      </p>
-                    )}
                   </div>
-                  {!isGmailStatusLoading && !gmailStatus?.connected && (
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={handleConnectGmail}
-                      disabled={isConnectingGmail}
-                    >
-                      {isConnectingGmail ? "Connecting…" : "Connect Gmail"}
-                    </Button>
-                  )}
                 </div>
 
                 {enquiry.email ? (
@@ -459,7 +377,7 @@ export default function EnquiryDetailPage() {
                     <div className="flex justify-end">
                       <Button
                         type="submit"
-                        disabled={!gmailStatus?.connected || isSendingReply || !replySubject.trim() || !replyBody.trim()}
+                        disabled={isSendingReply || !replySubject.trim() || !replyBody.trim()}
                       >
                         <Send className="mr-2 h-4 w-4" />
                         {isSendingReply ? "Sending…" : "Send response"}

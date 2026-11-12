@@ -11,6 +11,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
+import { handleApiError } from "@/lib/apiError";
 
 interface DeleteEventDialogProps {
   open: boolean;
@@ -28,11 +29,11 @@ export default function DeleteEventDialog({
   const handleDelete = async () => {
     if (!eventToDelete) return;
     try {
-      await deleteEvent.mutateAsync({ id: eventToDelete.id });
-      toast.success("Event deleted from Google Calendar");
+      await deleteEvent.mutateAsync(eventToDelete.id);
+      toast.success("Calendar event deleted");
       onOpenChange(false);
-    } catch (err: any) {
-      toast.error(err?.response?.data?.message || "Failed to delete event.");
+    } catch (error: unknown) {
+      toast.error(handleApiError(error));
     }
   };
 
@@ -42,7 +43,8 @@ export default function DeleteEventDialog({
         <AlertDialogHeader>
           <AlertDialogTitle>Delete Calendar Event?</AlertDialogTitle>
           <AlertDialogDescription>
-            Are you sure you want to delete &quot;{eventToDelete?.summary}&quot; from your Google Calendar? This action cannot be undone.
+            Are you sure you want to delete &quot;{eventToDelete?.summary}&quot; from the workspace
+            calendar? This action cannot be undone.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
@@ -62,4 +64,3 @@ export default function DeleteEventDialog({
     </AlertDialog>
   );
 }
-

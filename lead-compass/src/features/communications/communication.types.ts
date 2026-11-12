@@ -97,7 +97,7 @@ export interface GmailAccount {
   created_at: string;
 }
 
-export interface SendGmailPayload {
+export interface SendEmailPayload {
   to: string;
   subject: string;
   body: string;

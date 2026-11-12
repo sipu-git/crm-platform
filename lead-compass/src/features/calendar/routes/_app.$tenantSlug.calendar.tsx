@@ -1,31 +1,23 @@
-import { lazy, Suspense, useMemo, useState } from "react";
+import { lazy, Suspense, useEffect, useMemo, useState } from "react";
 import { useCalendarEvents } from "@/features/calendar/hooks/useCalendar";
 import type { CalendarEvent } from "@/features/calendar/types";
-import { GoogleConnectBanner } from "@/features/calendar/components/GoogleConnectBanner";
 import { CalendarHeader } from "@/features/calendar/components/CalendarHeader";
 import { PageHeader, TableSkeleton } from "@/components/ui-kit";
 import { addMonths, startOfMonth, endOfMonth, startOfWeek, endOfWeek } from "date-fns";
 
-const CalendarMonthView = lazy(
-  () => import("@/features/calendar/components/CalendarMonthView")
-);
+const CalendarMonthView = lazy(() => import("@/features/calendar/components/CalendarMonthView"));
 
-const CalendarAgendaView = lazy(
-  () => import("@/features/calendar/components/CalendarAgendaView")
-);
+const CalendarAgendaView = lazy(() => import("@/features/calendar/components/CalendarAgendaView"));
 
-const EventDialog = lazy(
-  () => import("@/features/calendar/components/EventDialog")
-);
+const EventDialog = lazy(() => import("@/features/calendar/components/EventDialog"));
 
-const DeleteEventDialog = lazy(
-  () => import("@/features/calendar/components/DeleteEventDialog")
-);
+const DeleteEventDialog = lazy(() => import("@/features/calendar/components/DeleteEventDialog"));
 
 export function CalendarPage() {
   const [currentDate, setCurrentDate] = useState<Date>(new Date());
   const [viewMode, setViewMode] = useState<"month" | "agenda">("month");
   const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
 
   const [eventDialogOpen, setEventDialogOpen] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
@@ -34,23 +26,22 @@ export function CalendarPage() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [eventToDelete, setEventToDelete] = useState<CalendarEvent | null>(null);
 
+  useEffect(() => {
+    const timeout = window.setTimeout(() => setDebouncedSearch(searchQuery.trim()), 250);
+    return () => window.clearTimeout(timeout);
+  }, [searchQuery]);
+
   const monthStart = startOfMonth(currentDate);
   const monthEnd = endOfMonth(monthStart);
 
   const timeMin = useMemo(
     () => startOfWeek(monthStart, { weekStartsOn: 0 }).toISOString(),
-    [monthStart]
+    [monthStart],
   );
 
-  const timeMax = useMemo(
-    () => endOfWeek(monthEnd, { weekStartsOn: 0 }).toISOString(),
-    [monthEnd]
-  );
+  const timeMax = useMemo(() => endOfWeek(monthEnd, { weekStartsOn: 0 }).toISOString(), [monthEnd]);
 
-  const todayIso = useMemo(
-    () => new Date().toISOString(),
-    []
-  );
+  const todayIso = useMemo(() => new Date().toISOString(), []);
 
   const {
     data: events = [],
@@ -61,7 +52,8 @@ export function CalendarPage() {
   } = useCalendarEvents({
     timeMin: viewMode === "month" ? timeMin : todayIso,
     ...(viewMode === "month" ? { timeMax } : {}),
-    ...(searchQuery ? { q: searchQuery } : {}),
+    maxResults: viewMode === "month" ? 250 : 100,
+    ...(debouncedSearch ? { q: debouncedSearch } : {}),
   });
 
   const handleNavigateMonth = (delta: number) => {
@@ -93,12 +85,10 @@ export function CalendarPage() {
     <div>
       <PageHeader
         title="Calendar"
-        description="Schedule events, manage Google Meet calls, and sync your team timeline with Google Calendar."
+        description="Schedule and manage shared events across your workspace."
       />
 
       <div className="p-4 sm:p-6 space-y-6">
-        <GoogleConnectBanner />
-
         <CalendarHeader
           currentDate={currentDate}
           onNavigateMonth={handleNavigateMonth}
@@ -114,7 +104,7 @@ export function CalendarPage() {
 
         {isError && (
           <div className="p-4 rounded-lg bg-destructive/10 text-destructive text-sm font-medium">
-            Could not load Google Calendar events. Make sure your Google Account is connected.
+            Could not load calendar events. Please refresh and try again.
           </div>
         )}
 
