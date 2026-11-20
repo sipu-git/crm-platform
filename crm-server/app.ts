@@ -21,22 +21,17 @@ import calendarRoutes from './src/modules/apps/calendar/calendar.routes.js';
 import dashboardRoutes from './src/modules/dashboard/dashboard.route.js';
 import aiRoutes from './src/modules/automation/ai.routes.js';
 import tenantRoutes from './src/modules/tenant/tenant.routes.js';
-import { registerNotificationListeners } from './src/modules/notification/utils/notification.listener.js';
-import { registerAuditListeners } from './src/modules/audit/audit.listener.js';
 import { env } from './src/shared/configs/env.js';
 import { requestLogger } from './src/shared/middleware/requestLogger.middleware.js';
 import { errorHandler } from './src/shared/middleware/errorHandler.middleware.js';
-import { connectDB } from './src/shared/configs/db.js';
-import { registerInvoiceListeners } from './src/modules/invoice/utils/invoice.listener.js';
-import { verifyConnection } from './src/modules/mail/services/email-connection.service';
-import { registerAutomationListeners } from './src/modules/automation/automation.listener.js';
+// import { connectDB } from './src/shared/configs/db.js';
 
 export function createApp() {
   const app = express();
   app.set('trust proxy', 1);
 
-  connectDB();
-  verifyConnection();
+//  await connectDB();
+//  await verifyConnection();
 
   app.use(helmet({
     crossOriginResourcePolicy: {
@@ -85,11 +80,6 @@ export function createApp() {
   app.use('/api/tenant', tenantRoutes);
 
   app.use(errorHandler);
-
-  registerInvoiceListeners();
-  registerAutomationListeners();
-  registerNotificationListeners();
-  registerAuditListeners();
 
   return app;
 }

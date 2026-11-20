@@ -13,6 +13,6 @@
     "ignoreDeprecations": "6.0",
     "skipLibCheck": true
   },
-  "include": ["**/*.ts"],
-  "exclude": ["node_modules", "dist"]
+  "include": ["app.ts","server.ts","lambda.ts",  "express.d.ts","**/*.ts"],
+  "exclude": ["node_modules", "dist","**/*.test.ts"]
 }
