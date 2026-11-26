@@ -30,7 +30,7 @@ export const REGISTERED_PERMISSIONS = RESOURCES.map(
   (resource) => `${resource}:read`,
 ) as readonly Permission[];
 
-const ADMIN_PERMISSIONS = REGISTERED_PERMISSIONS;
+const ADMIN_PERMISSIONS = [...REGISTERED_PERMISSIONS, "users:manage"] as const;
 
 export const ROLE_PERMISSIONS: Readonly<Record<AppRole, readonly Permission[]>> = {
   SUPER_ADMIN: ADMIN_PERMISSIONS,
